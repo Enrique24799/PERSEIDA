@@ -1,7 +1,13 @@
-# PERSEIDA — Gantt de Tiempo de Cambio (líneas internas)
+# PERSEIDA — Visores HTML (ejemplos)
 
-`gantt-tiempo-cambio.html` es un Gantt **autocontenido** (sin dependencias externas, se abre
-directamente en el navegador) que muestra los tiempos de cambio de las líneas internas.
+Visores HTML **autocontenidos** (sin dependencias externas, se abren directamente en el navegador):
+
+- `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
+- `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
+
+## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
+
+Muestra los tiempos de cambio de las líneas internas.
 
 ## Características
 
@@ -31,3 +37,30 @@ tabla y se ha clasificado como Cosmética.
 
 Para conectar con datos reales basta sustituir el array `LINES` y la función `genEvents()` del
 `<script>` por la consulta correspondiente.
+
+## `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas (propuesta de carga)
+
+Salida del algoritmo que propone en qué camión se carga cada pedido-posición. Los datos son de
+**ejemplo** y el algoritmo se simula en el propio navegador, de modo que la fecha y el modo
+cambian el resultado de forma realista.
+
+### Parámetros (para ejecutar el algoritmo)
+
+- **Fecha de propuesta de carga.**
+- **Disponibilidad:** *Solo stock* (solo usa stock real) o *Stock + planificado* (usa también la
+  producción planificada → aparecen propuestas de tipo *Fabricación* y baja el backlog).
+- Botón **Ejecutar algoritmo**.
+
+### Campos de la tabla
+
+`Id_Camión`, `Estado` (Completo / Parcial / **Backlog**), `Destino`, `Fecha propuesta de carga`,
+`Tipo de propuesta` (Stock / Fabricación), `Pedido`, `Posición`, `Material`, `Nombre material`,
+`Fecha de entrega`, `Fecha disponible`, `Stock real / planificado`, `Cliente`, `Cantidad (palets)`,
+`Volumen total camión` y `Peso total camión`.
+
+Si el algoritmo **no** propone carga para un pedido-posición, su estado es **Backlog** y el
+`Id_Camión` queda vacío. Las posiciones de un mismo camión se agrupan: los datos del camión y los
+totales de volumen/peso se muestran una sola vez por camión.
+
+Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
+si procede, `runAlgo()` por la llamada al algoritmo real.

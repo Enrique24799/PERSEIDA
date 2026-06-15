@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Output · Pantalla de Ventas — Propuesta de carga</title>
+<style>
+  :root {
+    --head-bg: #2f5f8f;
+    --border: #d7dee8;
+    --grid: #eef2f7;
+    --ink: #243140;
+    --stock: #2f80ed;
+    --fab: #e08a1e;
+    --ok: #27ae60;
+    --warn: #e0a800;
+    --bad: #d9534f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 14px 16px 28px; }
+
+  .titlebar {
+    background: linear-gradient(180deg, #37618f, #2f5f8f);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .titlebar .v { font-size: 12px; opacity: .8; font-weight: 400; }
+
+  /* ---------- Panel de filtros ---------- */
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 12px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+  }
+  fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px 10px; margin: 0; }
+  legend { font-size: 11px; color: #5b6b7d; padding: 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .controls { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 11px; color: #5b6b7d; }
+  input[type="date"], button {
+    font-size: 13px; padding: 6px 9px;
+    border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
+  }
+  .modo { display: flex; gap: 6px; }
+  .modo label {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid #b9c6d6; border-radius: 5px; padding: 6px 12px;
+    cursor: pointer; background: #fff; font-size: 13px;
+  }
+  .modo input { accent-color: var(--head-bg); }
+  .modo label.sel { border-color: var(--head-bg); background: #eaf2fd; font-weight: 600; }
+  button.primary {
+    background: #2f80ed; color: #fff; border-color: #2f80ed; cursor: pointer;
+    font-weight: 600; padding: 7px 16px;
+  }
+  button.primary:hover { background: #2b73d4; }
+
+  .legend-box { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+
+  .summary {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    padding: 8px 14px; font-size: 12px; color: #51637a;
+  }
+  .summary b { color: var(--ink); }
+
+  /* ---------- Tabla ---------- */
+  .tablewrap {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px; overflow: auto; max-height: 72vh;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; white-space: nowrap; }
+  thead th {
+    position: sticky; top: 0; z-index: 5;
+    background: #eef3f9; color: #41546a;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .3px;
+    padding: 7px 9px; text-align: left; border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+  }
+  tbody td { padding: 5px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid); }
+  tbody tr.tstart td { border-top: 2px solid #c4d0de; }
+  tbody td.cam { font-weight: 700; color: #1f2d3d; background: #f7fafd; }
+  tbody td.nom { white-space: normal; min-width: 200px; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover td { background: #f4f9ff; }
+  tbody tr.bl td { background: #fdf3f2; }
+  tbody tr.bl:hover td { background: #fbe9e7; }
+  tbody tr.bl-head td {
+    background: #f8d7d5; color: #8a2622; font-weight: 700; padding: 7px 12px;
+    border-top: 2px solid #d9534f; letter-spacing: .3px;
+  }
+  td .cam.empty { color: #aab4c0; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 11px; font-weight: 600; color: #fff; }
+  .badge.ok   { background: var(--ok); }
+  .badge.warn { background: var(--warn); }
+  .badge.bad  { background: var(--bad); }
+  .tipo { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tipo.stk  { background: #e7f0fd; color: var(--stock); }
+  .tipo.fab  { background: #fbeed8; color: #b56a07; }
+  .tipo.none { color: #aab4c0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="titlebar">
+    <span>Output · Pantalla de Ventas — Propuesta de carga de camiones</span>
+    <span class="v">v1.0</span>
+  </div>
+
+  <!-- Filtros -->
+  <div class="panel">
+    <fieldset>
+      <legend>Parámetros del algoritmo</legend>
+      <div class="controls">
+        <div class="field">
+          <label for="fFecha">Fecha de propuesta de carga</label>
+          <input type="date" id="fFecha" value="2026-06-15" />
+        </div>
+        <div class="field">
+          <label>Disponibilidad a considerar</label>
+          <div class="modo" id="modo">
+            <label class="sel"><input type="radio" name="modo" value="stock" checked /> Solo stock</label>
+            <label><input type="radio" name="modo" value="stockplan" /> Stock + planificado</label>
+          </div>
+        </div>
+        <button class="primary" id="btnRun">▶ Ejecutar algoritmo</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Leyenda</legend>
+      <div class="legend-box">
+        <span class="legend-item"><span class="badge ok">Completo</span></span>
+        <span class="legend-item"><span class="badge warn">Parcial</span></span>
+        <span class="legend-item"><span class="badge bad">Backlog</span></span>
+        <span class="legend-item"><span class="tipo stk">Stock</span></span>
+        <span class="legend-item"><span class="tipo fab">Fabricación</span></span>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Id Camión</th>
+          <th>Estado</th>
+          <th>Destino</th>
+          <th>F. prop. carga</th>
+          <th>Tipo propuesta</th>
+          <th>Pedido</th>
+          <th>Pos.</th>
+          <th>Material</th>
+          <th>Nombre material</th>
+          <th>F. entrega</th>
+          <th>F. disponible</th>
+          <th>Stock real / plan.</th>
+          <th>Cliente</th>
+          <th>Cant. (palets)</th>
+          <th>Vol. total cam. (m³)</th>
+          <th>Peso total cam. (kg)</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================================
+   PANTALLA DE VENTAS — salida del algoritmo de propuesta de carga.
+   Datos de EJEMPLO. El algoritmo se simula en cliente para que la
+   fecha y el modo (Solo stock / Stock + planificado) cambien el
+   resultado de forma realista (incluido el paso a BACKLOG).
+   ===================================================================== */
+
+/* ---------- Maestro de materiales (ejemplo) ---------- */
+/* volP = m³/palet · pesoP = kg/palet · stock = palets reales ·
+   plan = palets planificados · planDias = días hasta disponibilidad planificada */
+const MATERIALS = [
+  { mat:'M0014501', nom:'Champú Hidratante 400 ml',        volP:1.8, pesoP:620, stock:20, plan:30, planDias:3 },
+  { mat:'M0014502', nom:'Gel de Ducha Aloe 750 ml',        volP:2.0, pesoP:700, stock:8,  plan:25, planDias:2 },
+  { mat:'M0014503', nom:'Crema Facial Nutritiva 50 ml',    volP:1.2, pesoP:380, stock:0,  plan:40, planDias:4 },
+  { mat:'M0014504', nom:'Desodorante Spray 200 ml',        volP:1.5, pesoP:450, stock:35, plan:0,  planDias:0 },
+  { mat:'M0014505', nom:'Colonia Fresca 100 ml',           volP:1.0, pesoP:300, stock:5,  plan:20, planDias:5 },
+  { mat:'M0014506', nom:'Jabón de Manos 300 ml',           volP:1.6, pesoP:520, stock:50, plan:0,  planDias:0 },
+  { mat:'M0014507', nom:'Acondicionador Reparador 400 ml', volP:1.8, pesoP:610, stock:0,  plan:35, planDias:3 },
+  { mat:'M0014508', nom:'Pasta Dentífrica 75 ml',          volP:0.9, pesoP:280, stock:60, plan:0,  planDias:0 },
+  { mat:'M0014509', nom:'Mascarilla Capilar 250 ml',       volP:1.4, pesoP:430, stock:12, plan:18, planDias:2 },
+  { mat:'M0014510', nom:'Loción Corporal 500 ml',          volP:1.9, pesoP:660, stock:0,  plan:28, planDias:4 },
+];
+const MAT = Object.fromEntries(MATERIALS.map(m => [m.mat, m]));
+
+const CLIENTES = ['Mercadona','Carrefour','Grupo Día','Eroski','Alcampo','El Corte Inglés','Consum'];
+const DESTINOS = ['Madrid','Barcelona','Valencia','Sevilla','Bilbao','Zaragoza','Málaga'];
+
+/* Capacidad de camión */
+const MAX_PAL = 33, MAX_VOL = 90, MAX_PESO = 24000;
+
+/* ---------- Utilidades ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const $ = s => document.querySelector(s);
+function pad(n){ return String(n).padStart(2,'0'); }
+function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+function fmtDate(d){ return d ? `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}` : '—'; }
+function parseDate(v){ const [y,m,d] = v.split('-').map(Number); return new Date(y, m-1, d); }
+function fmtPeso(n){ return Math.round(n).toLocaleString('es-ES'); }
+
+/* ---------- Generación de la demanda (pedidos-posiciones) ---------- */
+function genDemanda(baseDate){
+  const rnd = mulberry32(20260615);
+  const dem = [];
+  let pedido = 4500000;
+  for (let p = 0; p < 18; p++){
+    pedido += 1 + Math.floor(rnd() * 7);
+    const cliente = CLIENTES[Math.floor(rnd() * CLIENTES.length)];
+    const destino = DESTINOS[Math.floor(rnd() * DESTINOS.length)];
+    const nPos = 1 + Math.floor(rnd() * 3);
+    for (let pos = 1; pos <= nPos; pos++){
+      const m = MATERIALS[Math.floor(rnd() * MATERIALS.length)];
+      dem.push({
+        pedido: String(pedido),
+        posicion: pos * 10,
+        mat: m.mat,
+        nom: m.nom,
+        palets: 2 + Math.floor(rnd() * 10),         // 2..11 palets
+        cliente, destino,
+        fEntrega: addDays(baseDate, 1 + Math.floor(rnd() * 8)),
+        volP: m.volP, pesoP: m.pesoP,
+      });
+    }
+  }
+  return dem;
+}
+
+/* ---------- Algoritmo de propuesta de carga ---------- */
+function runAlgo(mode, baseDate){
+  const usaPlan = (mode === 'stockplan');
+  const dem = genDemanda(baseDate);
+
+  // disponibilidad restante por material (se va consumiendo)
+  const rem = {};
+  MATERIALS.forEach(m => rem[m.mat] = { real: m.stock, plan: m.plan, planDate: addDays(baseDate, m.planDias) });
+
+  // se sirve primero lo más urgente y lo más pequeño (mejor aprovechamiento)
+  const orden = [...dem].sort((a, b) => (a.fEntrega - b.fEntrega) || (a.palets - b.palets));
+
+  const asignables = [], backlog = [];
+  orden.forEach(d => {
+    const r = rem[d.mat];
+    const disponible = r.real + (usaPlan ? r.plan : 0);
+    const base = { ...d, stockReal: MAT[d.mat].stock, stockPlan: MAT[d.mat].plan };
+    if (disponible >= d.palets){
+      let need = d.palets;
+      const useReal = Math.min(need, r.real); r.real -= useReal; need -= useReal;
+      let usePlan = 0;
+      if (need > 0){ usePlan = Math.min(need, r.plan); r.plan -= usePlan; need -= usePlan; }
+      base.tipo = usePlan > 0 ? 'Fabricación' : 'Stock';
+      base.fDisponible = usePlan > 0 ? r.planDate : baseDate;
+      asignables.push(base);
+    } else {
+      base.tipo = '—';
+      base.fDisponible = null;
+      backlog.push(base);
+    }
+  });
+
+  // empaquetado en camiones por destino respetando capacidad
+  const trucks = [];
+  let seq = 0;
+  const byDest = {};
+  asignables.forEach(a => (byDest[a.destino] = byDest[a.destino] || []).push(a));
+  Object.keys(byDest).sort().forEach(dest => {
+    let cur = null;
+    byDest[dest].sort((a, b) => (a.fDisponible - b.fDisponible) || (a.fEntrega - b.fEntrega));
+    byDest[dest].forEach(a => {
+      const v = a.palets * a.volP, w = a.palets * a.pesoP;
+      if (!cur || cur.palets + a.palets > MAX_PAL || cur.vol + v > MAX_VOL || cur.peso + w > MAX_PESO){
+        seq++;
+        cur = { id: 'CAM-' + String(seq).padStart(4, '0'), destino: dest, positions: [], palets: 0, vol: 0, peso: 0, fechaCarga: baseDate };
+        trucks.push(cur);
+      }
+      cur.positions.push(a);
+      cur.palets += a.palets; cur.vol += v; cur.peso += w;
+      if (a.fDisponible > cur.fechaCarga) cur.fechaCarga = a.fDisponible;  // si hay fabricación, carga más tarde
+    });
+  });
+  trucks.forEach(t => {
+    const fill = Math.max(t.palets / MAX_PAL, t.vol / MAX_VOL, t.peso / MAX_PESO);
+    t.estado = fill >= 0.85 ? 'Completo' : 'Parcial';
+  });
+
+  // backlog ordenado por fecha de entrega (lo más urgente primero)
+  backlog.sort((a, b) => (a.fEntrega - b.fEntrega));
+  return { trucks, backlog };
+}
+
+/* ---------- Render ---------- */
+function celdaPos(p){
+  const tipoCls = p.tipo === 'Stock' ? 'stk' : (p.tipo === 'Fabricación' ? 'fab' : 'none');
+  return `
+    <td><span class="tipo ${tipoCls}">${p.tipo}</span></td>
+    <td>${p.pedido}</td>
+    <td class="num">${p.posicion}</td>
+    <td>${p.mat}</td>
+    <td class="nom">${p.nom}</td>
+    <td>${fmtDate(p.fEntrega)}</td>
+    <td>${fmtDate(p.fDisponible)}</td>
+    <td class="num">${p.stockReal} / ${p.stockPlan}</td>
+    <td>${p.cliente}</td>
+    <td class="num">${p.palets}</td>`;
+}
+
+function render(res){
+  const rows = [];
+  res.trucks.forEach(t => {
+    const span = t.positions.length;
+    t.positions.forEach((p, i) => {
+      let tds = '';
+      if (i === 0){
+        tds += `<td rowspan="${span}" class="cam">${t.id}</td>`;
+        tds += `<td rowspan="${span}"><span class="badge ${t.estado === 'Completo' ? 'ok' : 'warn'}">${t.estado}</span></td>`;
+        tds += `<td rowspan="${span}">${t.destino}</td>`;
+        tds += `<td rowspan="${span}">${fmtDate(t.fechaCarga)}</td>`;
+      }
+      tds += celdaPos(p);
+      if (i === 0){
+        tds += `<td rowspan="${span}" class="num">${t.vol.toFixed(1)}</td>`;
+        tds += `<td rowspan="${span}" class="num">${fmtPeso(t.peso)}</td>`;
+      }
+      rows.push(`<tr class="${i === 0 ? 'tstart' : ''}">${tds}</tr>`);
+    });
+  });
+
+  if (res.backlog.length){
+    rows.push(`<tr class="bl-head"><td colspan="16">⚠ BACKLOG — ${res.backlog.length} posición(es) sin propuesta de carga</td></tr>`);
+    res.backlog.forEach(p => {
+      rows.push(`<tr class="bl">
+        <td class="cam empty">—</td>
+        <td><span class="badge bad">Backlog</span></td>
+        <td>${p.destino}</td>
+        <td>—</td>
+        ${celdaPos(p)}
+        <td class="num">—</td>
+        <td class="num">—</td>
+      </tr>`);
+    });
+  }
+
+  $('#tbody').innerHTML = rows.join('') ||
+    `<tr><td colspan="16" style="padding:24px;text-align:center;color:#8494a6">Sin resultados.</td></tr>`;
+
+  const cargadas = res.trucks.reduce((s, t) => s + t.positions.length, 0);
+  const fecha = fmtDate(parseDate($('#fFecha').value));
+  const modoTxt = $('input[name="modo"]:checked').value === 'stock' ? 'Solo stock' : 'Stock + planificado';
+  $('#summary').innerHTML =
+    `Propuesta para <b>${fecha}</b> · modo <b>${modoTxt}</b> &nbsp;—&nbsp; ` +
+    `<b>${res.trucks.length}</b> camiones propuestos · <b>${cargadas}</b> posiciones cargadas · ` +
+    `<b>${res.backlog.length}</b> en backlog`;
+}
+
+/* ---------- Ejecutar ---------- */
+function ejecutar(){
+  const mode = $('input[name="modo"]:checked').value;
+  const baseDate = parseDate($('#fFecha').value);
+  render(runAlgo(mode, baseDate));
+}
+
+/* resalta el modo seleccionado */
+document.querySelectorAll('#modo label').forEach(l => {
+  l.addEventListener('click', () => {
+    document.querySelectorAll('#modo label').forEach(x => x.classList.remove('sel'));
+    l.classList.add('sel');
+  });
+});
+$('#btnRun').addEventListener('click', ejecutar);
+
+/* ---------- Inicio ---------- */
+ejecutar();
+</script>
+</body>
+</html>
