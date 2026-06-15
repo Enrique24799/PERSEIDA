@@ -4,6 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
+- `AJUSTE_PALETS.html` — Transacción de control y ajuste de inventario de palets.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -64,3 +65,35 @@ totales de volumen/peso se muestran una sola vez por camión.
 
 Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
 si procede, `runAlgo()` por la llamada al algoritmo real.
+
+## `AJUSTE_PALETS.html` — Ajuste de palets (control de inventario)
+
+Simulación de una transacción SAP (`ZPAL_AJUS`) para **controlar y ajustar** el inventario de
+palets. Reproduce el modelo de negocio en el que a cada material se le cuelga un palet en su lista
+de materiales:
+
+- Al **notificar** una orden se **bloquean** palets = `ceil(uds_notificadas / uds_por_palet)`.
+- Si el semielaborado se **consume** en otra orden, se **desbloquean** palets en función de las
+  unidades dadas de baja frente a las unidades iniciales del palet.
+- El producto final vuelve a **bloquear** palet al notificarse.
+- Al **expedir**, el palet se da de **baja** (situación *Expedido*) contra una entrega.
+
+### Pantalla de selección (parámetros de entrada)
+
+Se introduce **uno** de estos campos (admite combinar varios; coincidencia parcial en los códigos):
+`Código Palet`, `Código Componente`, `Situación Palet` (Bloqueado / Desbloqueado / Expedido),
+`Orden Fabricación` y `Entrega`. Botones **Ejecutar** (F8) y **Limpiar**.
+
+### Ajustes de inventario
+
+Sobre los palets marcados en el ALV:
+
+- **Bloquear** / **Desbloquear** — cambia la situación del palet.
+- **Dar de baja (Expedir)** — pone el palet en *Expedido* contra una entrega (obligatoria).
+- **Ajustar inventario** — corrige las unidades ocupadas de un palet (muestra los palets
+  equivalentes `ceil(uds / uds_palet)`).
+
+Cada ajuste queda registrado en el **log de movimientos** (fecha/hora, usuario, palet, acción,
+situación anterior → nueva, unidades, documento y motivo). Incluye **Exportar** a CSV y barra de
+estado tipo SAP. Los datos son de **ejemplo**; para datos reales basta sustituir el array `PALETS`
+del `<script>` por la consulta correspondiente.

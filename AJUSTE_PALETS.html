@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ajuste de Palets — Control de inventario (ZPAL_AJUS)</title>
+<style>
+  :root {
+    --head-bg: #2f5f8f;
+    --border: #d7dee8;
+    --grid: #eef2f7;
+    --ink: #243140;
+    --ok: #27ae60;
+    --warn: #e0a800;
+    --bad: #d9534f;
+    --neutral: #8494a6;
+    --semi: #6f42c1;
+    --term: #2f80ed;
+    --comp: #b56a07;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 14px 16px 70px; }
+
+  /* ---------- Cabecera (estilo transacción SAP) ---------- */
+  .titlebar {
+    background: linear-gradient(180deg, #37618f, #2f5f8f);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .titlebar .tcode {
+    font-size: 11px; font-weight: 700; background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.35); padding: 2px 8px; border-radius: 4px;
+    letter-spacing: .5px;
+  }
+  .titlebar .spacer { flex: 1; }
+  .titlebar .user { font-size: 12px; opacity: .85; font-weight: 400; }
+
+  /* ---------- Pantalla de selección ---------- */
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 12px 14px;
+  }
+  fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px 12px; margin: 0; }
+  legend { font-size: 11px; color: #5b6b7d; padding: 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .controls { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 11px; color: #5b6b7d; }
+  input[type="text"], select, button {
+    font-size: 13px; padding: 6px 9px;
+    border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
+  }
+  input[type="text"] { width: 160px; font-family: "Consolas", monospace; }
+  select { min-width: 160px; }
+  .hint { font-size: 11px; color: #8494a6; margin-top: 8px; }
+  .btnrow { display: flex; gap: 8px; align-items: flex-end; }
+  button { cursor: pointer; }
+  button.primary {
+    background: #2f80ed; color: #fff; border-color: #2f80ed;
+    font-weight: 600; padding: 7px 16px;
+  }
+  button.primary:hover { background: #2b73d4; }
+  button.ghost { background: #fff; }
+  button.ghost:hover { background: #f1f5fb; }
+
+  /* ---------- Resumen ---------- */
+  .summary {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    padding: 8px 14px; font-size: 12px; color: #51637a;
+  }
+  .summary b { color: var(--ink); }
+
+  /* ---------- Barra de acciones (ajustes de inventario) ---------- */
+  .actionbar {
+    background: #f4f7fb; border: 1px solid var(--border); border-top: none;
+    padding: 8px 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .actionbar .sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+  .actionbar .selcount { font-size: 12px; color: #51637a; margin-left: auto; }
+  .actionbar .selcount b { color: var(--ink); }
+  .act {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid #b9c6d6; background: #fff; border-radius: 5px; padding: 6px 10px; font-size: 12px;
+  }
+  .act:hover { background: #eef4fc; border-color: #9bb2cc; }
+  .act .ic { font-size: 14px; line-height: 1; }
+  .act.lock   .ic { color: var(--warn); }
+  .act.unlock .ic { color: var(--ok); }
+  .act.ship   .ic { color: var(--neutral); }
+  .act.edit   .ic { color: var(--term); }
+
+  /* ---------- Tabla (ALV) ---------- */
+  .tablewrap {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    overflow: auto; max-height: 54vh;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; white-space: nowrap; }
+  thead th {
+    position: sticky; top: 0; z-index: 5;
+    background: #eef3f9; color: #41546a;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .3px;
+    padding: 7px 9px; text-align: left; border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+  }
+  tbody td { padding: 5px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid); }
+  tbody td.mono { font-family: "Consolas", monospace; }
+  tbody td.nom { white-space: normal; min-width: 190px; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody td.chk, thead th.chk { text-align: center; width: 34px; }
+  tbody tr:hover td { background: #f4f9ff; }
+  tbody tr.rsel td { background: #eaf2fd; }
+  tbody tr.rsel:hover td { background: #e1ecfb; }
+  td.empty, .empty-cell { padding: 24px; text-align: center; color: #8494a6; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 11px; font-weight: 600; color: #fff; }
+  .badge.ok      { background: var(--ok); }
+  .badge.warn    { background: var(--warn); }
+  .badge.neutral { background: var(--neutral); }
+  .tipo { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tipo.semi { background: #efe7fb; color: var(--semi); }
+  .tipo.term { background: #e7f0fd; color: var(--term); }
+  .tipo.comp { background: #fbeed8; color: var(--comp); }
+
+  /* ---------- Log de movimientos ---------- */
+  .logwrap {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+  .logtitle {
+    padding: 8px 14px; font-size: 12px; font-weight: 600; color: #41546a;
+    background: #f7fafd; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logtitle .clear { margin-left: auto; font-size: 11px; font-weight: 400; }
+  .logbody { max-height: 26vh; overflow: auto; }
+  table.log { font-size: 11.5px; }
+  table.log thead th { background: #f3f6fa; }
+  table.log td.acc { font-weight: 600; }
+  table.log td.acc.bloquear   { color: var(--warn); }
+  table.log td.acc.desbloquear{ color: var(--ok); }
+  table.log td.acc.baja       { color: var(--neutral); }
+  table.log td.acc.ajuste     { color: var(--term); }
+
+  /* ---------- Barra de estado (status bar SAP) ---------- */
+  .statusbar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #e9eef4; border-top: 1px solid #c4d0de;
+    padding: 6px 16px; font-size: 12px; color: #41546a;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .statusbar .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--neutral); flex: none; }
+  .statusbar.ok   .dot { background: var(--ok); }
+  .statusbar.warn .dot { background: var(--warn); }
+  .statusbar.err  .dot { background: var(--bad); }
+  .statusbar .sys { margin-left: auto; opacity: .7; }
+
+  /* ---------- Modal de ajuste ---------- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(20,32,48,.45);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: #fff; width: 460px; max-width: 92vw; border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3); overflow: hidden;
+  }
+  .modal .mhead {
+    background: linear-gradient(180deg, #37618f, #2f5f8f); color: #fff;
+    padding: 10px 14px; font-size: 14px; font-weight: 600;
+  }
+  .modal .mbody { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .modal .mrow { display: flex; flex-direction: column; gap: 4px; }
+  .modal .mrow label { font-size: 11px; color: #5b6b7d; text-transform: uppercase; letter-spacing: .4px; }
+  .modal .mrow input, .modal .mrow textarea {
+    font-size: 13px; padding: 7px 9px; border: 1px solid #b9c6d6; border-radius: 5px; width: 100%;
+    font-family: inherit;
+  }
+  .modal textarea { resize: vertical; min-height: 54px; }
+  .modal .info {
+    background: #f4f7fb; border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; font-size: 12px; color: #51637a; line-height: 1.5;
+  }
+  .modal .info b { color: var(--ink); }
+  .modal .calc { font-size: 12px; color: var(--term); font-weight: 600; }
+  .modal .mfoot {
+    padding: 12px 14px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; justify-content: flex-end; background: #f7fafd;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== Cabecera ===================== -->
+  <div class="titlebar">
+    <span>Ajuste de Palets — Control de inventario</span>
+    <span class="tcode">ZPAL_AJUS</span>
+    <span class="spacer"></span>
+    <span class="user" id="userBox">Usuario · —</span>
+  </div>
+
+  <!-- ===================== Pantalla de selección ===================== -->
+  <div class="panel">
+    <fieldset>
+      <legend>Criterios de selección</legend>
+      <div class="controls">
+        <div class="field">
+          <label for="fPalet">Código Palet</label>
+          <input type="text" id="fPalet" placeholder="PAL00000201" />
+        </div>
+        <div class="field">
+          <label for="fComp">Código Componente</label>
+          <input type="text" id="fComp" placeholder="40020100" />
+        </div>
+        <div class="field">
+          <label for="fSitu">Situación Palet</label>
+          <select id="fSitu">
+            <option value="">(Todas)</option>
+            <option value="BLOQUEADO">Bloqueado</option>
+            <option value="DESBLOQUEADO">Desbloqueado</option>
+            <option value="EXPEDIDO">Expedido / Baja</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fOrden">Orden Fabricación</label>
+          <input type="text" id="fOrden" placeholder="100046002" />
+        </div>
+        <div class="field">
+          <label for="fEntrega">Entrega</label>
+          <input type="text" id="fEntrega" placeholder="80012345" />
+        </div>
+        <div class="btnrow">
+          <button class="primary" id="btnRun" title="Ejecutar (F8)">▶ Ejecutar</button>
+          <button class="ghost" id="btnClear" title="Borrar criterios">✖ Limpiar</button>
+        </div>
+      </div>
+      <div class="hint">
+        Introduzca uno de los campos como parámetro de entrada (puede combinar varios). Si deja todo
+        en blanco se listan todos los palets. Los códigos admiten coincidencia parcial.
+      </div>
+    </fieldset>
+  </div>
+
+  <!-- ===================== Resumen ===================== -->
+  <div class="summary" id="summary"></div>
+
+  <!-- ===================== Barra de acciones ===================== -->
+  <div class="actionbar">
+    <button class="act lock"   id="aLock"><span class="ic">&#128274;</span> Bloquear</button>
+    <button class="act unlock" id="aUnlock"><span class="ic">&#128275;</span> Desbloquear</button>
+    <button class="act ship"   id="aShip"><span class="ic">&#128666;</span> Dar de baja (Expedir)</button>
+    <button class="act edit"   id="aEdit"><span class="ic">&#9998;</span> Ajustar inventario</button>
+    <span class="sep"></span>
+    <button class="act" id="aRefresh"><span class="ic">&#8635;</span> Refrescar</button>
+    <button class="act" id="aExport"><span class="ic">&#8675;</span> Exportar</button>
+    <span class="selcount" id="selCount">Seleccionados: <b>0</b></span>
+  </div>
+
+  <!-- ===================== Tabla ALV ===================== -->
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="chk"><input type="checkbox" id="chkAll" title="Marcar todo" /></th>
+          <th>Palet</th>
+          <th>Componente</th>
+          <th>Descripción</th>
+          <th>Lote</th>
+          <th>Tipo</th>
+          <th>Uds/Pal.</th>
+          <th>Uds Ocup.</th>
+          <th>Situación</th>
+          <th>Orden Fab.</th>
+          <th>Entrega</th>
+          <th>Centro</th>
+          <th>Almacén</th>
+          <th>Ubicación</th>
+          <th>Últ. mov.</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- ===================== Log de movimientos ===================== -->
+  <div class="logwrap">
+    <div class="logtitle">
+      &#128221; Log de ajustes de la sesión
+      <button class="ghost clear" id="btnClearLog">Vaciar log</button>
+    </div>
+    <div class="logbody">
+      <table class="log">
+        <thead>
+          <tr>
+            <th>Fecha/Hora</th>
+            <th>Usuario</th>
+            <th>Palet</th>
+            <th>Componente</th>
+            <th>Acción</th>
+            <th>Situación</th>
+            <th>Uds (antes &#8594; después)</th>
+            <th>Documento</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody id="logbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== Barra de estado ===================== -->
+<div class="statusbar" id="statusbar">
+  <span class="dot"></span>
+  <span id="statusmsg">Listo. Introduzca los criterios de selección y pulse Ejecutar.</span>
+  <span class="sys" id="statussys"></span>
+</div>
+
+<!-- ===================== Modal de ajuste ===================== -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="mhead" id="modalTitle">Ajuste</div>
+    <div class="mbody">
+      <div class="info" id="modalInfo"></div>
+      <div class="mrow" id="rowUnidades" style="display:none">
+        <label for="mUnidades">Unidades ocupadas (nuevo valor)</label>
+        <input type="text" id="mUnidades" inputmode="numeric" />
+        <span class="calc" id="mCalc"></span>
+      </div>
+      <div class="mrow" id="rowEntrega" style="display:none">
+        <label for="mEntrega">Entrega</label>
+        <input type="text" id="mEntrega" placeholder="80012345" />
+      </div>
+      <div class="mrow">
+        <label for="mMotivo">Motivo del ajuste</label>
+        <textarea id="mMotivo" placeholder="Indique el motivo (recuento, corrección, expedición, ...)"></textarea>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="ghost" id="mCancel">Cancelar</button>
+      <button class="primary" id="mOk">Ejecutar ajuste</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   AJUSTE DE PALETS — Transacción de control e inventario (simulación).
+   Datos de EJEMPLO. Toda la lógica se ejecuta en el navegador, sin
+   dependencias externas.
+
+   Modelo de negocio simulado:
+   - A cada material (componente / semielaborado / terminado) se le cuelga
+     un palet en su lista de materiales con sus "unidades por palet".
+   - Al NOTIFICAR una orden se BLOQUEAN palets = ceil(uds_notificadas / uds_palet).
+   - Si el semielaborado se consume en otra orden, se DESBLOQUEAN palets en
+     función de las unidades dadas de baja / las unidades iniciales del palet.
+   - El producto final vuelve a BLOQUEAR palet al notificarse.
+   - Al EXPEDIR, el palet se da de BAJA (situación EXPEDIDO) contra una entrega.
+
+   Esta transacción permite consultar el estado y realizar AJUSTES de
+   inventario (bloquear, desbloquear, dar de baja y corregir unidades),
+   dejando traza en el log de movimientos.
+   ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const USUARIO = 'ENRTEJFOR';           // usuario SAP (derivado del login)
+$('#userBox').textContent = 'Usuario · ' + USUARIO;
+
+/* ---------- Maestro de palets (datos de ejemplo) ---------- */
+/* situacion: BLOQUEADO | DESBLOQUEADO | EXPEDIDO
+   tipo:      SEMITERMINADO | TERMINADO | COMPONENTE                       */
+const PALETS = [
+  /* --- Semielaborado Champú base · OF 100045001 (notificada y luego consumida) --- */
+  { palet:'PAL00000101', material:'30010045', desc:'SEMI Champú base 400 ml', lote:'2406A01', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:240, situacion:'DESBLOQUEADO', orden:'100045001', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-01-01', fecha:'05/06/2026' },
+  { palet:'PAL00000102', material:'30010045', desc:'SEMI Champú base 400 ml', lote:'2406A01', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:240, situacion:'DESBLOQUEADO', orden:'100045001', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-01-02', fecha:'05/06/2026' },
+  { palet:'PAL00000103', material:'30010045', desc:'SEMI Champú base 400 ml', lote:'2406A01', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:220, situacion:'BLOQUEADO',    orden:'100045001', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-01-03', fecha:'05/06/2026' },
+
+  /* --- Producto terminado Champú · OF 100046002 (consume el semi y se notifica) --- */
+  { palet:'PAL00000201', material:'40020100', desc:'PT Champú Hidratante 400 ml', lote:'2406B11', tipo:'TERMINADO', udsPalet:120, udsOcup:120, situacion:'EXPEDIDO',  orden:'100046002', entrega:'80012345', centro:'1000', almacen:'PT01', ubic:'PT-B-04-01', fecha:'11/06/2026' },
+  { palet:'PAL00000202', material:'40020100', desc:'PT Champú Hidratante 400 ml', lote:'2406B11', tipo:'TERMINADO', udsPalet:120, udsOcup:120, situacion:'EXPEDIDO',  orden:'100046002', entrega:'80012345', centro:'1000', almacen:'PT01', ubic:'PT-B-04-02', fecha:'11/06/2026' },
+  { palet:'PAL00000203', material:'40020100', desc:'PT Champú Hidratante 400 ml', lote:'2406B11', tipo:'TERMINADO', udsPalet:120, udsOcup:60,  situacion:'BLOQUEADO', orden:'100046002', entrega:'',         centro:'1000', almacen:'PT01', ubic:'PT-B-04-03', fecha:'11/06/2026' },
+
+  /* --- Semielaborado Gel base · OF 100045010 --- */
+  { palet:'PAL00000110', material:'30010046', desc:'SEMI Gel base 750 ml', lote:'2406A07', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:180, situacion:'BLOQUEADO', orden:'100045010', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-02-01', fecha:'06/06/2026' },
+  { palet:'PAL00000111', material:'30010046', desc:'SEMI Gel base 750 ml', lote:'2406A07', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:180, situacion:'BLOQUEADO', orden:'100045010', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-02-02', fecha:'06/06/2026' },
+  { palet:'PAL00000112', material:'30010046', desc:'SEMI Gel base 750 ml', lote:'2406A07', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:140, situacion:'BLOQUEADO', orden:'100045010', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-02-03', fecha:'06/06/2026' },
+
+  /* --- Producto terminado Gel ducha · OF 100046020 --- */
+  { palet:'PAL00000210', material:'40020101', desc:'PT Gel de Ducha Aloe 750 ml', lote:'2406B22', tipo:'TERMINADO', udsPalet:96, udsOcup:96, situacion:'EXPEDIDO',  orden:'100046020', entrega:'80012360', centro:'1000', almacen:'PT01', ubic:'PT-B-07-01', fecha:'12/06/2026' },
+  { palet:'PAL00000211', material:'40020101', desc:'PT Gel de Ducha Aloe 750 ml', lote:'2406B22', tipo:'TERMINADO', udsPalet:96, udsOcup:96, situacion:'BLOQUEADO', orden:'100046020', entrega:'',         centro:'1000', almacen:'PT01', ubic:'PT-B-07-02', fecha:'12/06/2026' },
+  { palet:'PAL00000212', material:'40020101', desc:'PT Gel de Ducha Aloe 750 ml', lote:'2406B22', tipo:'TERMINADO', udsPalet:96, udsOcup:8,  situacion:'BLOQUEADO', orden:'100046020', entrega:'',         centro:'1000', almacen:'PT01', ubic:'PT-B-07-03', fecha:'12/06/2026' },
+
+  /* --- Componente Tapón rosca --- */
+  { palet:'PAL00000301', material:'20005500', desc:'COMP Tapón rosca 28 mm', lote:'2405C03', tipo:'COMPONENTE', udsPalet:5000, udsOcup:5000, situacion:'DESBLOQUEADO', orden:'100046002', entrega:'', centro:'1000', almacen:'MP01', ubic:'MP-C-02-04', fecha:'09/06/2026' },
+  { palet:'PAL00000302', material:'20005500', desc:'COMP Tapón rosca 28 mm', lote:'2405C03', tipo:'COMPONENTE', udsPalet:5000, udsOcup:1200, situacion:'BLOQUEADO',    orden:'100046020', entrega:'', centro:'1000', almacen:'MP01', ubic:'MP-C-02-05', fecha:'10/06/2026' },
+];
+
+/* ---------- Estado de la sesión ---------- */
+const seleccion = new Set();   // palets marcados
+let currentRows = [];          // resultado actualmente mostrado
+const LOG = [];                // movimientos de la sesión
+
+/* ---------- Utilidades ---------- */
+function pad(n){ return String(n).padStart(2,'0'); }
+function ahora(){
+  const d = new Date();
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function hoy(){
+  const d = new Date();
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const SITU_BADGE = {
+  BLOQUEADO:    '<span class="badge warn">Bloqueado</span>',
+  DESBLOQUEADO: '<span class="badge ok">Desbloqueado</span>',
+  EXPEDIDO:     '<span class="badge neutral">Expedido / Baja</span>',
+};
+function tipoTag(t){
+  if (t === 'SEMITERMINADO') return '<span class="tipo semi">Semi</span>';
+  if (t === 'TERMINADO')     return '<span class="tipo term">Terminado</span>';
+  return '<span class="tipo comp">Componente</span>';
+}
+function setStatus(msg, type){
+  const sb = $('#statusbar');
+  sb.className = 'statusbar' + (type ? ' ' + type : '');
+  $('#statusmsg').textContent = msg;
+  $('#statussys').textContent = 'PERSEIDA · ' + USUARIO + ' · ' + hoy();
+}
+
+/* ---------- Ejecutar selección (F8) ---------- */
+function ejecutar(){
+  const fp = $('#fPalet').value.trim().toUpperCase();
+  const fc = $('#fComp').value.trim().toUpperCase();
+  const fs = $('#fSitu').value;
+  const fo = $('#fOrden').value.trim();
+  const fe = $('#fEntrega').value.trim();
+
+  currentRows = PALETS.filter(p =>
+    (!fp || p.palet.toUpperCase().includes(fp)) &&
+    (!fc || p.material.toUpperCase().includes(fc)) &&
+    (!fs || p.situacion === fs) &&
+    (!fo || (p.orden || '').includes(fo)) &&
+    (!fe || (p.entrega || '').includes(fe))
+  );
+
+  // se conserva en 'seleccion' solo lo que sigue visible
+  [...seleccion].forEach(id => { if (!currentRows.some(p => p.palet === id)) seleccion.delete(id); });
+
+  render(currentRows);
+  resumen(currentRows);
+  updateSelCount();
+
+  if (!currentRows.length) setStatus('No se han encontrado palets para los criterios introducidos.', 'warn');
+  else setStatus(`${currentRows.length} registro(s) seleccionado(s).`, 'ok');
+}
+
+function render(rows){
+  const tb = $('#tbody');
+  if (!rows.length){
+    tb.innerHTML = `<tr><td class="empty" colspan="15">Sin registros. Ajuste los criterios de selección y pulse Ejecutar.</td></tr>`;
+    $('#chkAll').checked = false;
+    return;
+  }
+  tb.innerHTML = rows.map(p => `
+    <tr data-palet="${p.palet}" class="${seleccion.has(p.palet) ? 'rsel' : ''}">
+      <td class="chk"><input type="checkbox" data-palet="${p.palet}" ${seleccion.has(p.palet) ? 'checked' : ''}></td>
+      <td class="mono">${p.palet}</td>
+      <td class="mono">${p.material}</td>
+      <td class="nom">${esc(p.desc)}</td>
+      <td class="mono">${p.lote}</td>
+      <td>${tipoTag(p.tipo)}</td>
+      <td class="num">${p.udsPalet.toLocaleString('es-ES')}</td>
+      <td class="num">${p.udsOcup.toLocaleString('es-ES')}</td>
+      <td>${SITU_BADGE[p.situacion]}</td>
+      <td class="mono">${p.orden || '—'}</td>
+      <td class="mono">${p.entrega || '—'}</td>
+      <td>${p.centro}</td>
+      <td>${p.almacen}</td>
+      <td class="mono">${p.ubic}</td>
+      <td>${p.fecha}</td>
+    </tr>`).join('');
+
+  const allSel = rows.length && rows.every(p => seleccion.has(p.palet));
+  $('#chkAll').checked = !!allSel;
+}
+
+function resumen(rows){
+  const b = rows.filter(p => p.situacion === 'BLOQUEADO').length;
+  const d = rows.filter(p => p.situacion === 'DESBLOQUEADO').length;
+  const e = rows.filter(p => p.situacion === 'EXPEDIDO').length;
+  const u = rows.reduce((s, p) => s + p.udsOcup, 0);
+  $('#summary').innerHTML =
+    `Resultado: <b>${rows.length}</b> palet(s) &nbsp;·&nbsp; ` +
+    `Bloqueados: <b>${b}</b> &nbsp;·&nbsp; Desbloqueados: <b>${d}</b> &nbsp;·&nbsp; ` +
+    `Expedidos: <b>${e}</b> &nbsp;·&nbsp; Unidades ocupadas: <b>${u.toLocaleString('es-ES')}</b>`;
+}
+
+function updateSelCount(){
+  $('#selCount').innerHTML = 'Seleccionados: <b>' + seleccion.size + '</b>';
+}
+function selectedRows(){ return currentRows.filter(p => seleccion.has(p.palet)); }
+
+/* ---------- Log de movimientos ---------- */
+function logMov(p, accion, sitDe, sitA, udsDe, udsA, doc, motivo){
+  LOG.unshift({
+    fecha: ahora(), usuario: USUARIO, palet: p.palet, material: p.material,
+    accion, sitDe, sitA, udsDe, udsA, doc: doc || '', motivo: motivo || ''
+  });
+  renderLog();
+}
+function renderLog(){
+  const tb = $('#logbody');
+  if (!LOG.length){
+    tb.innerHTML = `<tr><td class="empty-cell" colspan="9">Sin movimientos en esta sesión.</td></tr>`;
+    return;
+  }
+  const accCls = { 'Bloqueo':'bloquear', 'Desbloqueo':'desbloquear', 'Baja / Expedición':'baja', 'Ajuste de unidades':'ajuste' };
+  tb.innerHTML = LOG.map(m => {
+    const sit = (m.sitDe && m.sitA && m.sitDe !== m.sitA) ? `${m.sitDe} &#8594; ${m.sitA}` : (m.sitA || m.sitDe || '—');
+    const uds = (m.udsDe !== undefined && m.udsDe !== null)
+      ? `${Number(m.udsDe).toLocaleString('es-ES')} &#8594; ${Number(m.udsA).toLocaleString('es-ES')}` : '—';
+    return `<tr>
+      <td class="mono">${m.fecha}</td>
+      <td>${m.usuario}</td>
+      <td class="mono">${m.palet}</td>
+      <td class="mono">${m.material}</td>
+      <td class="acc ${accCls[m.accion] || ''}">${m.accion}</td>
+      <td>${sit}</td>
+      <td class="num">${uds}</td>
+      <td class="mono">${m.doc || '—'}</td>
+      <td>${esc(m.motivo) || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- Modal de ajuste ---------- */
+let modalAction = null;   // 'bloquear' | 'desbloquear' | 'baja' | 'ajustar'
+let modalTarget = null;   // palet objetivo para 'ajustar'
+
+function abrirModal(action){
+  const sel = selectedRows();
+  if (!sel.length){ setStatus('Seleccione al menos un palet para realizar el ajuste.', 'err'); return; }
+
+  modalAction = action;
+  modalTarget = null;
+  $('#rowUnidades').style.display = 'none';
+  $('#rowEntrega').style.display = 'none';
+  $('#mMotivo').value = '';
+  $('#mCalc').textContent = '';
+
+  if (action === 'ajustar'){
+    if (sel.length !== 1){ setStatus('El ajuste de unidades se realiza palet a palet: seleccione un único palet.', 'err'); return; }
+    const p = sel[0];
+    if (p.situacion === 'EXPEDIDO'){ setStatus('No se pueden ajustar unidades de un palet ya expedido (dado de baja).', 'err'); return; }
+    modalTarget = p;
+    $('#modalTitle').textContent = 'Ajuste de inventario — ' + p.palet;
+    $('#modalInfo').innerHTML = `Componente <b>${p.material}</b> · ${esc(p.desc)}<br>` +
+      `Uds/Palet: <b>${p.udsPalet.toLocaleString('es-ES')}</b> · Uds ocupadas actuales: <b>${p.udsOcup.toLocaleString('es-ES')}</b>`;
+    $('#rowUnidades').style.display = 'flex';
+    $('#mUnidades').value = p.udsOcup;
+    actualizarCalc();
+  } else {
+    const titulos = { bloquear:'Bloquear palets', desbloquear:'Desbloquear palets', baja:'Dar de baja / Expedir palets' };
+    $('#modalTitle').textContent = titulos[action];
+    $('#modalInfo').innerHTML = `Acción sobre <b>${sel.length}</b> palet(s) seleccionado(s): ` +
+      sel.map(p => p.palet).join(', ');
+    if (action === 'baja'){
+      $('#rowEntrega').style.display = 'flex';
+      const ent = [...new Set(sel.map(p => p.entrega).filter(Boolean))];
+      $('#mEntrega').value = ent.length === 1 ? ent[0] : '';
+    }
+  }
+  $('#overlay').classList.add('show');
+  setTimeout(() => { (modalTarget ? $('#mUnidades') : (action === 'baja' ? $('#mEntrega') : $('#mMotivo'))).focus(); }, 30);
+}
+function cerrarModal(){ $('#overlay').classList.remove('show'); modalAction = null; modalTarget = null; }
+
+function actualizarCalc(){
+  if (!modalTarget) return;
+  const v = parseInt($('#mUnidades').value, 10);
+  if (isNaN(v) || v < 0){ $('#mCalc').textContent = ''; return; }
+  const palets = Math.ceil(v / modalTarget.udsPalet);
+  $('#mCalc').textContent = `Palets equivalentes = ceil(${v} / ${modalTarget.udsPalet}) = ${palets}`;
+}
+
+function confirmarModal(){
+  const motivo = $('#mMotivo').value.trim();
+  const sel = selectedRows();
+
+  if (modalAction === 'ajustar'){
+    const p = modalTarget;
+    const v = parseInt($('#mUnidades').value, 10);
+    if (isNaN(v) || v < 0){ setStatus('Introduzca un número de unidades válido.', 'err'); return; }
+    if (v > p.udsPalet){ setStatus(`Las unidades (${v}) superan la capacidad del palet (${p.udsPalet}).`, 'err'); return; }
+    const antes = p.udsOcup;
+    p.udsOcup = v;
+    p.fecha = hoy();
+    logMov(p, 'Ajuste de unidades', p.situacion, p.situacion, antes, v, p.orden, motivo);
+    cerrarModal(); ejecutar();
+    setStatus(`Palet ${p.palet}: unidades ajustadas de ${antes} a ${v}.`, 'ok');
+    return;
+  }
+
+  // Acciones de cambio de situación (bloquear / desbloquear / baja)
+  let ok = 0; const ko = [];
+  if (modalAction === 'baja'){
+    const entrega = $('#mEntrega').value.trim();
+    if (!entrega){ setStatus('Para dar de baja (expedir) es obligatorio indicar la entrega.', 'err'); return; }
+    sel.forEach(p => {
+      if (p.situacion === 'EXPEDIDO'){ ko.push(p.palet); return; }
+      const de = p.situacion;
+      p.situacion = 'EXPEDIDO'; p.entrega = entrega; p.fecha = hoy();
+      logMov(p, 'Baja / Expedición', de, 'EXPEDIDO', null, null, entrega, motivo);
+      ok++;
+    });
+  } else if (modalAction === 'bloquear'){
+    sel.forEach(p => {
+      if (p.situacion === 'EXPEDIDO'){ ko.push(p.palet); return; }
+      if (p.situacion === 'BLOQUEADO'){ return; }
+      const de = p.situacion;
+      p.situacion = 'BLOQUEADO'; p.fecha = hoy();
+      logMov(p, 'Bloqueo', de, 'BLOQUEADO', null, null, p.orden, motivo);
+      ok++;
+    });
+  } else if (modalAction === 'desbloquear'){
+    sel.forEach(p => {
+      if (p.situacion === 'EXPEDIDO'){ ko.push(p.palet); return; }
+      if (p.situacion === 'DESBLOQUEADO'){ return; }
+      const de = p.situacion;
+      p.situacion = 'DESBLOQUEADO'; p.fecha = hoy();
+      logMov(p, 'Desbloqueo', de, 'DESBLOQUEADO', null, null, p.orden, motivo);
+      ok++;
+    });
+  }
+
+  cerrarModal();
+  seleccion.clear();
+  ejecutar();
+  let msg = `${ok} palet(s) actualizado(s).`;
+  if (ko.length) msg += ` ${ko.length} omitido(s) por estar expedidos: ${ko.join(', ')}.`;
+  setStatus(msg, ko.length ? 'warn' : 'ok');
+}
+
+/* ---------- Exportar a CSV (como el "Exportar" de un ALV) ---------- */
+function exportar(){
+  if (!currentRows.length){ setStatus('No hay datos que exportar.', 'warn'); return; }
+  const cab = ['Palet','Componente','Descripcion','Lote','Tipo','Uds/Palet','Uds Ocupadas','Situacion','Orden','Entrega','Centro','Almacen','Ubicacion','Ult.Mov'];
+  const filas = currentRows.map(p => [p.palet,p.material,p.desc,p.lote,p.tipo,p.udsPalet,p.udsOcup,p.situacion,p.orden,p.entrega,p.centro,p.almacen,p.ubic,p.fecha]);
+  const csv = [cab, ...filas].map(r => r.map(c => `"${String(c ?? '').replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'AJUSTE_PALETS.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus(`Exportados ${currentRows.length} registro(s) a AJUSTE_PALETS.csv.`, 'ok');
+}
+
+/* ---------- Eventos ---------- */
+$('#btnRun').addEventListener('click', ejecutar);
+$('#aRefresh').addEventListener('click', ejecutar);
+$('#btnClear').addEventListener('click', () => {
+  ['fPalet','fComp','fOrden','fEntrega'].forEach(id => $('#' + id).value = '');
+  $('#fSitu').value = '';
+  seleccion.clear();
+  ejecutar();
+  setStatus('Criterios de selección borrados.', 'info');
+});
+
+$('#aLock').addEventListener('click',   () => abrirModal('bloquear'));
+$('#aUnlock').addEventListener('click', () => abrirModal('desbloquear'));
+$('#aShip').addEventListener('click',   () => abrirModal('baja'));
+$('#aEdit').addEventListener('click',   () => abrirModal('ajustar'));
+$('#aExport').addEventListener('click', exportar);
+
+$('#mCancel').addEventListener('click', cerrarModal);
+$('#mOk').addEventListener('click', confirmarModal);
+$('#mUnidades').addEventListener('input', actualizarCalc);
+$('#overlay').addEventListener('click', e => { if (e.target === $('#overlay')) cerrarModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#overlay').classList.contains('show')) cerrarModal();
+  if (e.key === 'F8'){ e.preventDefault(); ejecutar(); }
+});
+
+$('#btnClearLog').addEventListener('click', () => { LOG.length = 0; renderLog(); setStatus('Log de la sesión vaciado.', 'info'); });
+
+/* selección de filas (delegación) */
+$('#tbody').addEventListener('change', e => {
+  const cb = e.target.closest('input[type="checkbox"]');
+  if (!cb) return;
+  const id = cb.dataset.palet;
+  if (cb.checked) seleccion.add(id); else seleccion.delete(id);
+  const tr = cb.closest('tr'); if (tr) tr.classList.toggle('rsel', cb.checked);
+  $('#chkAll').checked = currentRows.length && currentRows.every(p => seleccion.has(p.palet));
+  updateSelCount();
+});
+$('#chkAll').addEventListener('change', e => {
+  const on = e.target.checked;
+  currentRows.forEach(p => on ? seleccion.add(p.palet) : seleccion.delete(p.palet));
+  render(currentRows);
+  updateSelCount();
+});
+
+/* ---------- Inicio ---------- */
+renderLog();
+ejecutar();
+</script>
+</body>
+</html>
