@@ -15,15 +15,14 @@ directamente en el navegador) que muestra los tiempos de cambio de las líneas i
   - **Sección:** Todas / Cosmética / Higiene.
   - **Puesto de trabajo (línea):** Todos o una línea concreta (la lista se actualiza según la sección).
   - **Tiempo de cambio:** Todos / Cambio de producto / Cambio de formato.
-- **Zoom In / Zoom Out**, **Actualizar** y **Reiniciar**, además de un panel de KPIs (nº de
-  cambios y minutos totales) que se recalcula con los filtros.
+- **Zoom In / Zoom Out**, **Actualizar** y **Reiniciar**.
 
 ## Origen de los datos
 
 | Dato | Origen |
 |------|--------|
 | Asignación de líneas a sección (Cosmética / Higiene) | Pestañas de las capturas |
-| `Código`, `%`, `C.Prod` (Cambio de producto, min), `C.Form` (Cambio de formato, min) | Tabla `prLinea / prCodLinea / prPorcentaje / prCambioProducto / prCambioFormato` |
+| `Código`, `C.Prod` (Cambio de producto, min), `C.Form` (Cambio de formato, min) | Tabla `prLinea / prCodLinea / prCambioProducto / prCambioFormato` |
 | Eventos de cambio sobre la línea de tiempo | **Datos de ejemplo** generados de forma reproducible para la semana del 15/06/2026 |
 
 Líneas que aparecen en la pestaña de sección pero **no** en la tabla → valores de ejemplo:

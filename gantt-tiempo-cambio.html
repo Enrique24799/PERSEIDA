@@ -6,7 +6,7 @@
 <title>Gantt · Tiempo de Cambio — Líneas internas</title>
 <style>
   :root {
-    --left: 460px;          /* ancho de la zona fija de columnas */
+    --left: 416px;          /* ancho de la zona fija de columnas */
     --row-h: 32px;
     --head-bg: #2f5f8f;
     --producto: #2f80ed;    /* Cambio de producto */
@@ -100,28 +100,6 @@
     flex: 1 1 260px;
   }
 
-  /* ---------- KPIs ---------- */
-  .kpis {
-    display: flex;
-    gap: 10px;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-top: none;
-    padding: 10px 14px;
-    flex-wrap: wrap;
-  }
-  .kpi {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 12px;
-    min-width: 120px;
-    background: #f8fafd;
-  }
-  .kpi .v { font-size: 18px; font-weight: 700; }
-  .kpi .l { font-size: 11px; color: #6b7a8c; }
-  .kpi.prod .v { color: var(--producto); }
-  .kpi.form .v { color: var(--formato); }
-
   /* ---------- Gantt ---------- */
   .gantt {
     position: relative;
@@ -143,7 +121,7 @@
   }
   .cols {
     display: grid;
-    grid-template-columns: 96px 86px 96px 44px 70px 68px;
+    grid-template-columns: 96px 86px 96px 70px 68px;
     width: var(--left);
     align-items: center;
   }
@@ -274,9 +252,6 @@
     <p class="note">ℹ️ Cada línea ocupa <b>una sola fila</b>: al cambiar de turno la programación continúa en la misma línea (las bandas de color suaves y las líneas discontinuas marcan los turnos M/T/N).</p>
   </div>
 
-  <!-- KPIs -->
-  <div class="kpis" id="kpis"></div>
-
   <!-- Gantt -->
   <div class="gantt" id="gantt"></div>
 
@@ -286,31 +261,31 @@
 /* =====================================================================
    DATOS DE LAS LÍNEAS (puestos de trabajo)
    - Secciones tomadas de las pestañas Cosmética / Higiene.
-   - codigo / pct / prod (Cambio de producto, min) / form (Cambio de formato, min)
-     tomados de la tabla (prCodLinea, prPorcentaje, prCambioProducto, prCambioFormato).
+   - codigo / prod (Cambio de producto, min) / form (Cambio de formato, min)
+     tomados de la tabla (prCodLinea, prCambioProducto, prCambioFormato).
    - Líneas marcadas (*) no figuran en la tabla -> valores de EJEMPLO.
    ===================================================================== */
 const LINES = [
   // --- COSMÉTICA ---
-  { n:'ENV13',    cod:'10000096', sec:'Cosmética', pct:65, prod:60, form:100 },
-  { n:'ENVSACH',  cod:'10000097', sec:'Cosmética', pct:50, prod:45, form:95  },
-  { n:'ENVTARR1', cod:'10000099', sec:'Cosmética', pct:55, prod:45, form:95  },
-  { n:'ENVTUBO1', cod:'10000101', sec:'Cosmética', pct:59, prod:60, form:100 },
-  { n:'ENVTUBO2', cod:'10000102', sec:'Cosmética', pct:74, prod:60, form:100 },
-  { n:'ESTUCHAD', cod:'10000103', sec:'Cosmética', pct:62, prod:50, form:85, ej:true },
-  { n:'L18',      cod:'10000152', sec:'Cosmética', pct:68, prod:60, form:90  },
-  { n:'L19',      cod:'10000156', sec:'Cosmética', pct:67, prod:60, form:90  },
-  { n:'L3',       cod:'10000093', sec:'Cosmética', pct:50, prod:45, form:90  },
-  { n:'LCOLONIA', cod:'10000114', sec:'Cosmética', pct:95, prod:40, form:95  },
-  { n:'LENCAJAD', cod:'10000104', sec:'Cosmética', pct:58, prod:45, form:80, ej:true },
-  { n:'MONTMANU', cod:'10000105', sec:'Cosmética', pct:70, prod:55, form:90, ej:true },
+  { n:'ENV13',    cod:'10000096', sec:'Cosmética', prod:60, form:100 },
+  { n:'ENVSACH',  cod:'10000097', sec:'Cosmética', prod:45, form:95  },
+  { n:'ENVTARR1', cod:'10000099', sec:'Cosmética', prod:45, form:95  },
+  { n:'ENVTUBO1', cod:'10000101', sec:'Cosmética', prod:60, form:100 },
+  { n:'ENVTUBO2', cod:'10000102', sec:'Cosmética', prod:60, form:100 },
+  { n:'ESTUCHAD', cod:'10000103', sec:'Cosmética', prod:50, form:85, ej:true },
+  { n:'L18',      cod:'10000152', sec:'Cosmética', prod:60, form:90  },
+  { n:'L19',      cod:'10000156', sec:'Cosmética', prod:60, form:90  },
+  { n:'L3',       cod:'10000093', sec:'Cosmética', prod:45, form:90  },
+  { n:'LCOLONIA', cod:'10000114', sec:'Cosmética', prod:40, form:95  },
+  { n:'LENCAJAD', cod:'10000104', sec:'Cosmética', prod:45, form:80, ej:true },
+  { n:'MONTMANU', cod:'10000105', sec:'Cosmética', prod:55, form:90, ej:true },
   // --- HIGIENE ---
-  { n:'L1', cod:'10000091', sec:'Higiene', pct:57, prod:40, form:81 },
-  { n:'L2', cod:'10000092', sec:'Higiene', pct:66, prod:50, form:67 },
-  { n:'L4', cod:'10000094', sec:'Higiene', pct:60, prod:55, form:70 },
-  { n:'L5', cod:'10000095', sec:'Higiene', pct:52, prod:55, form:83 },
-  { n:'L6', cod:'10000151', sec:'Higiene', pct:59, prod:60, form:76 },
-  { n:'L7', cod:'10000155', sec:'Higiene', pct:61, prod:60, form:65 },
+  { n:'L1', cod:'10000091', sec:'Higiene', prod:40, form:81 },
+  { n:'L2', cod:'10000092', sec:'Higiene', prod:50, form:67 },
+  { n:'L4', cod:'10000094', sec:'Higiene', prod:55, form:70 },
+  { n:'L5', cod:'10000095', sec:'Higiene', prod:55, form:83 },
+  { n:'L6', cod:'10000151', sec:'Higiene', prod:60, form:76 },
+  { n:'L7', cod:'10000155', sec:'Higiene', prod:60, form:65 },
 ];
 
 /* ---------- Ventana temporal ---------- */
@@ -397,7 +372,7 @@ function buildHead(){
       <div class="left-head">
         <div class="cols">
           <div>Puesto / Línea</div><div>Código</div><div>Sección</div>
-          <div class="num">%</div><div class="num">C.Prod</div><div class="num">C.Form</div>
+          <div class="num">C.Prod</div><div class="num">C.Form</div>
         </div>
       </div>
       <div class="time-head" style="width:${trackPx}px">
@@ -433,13 +408,11 @@ function render(){
   const trackPx = px(TOTAL_MIN);
 
   let rows = '';
-  let nProd = 0, nForm = 0, minProd = 0, minForm = 0;
 
   lns.forEach(l => {
     let bars = '';
     l.events.forEach(e => {
       if (f.tipo && e.tipo !== f.tipo) return;
-      if (e.tipo === 'producto'){ nProd++; minProd += e.dur; } else { nForm++; minForm += e.dur; }
       const left = px(minFromStart(e.start));
       const w = Math.max(px(e.dur), 3);
       const fin = new Date(e.start.getTime() + e.dur * 60000);
@@ -456,7 +429,6 @@ function render(){
             <div class="ln-name">${l.n}</div>
             <div>${l.cod}</div>
             <div class="ln-sec"><span class="badge ${l.sec==='Cosmética'?'cos':'hig'}">${l.sec}</span></div>
-            <div class="num">${l.pct}</div>
             <div class="num">${l.prod}</div>
             <div class="num">${l.form}</div>
           </div>
@@ -473,14 +445,6 @@ function render(){
     : `<div class="empty">No hay puestos para los filtros seleccionados.</div>`;
 
   $('#gantt').innerHTML = buildHead() + body;
-
-  // KPIs
-  $('#kpis').innerHTML = `
-    <div class="kpi"><div class="v">${lns.length}</div><div class="l">Puestos mostrados</div></div>
-    <div class="kpi"><div class="v">${nProd + nForm}</div><div class="l">Cambios totales</div></div>
-    <div class="kpi prod"><div class="v">${nProd}</div><div class="l">Cambios de producto (${minProd} min)</div></div>
-    <div class="kpi form"><div class="v">${nForm}</div><div class="l">Cambios de formato (${minForm} min)</div></div>
-    <div class="kpi"><div class="v">${minProd + minForm} min</div><div class="l">Tiempo de cambio total</div></div>`;
 }
 
 /* ---------- Eventos de UI ---------- */
