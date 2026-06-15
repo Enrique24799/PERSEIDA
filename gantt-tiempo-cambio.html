@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gantt · Tiempo de Cambio — Líneas internas</title>
+<style>
+  :root {
+    --left: 460px;          /* ancho de la zona fija de columnas */
+    --row-h: 32px;
+    --head-bg: #2f5f8f;
+    --producto: #2f80ed;    /* Cambio de producto */
+    --formato:  #27ae60;    /* Cambio de formato  */
+    --border: #d7dee8;
+    --grid: #e9eef5;
+    --ink: #243140;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 14px 16px 28px; }
+
+  /* ---------- Cabecera ---------- */
+  .titlebar {
+    background: linear-gradient(180deg, #37618f, #2f5f8f);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .titlebar .v { font-size: 12px; opacity: .8; font-weight: 400; }
+
+  /* ---------- Panel de filtros ---------- */
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 12px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+  }
+  fieldset {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px 10px;
+    margin: 0;
+  }
+  legend { font-size: 11px; color: #5b6b7d; padding: 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 11px; color: #5b6b7d; }
+  .controls { display: flex; gap: 12px; align-items: flex-end; }
+  select, button {
+    font-size: 13px;
+    padding: 6px 9px;
+    border: 1px solid #b9c6d6;
+    border-radius: 5px;
+    background: #fff;
+    color: var(--ink);
+    min-width: 150px;
+  }
+  button {
+    min-width: auto;
+    cursor: pointer;
+    background: #f4f7fb;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  button:hover { background: #e7eef7; }
+  button.primary { background: #2f80ed; color: #fff; border-color: #2f80ed; }
+  button.primary:hover { background: #2b73d4; }
+
+  .legend-box { display: flex; gap: 16px; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .dot { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  .dot.prod { background: var(--producto); }
+  .dot.form { background: var(--formato); }
+  .dot.turno { background: repeating-linear-gradient(90deg,#9aa7b6 0 4px,transparent 4px 8px); border-radius:0; height: 0; border-top: 2px dashed #9aa7b6; width: 16px; }
+
+  .note {
+    background: #fff8e6;
+    border: 1px solid #f0dca0;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 12px;
+    color: #7a6314;
+    margin: 0;
+    flex: 1 1 260px;
+  }
+
+  /* ---------- KPIs ---------- */
+  .kpis {
+    display: flex;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+  }
+  .kpi {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    min-width: 120px;
+    background: #f8fafd;
+  }
+  .kpi .v { font-size: 18px; font-weight: 700; }
+  .kpi .l { font-size: 11px; color: #6b7a8c; }
+  .kpi.prod .v { color: var(--producto); }
+  .kpi.form .v { color: var(--formato); }
+
+  /* ---------- Gantt ---------- */
+  .gantt {
+    position: relative;
+    overflow: auto;
+    max-height: 70vh;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .ghead { position: sticky; top: 0; z-index: 30; display: flex; width: max-content; }
+  .left-head {
+    position: sticky; left: 0; z-index: 40;
+    width: var(--left);
+    background: #eef3f9;
+    border-right: 2px solid #c4d0de;
+    border-bottom: 1px solid var(--border);
+  }
+  .cols {
+    display: grid;
+    grid-template-columns: 96px 86px 96px 44px 70px 68px;
+    width: var(--left);
+    align-items: center;
+  }
+  .cols > div { padding: 4px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .left-head .cols { font-weight: 600; font-size: 11px; color: #41546a; text-transform: uppercase; letter-spacing: .3px; height: 100%; }
+  .left-head .cols > div { border-bottom: none; }
+  .left-head { height: 46px; display: flex; align-items: center; }
+
+  .time-head { background: #eef3f9; border-bottom: 1px solid var(--border); }
+  .days, .hours { display: flex; }
+  .day {
+    border-right: 1px solid #c4d0de;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 3px 0;
+    color: #34495e;
+    background: #f6f3e7;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .hour {
+    border-right: 1px solid var(--grid);
+    font-size: 11px;
+    color: #6b7a8c;
+    padding: 3px 0 3px 4px;
+    white-space: nowrap;
+  }
+
+  .gbody { width: max-content; }
+  .row { display: flex; width: max-content; border-bottom: 1px solid #eef2f7; }
+  .row:hover .left-cell { background: #eaf2fd; }
+  .left-cell {
+    position: sticky; left: 0; z-index: 20;
+    width: var(--left);
+    background: #fff;
+    border-right: 2px solid #c4d0de;
+  }
+  .left-cell .cols { height: var(--row-h); }
+  .left-cell .cols > div { font-size: 12px; }
+  .ln-name { font-weight: 700; color: #1f2d3d; }
+  .ln-sec { font-size: 11px; }
+  .badge { display:inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .badge.cos { background: #fde6f0; color: #c0367f; }
+  .badge.hig { background: #e4f4ec; color: #1c8a52; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .track { position: relative; height: var(--row-h); }
+  .band { position: absolute; top: 0; bottom: 0; }
+  .band.m { background: rgba(39,174,96,.045); }   /* mañana */
+  .band.t { background: rgba(242,153,74,.05); }    /* tarde  */
+  .band.n { background: rgba(47,128,237,.05); }    /* noche  */
+  .gline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grid); }
+  .gline.day { background: #c4d0de; }
+  .gline.turno { border-left: 1px dashed #b3bfcd; width: 0; }
+
+  .bar {
+    position: absolute;
+    top: 6px;
+    height: 20px;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 10px;
+    line-height: 20px;
+    padding: 0 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: default;
+    box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  }
+  .bar.prod { background: var(--producto); }
+  .bar.form { background: var(--formato); }
+  .bar:hover { filter: brightness(1.08); outline: 2px solid rgba(0,0,0,.25); z-index: 5; }
+
+  .empty { padding: 28px; text-align: center; color: #8494a6; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="titlebar">
+    <span>Gantt · Tiempo de Cambio — Líneas internas</span>
+    <span class="v">v3.0</span>
+  </div>
+
+  <!-- Filtros -->
+  <div class="panel">
+    <fieldset>
+      <legend>Opciones de consulta</legend>
+      <div class="controls">
+        <div class="field">
+          <label for="fSeccion">Sección</label>
+          <select id="fSeccion">
+            <option value="">Todas las secciones</option>
+            <option value="Cosmética">Cosmética</option>
+            <option value="Higiene">Higiene</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fLinea">Puesto de trabajo (línea)</label>
+          <select id="fLinea"><option value="">Todos los puestos</option></select>
+        </div>
+        <div class="field">
+          <label for="fTipo">Tiempo de cambio</label>
+          <select id="fTipo">
+            <option value="">Todos</option>
+            <option value="producto">Cambio de producto</option>
+            <option value="formato">Cambio de formato</option>
+          </select>
+        </div>
+        <button class="primary" id="btnUpd">⟳ Actualizar</button>
+        <button id="btnZin">🔍 Zoom In</button>
+        <button id="btnZout">🔍 Zoom Out</button>
+        <button id="btnReset">↺ Reiniciar</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Leyendas</legend>
+      <div class="legend-box">
+        <span class="legend-item"><span class="dot prod"></span> Cambio de producto</span>
+        <span class="legend-item"><span class="dot form"></span> Cambio de formato</span>
+        <span class="legend-item"><span class="dot turno"></span> Cambio de turno</span>
+      </div>
+    </fieldset>
+
+    <p class="note">ℹ️ Cada línea ocupa <b>una sola fila</b>: al cambiar de turno la programación continúa en la misma línea (las bandas de color suaves y las líneas discontinuas marcan los turnos M/T/N).</p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- Gantt -->
+  <div class="gantt" id="gantt"></div>
+
+</div>
+
+<script>
+/* =====================================================================
+   DATOS DE LAS LÍNEAS (puestos de trabajo)
+   - Secciones tomadas de las pestañas Cosmética / Higiene.
+   - codigo / pct / prod (Cambio de producto, min) / form (Cambio de formato, min)
+     tomados de la tabla (prCodLinea, prPorcentaje, prCambioProducto, prCambioFormato).
+   - Líneas marcadas (*) no figuran en la tabla -> valores de EJEMPLO.
+   ===================================================================== */
+const LINES = [
+  // --- COSMÉTICA ---
+  { n:'ENV13',    cod:'10000096', sec:'Cosmética', pct:65, prod:60, form:100 },
+  { n:'ENVSACH',  cod:'10000097', sec:'Cosmética', pct:50, prod:45, form:95  },
+  { n:'ENVTARR1', cod:'10000099', sec:'Cosmética', pct:55, prod:45, form:95  },
+  { n:'ENVTUBO1', cod:'10000101', sec:'Cosmética', pct:59, prod:60, form:100 },
+  { n:'ENVTUBO2', cod:'10000102', sec:'Cosmética', pct:74, prod:60, form:100 },
+  { n:'ESTUCHAD', cod:'10000103', sec:'Cosmética', pct:62, prod:50, form:85, ej:true },
+  { n:'L18',      cod:'10000152', sec:'Cosmética', pct:68, prod:60, form:90  },
+  { n:'L19',      cod:'10000156', sec:'Cosmética', pct:67, prod:60, form:90  },
+  { n:'L3',       cod:'10000093', sec:'Cosmética', pct:50, prod:45, form:90  },
+  { n:'LCOLONIA', cod:'10000114', sec:'Cosmética', pct:95, prod:40, form:95  },
+  { n:'LENCAJAD', cod:'10000104', sec:'Cosmética', pct:58, prod:45, form:80, ej:true },
+  { n:'MONTMANU', cod:'10000105', sec:'Cosmética', pct:70, prod:55, form:90, ej:true },
+  // --- HIGIENE ---
+  { n:'L1', cod:'10000091', sec:'Higiene', pct:57, prod:40, form:81 },
+  { n:'L2', cod:'10000092', sec:'Higiene', pct:66, prod:50, form:67 },
+  { n:'L4', cod:'10000094', sec:'Higiene', pct:60, prod:55, form:70 },
+  { n:'L5', cod:'10000095', sec:'Higiene', pct:52, prod:55, form:83 },
+  { n:'L6', cod:'10000151', sec:'Higiene', pct:59, prod:60, form:76 },
+  { n:'L7', cod:'10000155', sec:'Higiene', pct:61, prod:60, form:65 },
+];
+
+/* ---------- Ventana temporal ---------- */
+const WINDOW_START = new Date(2026, 5, 15, 0, 0, 0); // lunes 15 junio 2026
+const DAYS = 7;
+const WINDOW_END = new Date(WINDOW_START.getTime() + DAYS * 86400000);
+const TOTAL_MIN = DAYS * 1440;
+let pxPerMin = 1;                 // escala (zoom)
+const MIN_PX = 0.5, MAX_PX = 4;
+
+const WD  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const WDS = ['dom','lun','mar','mié','jue','vie','sáb'];
+const MES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+/* ---------- Generador pseudoaleatorio reproducible ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------- Generación de eventos de cambio por línea ---------- */
+function genEvents(line, idx){
+  const rnd = mulberry32(idx * 2654435761 + 97);
+  const ev = [];
+  let t = WINDOW_START.getTime() + rnd() * 3 * 3600000;   // arranque desfasado
+  while (t < WINDOW_END.getTime()) {
+    const prodMins = 150 + rnd() * 360;                    // 2.5h – 8.5h produciendo
+    t += prodMins * 60000;
+    if (t >= WINDOW_END.getTime()) break;
+    const esFormato = rnd() < 0.42;                        // ~42% formato / 58% producto
+    const dur = esFormato ? line.form : line.prod;         // minutos
+    ev.push({ start: new Date(t), dur, tipo: esFormato ? 'formato' : 'producto' });
+    t += dur * 60000;
+  }
+  return ev;
+}
+LINES.forEach((l, i) => { l.events = genEvents(l, i); });
+
+/* ---------- Utilidades ---------- */
+const $ = s => document.querySelector(s);
+const minFromStart = d => (d.getTime() - WINDOW_START.getTime()) / 60000;
+const px = m => m * pxPerMin;
+function pad(n){ return String(n).padStart(2,'0'); }
+function fechaHora(d){ return `${WDS[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+
+/* ---------- Filtros ---------- */
+function filtros(){
+  return { sec: $('#fSeccion').value, linea: $('#fLinea').value, tipo: $('#fTipo').value };
+}
+function lineasVisibles(){
+  const f = filtros();
+  return LINES.filter(l =>
+    (!f.sec   || l.sec === f.sec) &&
+    (!f.linea || l.n   === f.linea)
+  );
+}
+
+/* ---------- Poblar selector de líneas según sección ---------- */
+function poblarLineas(){
+  const sec = $('#fSeccion').value;
+  const sel = $('#fLinea');
+  const actual = sel.value;
+  const opts = LINES.filter(l => !sec || l.sec === sec)
+                    .sort((a,b)=> a.n.localeCompare(b.n))
+                    .map(l => `<option value="${l.n}">${l.n} — ${l.sec}</option>`).join('');
+  sel.innerHTML = `<option value="">Todos los puestos</option>${opts}`;
+  // conserva selección si sigue siendo válida
+  if ([...sel.options].some(o => o.value === actual)) sel.value = actual; else sel.value = '';
+}
+
+/* ---------- Cabecera de tiempos ---------- */
+function buildHead(){
+  const trackPx = px(TOTAL_MIN);
+  const dayPx = px(1440);
+  let days = '';
+  for (let d = 0; d < DAYS; d++){
+    const dt = new Date(WINDOW_START.getTime() + d * 86400000);
+    days += `<div class="day" style="width:${dayPx}px">${WD[dt.getDay()]}, ${dt.getDate()} ${MES[dt.getMonth()]} ${dt.getFullYear()}</div>`;
+  }
+  const stepPx = px(360); // cada 6 h
+  let hours = '';
+  for (let h = 0; h < DAYS * 24; h += 6){
+    hours += `<div class="hour" style="width:${stepPx}px">${pad(h % 24)}:00</div>`;
+  }
+  return `
+    <div class="ghead">
+      <div class="left-head">
+        <div class="cols">
+          <div>Puesto / Línea</div><div>Código</div><div>Sección</div>
+          <div class="num">%</div><div class="num">C.Prod</div><div class="num">C.Form</div>
+        </div>
+      </div>
+      <div class="time-head" style="width:${trackPx}px">
+        <div class="days" style="width:${trackPx}px">${days}</div>
+        <div class="hours" style="width:${trackPx}px">${hours}</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Fondo de una pista (turnos + rejilla) ---------- */
+function trackBackground(){
+  const dayPx = px(1440);
+  let html = '';
+  for (let d = 0; d < DAYS; d++){
+    const x0 = d * dayPx;
+    // bandas de turno: Noche 00-06, Mañana 06-14, Tarde 14-22, Noche 22-24
+    html += `<div class="band n" style="left:${x0}px;width:${px(360)}px"></div>`;
+    html += `<div class="band m" style="left:${x0+px(360)}px;width:${px(480)}px"></div>`;
+    html += `<div class="band t" style="left:${x0+px(840)}px;width:${px(480)}px"></div>`;
+    html += `<div class="band n" style="left:${x0+px(1320)}px;width:${px(120)}px"></div>`;
+    // separadores de turno (cambio de turno)
+    [360, 840, 1320].forEach(m => { html += `<div class="gline turno" style="left:${x0+px(m)}px"></div>`; });
+    // línea de día
+    html += `<div class="gline day" style="left:${x0}px"></div>`;
+  }
+  return html;
+}
+
+/* ---------- Render principal ---------- */
+function render(){
+  const f = filtros();
+  const lns = lineasVisibles();
+  const trackPx = px(TOTAL_MIN);
+
+  let rows = '';
+  let nProd = 0, nForm = 0, minProd = 0, minForm = 0;
+
+  lns.forEach(l => {
+    let bars = '';
+    l.events.forEach(e => {
+      if (f.tipo && e.tipo !== f.tipo) return;
+      if (e.tipo === 'producto'){ nProd++; minProd += e.dur; } else { nForm++; minForm += e.dur; }
+      const left = px(minFromStart(e.start));
+      const w = Math.max(px(e.dur), 3);
+      const fin = new Date(e.start.getTime() + e.dur * 60000);
+      const etq = e.tipo === 'producto' ? 'Cambio de producto' : 'Cambio de formato';
+      const tip = `${l.n} (${l.sec})\n${etq}\nInicio: ${fechaHora(e.start)}\nFin:    ${fechaHora(fin)}\nDuración: ${e.dur} min`;
+      const txt = w > 26 ? `${e.dur}m` : '';
+      bars += `<div class="bar ${e.tipo === 'producto' ? 'prod' : 'form'}" style="left:${left}px;width:${w}px" title="${tip}">${txt}</div>`;
+    });
+
+    rows += `
+      <div class="row">
+        <div class="left-cell">
+          <div class="cols">
+            <div class="ln-name">${l.n}</div>
+            <div>${l.cod}</div>
+            <div class="ln-sec"><span class="badge ${l.sec==='Cosmética'?'cos':'hig'}">${l.sec}</span></div>
+            <div class="num">${l.pct}</div>
+            <div class="num">${l.prod}</div>
+            <div class="num">${l.form}</div>
+          </div>
+        </div>
+        <div class="track" style="width:${trackPx}px">
+          ${trackBackground()}
+          ${bars}
+        </div>
+      </div>`;
+  });
+
+  const body = lns.length
+    ? `<div class="gbody">${rows}</div>`
+    : `<div class="empty">No hay puestos para los filtros seleccionados.</div>`;
+
+  $('#gantt').innerHTML = buildHead() + body;
+
+  // KPIs
+  $('#kpis').innerHTML = `
+    <div class="kpi"><div class="v">${lns.length}</div><div class="l">Puestos mostrados</div></div>
+    <div class="kpi"><div class="v">${nProd + nForm}</div><div class="l">Cambios totales</div></div>
+    <div class="kpi prod"><div class="v">${nProd}</div><div class="l">Cambios de producto (${minProd} min)</div></div>
+    <div class="kpi form"><div class="v">${nForm}</div><div class="l">Cambios de formato (${minForm} min)</div></div>
+    <div class="kpi"><div class="v">${minProd + minForm} min</div><div class="l">Tiempo de cambio total</div></div>`;
+}
+
+/* ---------- Eventos de UI ---------- */
+$('#fSeccion').addEventListener('change', () => { poblarLineas(); render(); });
+$('#fLinea').addEventListener('change', render);
+$('#fTipo').addEventListener('change', render);
+$('#btnUpd').addEventListener('click', render);
+$('#btnZin').addEventListener('click', () => { pxPerMin = Math.min(MAX_PX, +(pxPerMin * 1.4).toFixed(3)); render(); });
+$('#btnZout').addEventListener('click', () => { pxPerMin = Math.max(MIN_PX, +(pxPerMin / 1.4).toFixed(3)); render(); });
+$('#btnReset').addEventListener('click', () => {
+  $('#fSeccion').value = ''; poblarLineas();
+  $('#fLinea').value = ''; $('#fTipo').value = ''; pxPerMin = 1; render();
+});
+
+/* ---------- Inicio ---------- */
+poblarLineas();
+render();
+</script>
+</body>
+</html>
