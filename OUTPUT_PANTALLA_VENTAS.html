@@ -180,7 +180,7 @@
           <th>Stock real / plan.</th>
           <th>Cliente</th>
           <th>Cant. (palets)</th>
-          <th>Vol. total cam. (m³)</th>
+          <th>Vol. total cam. (palets)</th>
           <th>Peso total cam. (kg)</th>
         </tr>
       </thead>
@@ -349,7 +349,7 @@ function render(res){
       }
       tds += celdaPos(p);
       if (i === 0){
-        tds += `<td rowspan="${span}" class="num">${t.vol.toFixed(1)}</td>`;
+        tds += `<td rowspan="${span}" class="num">${t.palets}</td>`;
         tds += `<td rowspan="${span}" class="num">${fmtPeso(t.peso)}</td>`;
       }
       rows.push(`<tr class="${i === 0 ? 'tstart' : ''}">${tds}</tr>`);
