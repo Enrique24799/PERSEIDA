@@ -324,6 +324,14 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
     </fieldset>
 
     <fieldset>
+      <legend>Código Palet</legend>
+      <div class="field-row">
+        <input type="text" id="fil-codpal" placeholder="PL-001..." style="width:130px"
+               oninput="applyFilters()">
+      </div>
+    </fieldset>
+
+    <fieldset>
       <legend>Fecha Salida</legend>
       <div class="field-row">
         <input type="date" id="fil-desde" style="width:145px" onchange="applyFilters()">
@@ -603,17 +611,19 @@ let DATA = [];
 let filtered = [];
 
 function applyFilters() {
-  const cli  = document.getElementById('fil-cliente').value.trim().toLowerCase();
-  const tipo = document.getElementById('fil-tipo').value;
-  const fact = document.getElementById('fil-fact').value;
-  const desde= document.getElementById('fil-desde').value;
-  const hasta= document.getElementById('fil-hasta').value;
+  const cli    = document.getElementById('fil-cliente').value.trim().toLowerCase();
+  const codpal = document.getElementById('fil-codpal').value.trim().toLowerCase();
+  const tipo   = document.getElementById('fil-tipo').value;
+  const fact   = document.getElementById('fil-fact').value;
+  const desde  = document.getElementById('fil-desde').value;
+  const hasta  = document.getElementById('fil-hasta').value;
 
   filtered = DATA.filter(r => {
-    if (cli  && !r.idCliente.toLowerCase().includes(cli)
-             && !r.nomCliente.toLowerCase().includes(cli)) return false;
-    if (tipo && r.tipo      !== tipo) return false;
-    if (fact && r.facturado !== fact) return false;
+    if (cli    && !r.idCliente.toLowerCase().includes(cli)
+               && !r.nomCliente.toLowerCase().includes(cli)) return false;
+    if (codpal && !r.codPalet.toLowerCase().includes(codpal)) return false;
+    if (tipo   && r.tipo      !== tipo) return false;
+    if (fact   && r.facturado !== fact) return false;
     if (desde) { const d = new Date(desde + 'T00:00:00'); if (r.fSalida < d) return false; }
     if (hasta) { const h = new Date(hasta + 'T23:59:59'); if (r.fSalida > h) return false; }
     return true;
@@ -623,7 +633,7 @@ function applyFilters() {
 }
 
 function clearFilters() {
-  ['fil-cliente','fil-tipo','fil-fact','fil-desde','fil-hasta']
+  ['fil-cliente','fil-codpal','fil-tipo','fil-fact','fil-desde','fil-hasta']
     .forEach(id => document.getElementById(id).value = '');
   applyFilters();
 }
