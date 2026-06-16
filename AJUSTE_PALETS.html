@@ -296,6 +296,7 @@
         <tr>
           <th class="chk"><input type="checkbox" id="chkAll" title="Marcar todo" /></th>
           <th>Palet</th>
+          <th>Nombre Palet</th>
           <th>Matrícula</th>
           <th>Componente</th>
           <th>Descripción</th>
@@ -549,6 +550,7 @@ function filaOcupado(p){
     <tr data-id="${p._id}" class="${sel ? 'rsel' : ''}">
       <td class="chk"><input type="checkbox" data-id="${p._id}" ${sel ? 'checked' : ''}></td>
       <td class="mono">${p.palet}</td>
+      <td>${TIPO_PAL[p.palet] || '—'}</td>
       <td class="mono">${p.matricula || '—'}</td>
       <td class="mono">${p.material}</td>
       <td class="nom">${esc(p.desc)}</td>
@@ -569,9 +571,10 @@ function filaLibre(codigo, count){
     <tr class="librerow">
       <td class="chk">—</td>
       <td class="mono">${codigo}</td>
+      <td class="muted-cell">${TIPO_PAL[codigo] ? esc(TIPO_PAL[codigo]) : 'Palet libre (sin asignar)'}</td>
       <td class="mono">—</td>
       <td class="mono">—</td>
-      <td class="nom muted-cell">${TIPO_PAL[codigo] ? esc(TIPO_PAL[codigo]) : 'Palets libres (sin asignar)'}</td>
+      <td class="nom">—</td>
       <td>—</td>
       <td class="num">—</td>
       <td class="num">—</td>
@@ -589,7 +592,7 @@ function render(){
   const out = currentRows.map(filaOcupado);
   freeRows.forEach(f => out.push(filaLibre(f.codigo, f.count)));
   if (!out.length){
-    tb.innerHTML = `<tr><td class="empty" colspan="15">Sin registros. Ajuste los criterios de selección y pulse Ejecutar.</td></tr>`;
+    tb.innerHTML = `<tr><td class="empty" colspan="16">Sin registros. Ajuste los criterios de selección y pulse Ejecutar.</td></tr>`;
     $('#chkAll').checked = false;
     return;
   }
@@ -695,7 +698,7 @@ function abrirModal(action){
     const p = sel[0];
     modalTarget = p;
     $('#modalTitle').textContent = 'Ajuste de inventario — ' + (p.matricula || p.palet);
-    $('#modalInfo').innerHTML = `Palet <b>${p.palet}</b> · Matrícula <b>${p.matricula || '—'}</b> · ${SITU_BADGE[p.situacion]}<br>` +
+    $('#modalInfo').innerHTML = `Palet <b>${p.palet}</b>${TIPO_PAL[p.palet] ? ' · ' + esc(TIPO_PAL[p.palet]) : ''} · Matrícula <b>${p.matricula || '—'}</b> · ${SITU_BADGE[p.situacion]}<br>` +
       `Componente <b>${p.material}</b> · ${esc(p.desc)}<br>` +
       `Uds/Palet: <b>${nf(p.udsPalet)}</b> · Uds ocupadas actuales: <b>${nf(p.udsOcup)}</b>`;
     $('#rowUnidades').style.display = 'flex';
@@ -812,9 +815,9 @@ function confirmarModal(){
 /* ---------- Exportar a CSV ---------- */
 function exportar(){
   if (!currentRows.length && !freeRows.length){ setStatus('No hay datos que exportar.', 'warn'); return; }
-  const cab = ['Palet','Matricula','Componente','Descripcion','Tipo','Uds/Palet','Uds Ocupadas','Situacion','Nº palets','Orden','Status Orden','Entrega','Doc. compras','Ubicacion'];
-  const filas = currentRows.map(p => [p.palet,p.matricula,p.material,p.desc,p.tipo,p.udsPalet,p.udsOcup,p.situacion,'1',p.orden,p.statusOrden,p.entrega,p.docCompras,p.ubic]);
-  freeRows.forEach(f => filas.push([f.codigo,'','',(TIPO_PAL[f.codigo]||''),'','','','LIBRE',String(f.count),'','','','','']));
+  const cab = ['Palet','Nombre Palet','Matricula','Componente','Descripcion','Tipo','Uds/Palet','Uds Ocupadas','Situacion','Nº palets','Orden','Status Orden','Entrega','Doc. compras','Ubicacion'];
+  const filas = currentRows.map(p => [p.palet,(TIPO_PAL[p.palet]||''),p.matricula,p.material,p.desc,p.tipo,p.udsPalet,p.udsOcup,p.situacion,'1',p.orden,p.statusOrden,p.entrega,p.docCompras,p.ubic]);
+  freeRows.forEach(f => filas.push([f.codigo,(TIPO_PAL[f.codigo]||''),'','','','','','','LIBRE',String(f.count),'','','','','']));
   const csv = [cab, ...filas].map(r => r.map(c => `"${String(c ?? '').replace(/"/g,'""')}"`).join(';')).join('\r\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');

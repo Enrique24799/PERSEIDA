@@ -110,8 +110,8 @@ Se introduce **uno** de estos campos (admite combinar varios; coincidencia parci
 - **Ajustar inventario** — corrige las unidades de un palet; con **0** unidades lo da de baja.
 - **Alta de palet** — da de alta N palets libres de un código.
 
-Las columnas son: Palet, Matrícula, Componente, Descripción, Tipo, Uds/Pal., Uds Ocup., Situación,
-**Nº palets**, Orden Fab., Status Orden, Entrega, **Doc. compras** y Ubicación.
+Las columnas son: Palet, **Nombre Palet**, Matrícula, Componente, Descripción, Tipo, Uds/Pal.,
+Uds Ocup., Situación, **Nº palets**, Orden Fab., Status Orden, Entrega, **Doc. compras** y Ubicación.
 
 Cada acción queda registrada en el **log de movimientos** (fecha/hora, usuario, palet, acción,
 situación anterior → nueva, unidades, documento y motivo). Incluye **Exportar** a CSV y barra de
