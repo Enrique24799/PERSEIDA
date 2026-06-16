@@ -99,9 +99,10 @@
   }
   .act:hover { background: #eef4fc; border-color: #9bb2cc; }
   .act .ic { font-size: 14px; line-height: 1; }
-  .act.lock   .ic { color: var(--warn); }
+  .act.lock  .ic { color: var(--warn); }
   .act.unlock .ic { color: var(--ok); }
-  .act.edit   .ic { color: var(--term); }
+  .act.edit  .ic { color: var(--term); }
+  .act.alta  .ic { color: var(--ok); }
 
   /* ---------- Tabla (ALV) ---------- */
   .tablewrap {
@@ -131,6 +132,7 @@
   .badge { display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 11px; font-weight: 600; color: #fff; }
   .badge.ok      { background: var(--ok); }
   .badge.warn    { background: var(--warn); }
+  .badge.info    { background: var(--term); }
   .badge.neutral { background: var(--neutral); }
   .tipo { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
   .tipo.semi { background: #efe7fb; color: var(--semi); }
@@ -161,6 +163,7 @@
   table.log td.acc { font-weight: 600; }
   table.log td.acc.bloquear   { color: var(--warn); }
   table.log td.acc.desbloquear{ color: var(--ok); }
+  table.log td.acc.alta       { color: var(--ok); }
   table.log td.acc.baja       { color: var(--bad); }
   table.log td.acc.ajuste     { color: var(--term); }
 
@@ -235,7 +238,7 @@
       <div class="controls">
         <div class="field">
           <label for="fPalet">Código Palet</label>
-          <input type="text" id="fPalet" placeholder="04969349" />
+          <input type="text" id="fPalet" placeholder="04969347" />
         </div>
         <div class="field">
           <label for="fComp">Código Componente</label>
@@ -247,6 +250,7 @@
             <option value="">(Todas)</option>
             <option value="BLOQUEADO">Bloqueado</option>
             <option value="LIBRE">Libre</option>
+            <option value="DEVOLUCION">Devolución</option>
           </select>
         </div>
         <div class="field">
@@ -263,9 +267,9 @@
         </div>
       </div>
       <div class="hint">
-        Introduzca uno de los campos como parámetro de entrada (puede combinar varios). Si deja todo
-        en blanco se listan todos los palets. Los palets <b>libres</b> no tienen material, matrícula ni
-        orden: se muestran agrupados en una sola fila con su nº de palets.
+        Introduzca uno de los campos como parámetro de entrada (puede combinar varios). Los palets
+        <b>libres</b> se agrupan por <b>código de palet</b> (columna Nº palets). La <b>entrega</b> solo
+        viene rellena en las <b>devoluciones</b> (palet con material devuelto por el cliente, sin matrícula).
       </div>
     </fieldset>
   </div>
@@ -278,6 +282,7 @@
     <button class="act lock"   id="aLock"><span class="ic">&#128274;</span> Bloquear</button>
     <button class="act unlock" id="aUnlock"><span class="ic">&#128275;</span> Desbloquear</button>
     <button class="act edit"   id="aEdit"><span class="ic">&#9998;</span> Ajustar inventario</button>
+    <button class="act alta"   id="aAlta"><span class="ic">&#10133;</span> Alta de palet</button>
     <span class="sep"></span>
     <button class="act" id="aRefresh"><span class="ic">&#8635;</span> Refrescar</button>
     <button class="act" id="aExport"><span class="ic">&#8675;</span> Exportar</button>
@@ -352,6 +357,19 @@
     <div class="mhead" id="modalTitle">Ajuste</div>
     <div class="mbody">
       <div class="info" id="modalInfo"></div>
+      <div class="mrow" id="rowCodigoBloq" style="display:none">
+        <label for="mCodigoBloq">Código de palet a bloquear (CLP)</label>
+        <select id="mCodigoBloq"></select>
+      </div>
+      <div class="mrow" id="rowCodigoAlta" style="display:none">
+        <label for="mCodigoAlta">Código de palet (CLP)</label>
+        <input type="text" id="mCodigoAlta" list="dlCodigos" placeholder="04969347" />
+        <div class="inherit" id="mCodigoAltaInfo"></div>
+      </div>
+      <div class="mrow" id="rowCantidad" style="display:none">
+        <label for="mCantidad">Nº de palets a dar de alta</label>
+        <input type="text" id="mCantidad" inputmode="numeric" placeholder="0" />
+      </div>
       <div class="mrow" id="rowMaterial" style="display:none">
         <label for="mMaterial">Material del palet</label>
         <select id="mMaterial"></select>
@@ -362,14 +380,15 @@
         <input type="text" id="mUnidades" inputmode="numeric" />
         <span class="calc" id="mCalc"></span>
       </div>
+      <datalist id="dlCodigos"></datalist>
       <div class="mrow">
-        <label for="mMotivo">Motivo del ajuste</label>
-        <textarea id="mMotivo" placeholder="Indique el motivo (recuento, corrección, bloqueo manual, ...)"></textarea>
+        <label for="mMotivo">Motivo</label>
+        <textarea id="mMotivo" placeholder="Indique el motivo (recuento, corrección, bloqueo manual, alta, ...)"></textarea>
       </div>
     </div>
     <div class="mfoot">
       <button class="ghost" id="mCancel">Cancelar</button>
-      <button class="primary" id="mOk">Ejecutar ajuste</button>
+      <button class="primary" id="mOk">Ejecutar</button>
     </div>
   </div>
 </div>
@@ -381,23 +400,35 @@
    dependencias externas.
 
    Modelo:
-   - Palet LIBRE = soporte vacío, sin matrícula / material / orden. Todos los
-     libres se muestran AGRUPADOS en una sola fila (columna "Nº palets").
-   - BLOQUEAR (manual): se coge 1 palet del stock de libres y se le asigna un
-     material y sus unidades. La columna Orden muestra "BLOQUEO MANUAL".
-   - AJUSTAR INVENTARIO: corrige las unidades de un palet bloqueado. Si se
-     ponen 0 unidades, el palet se da de BAJA (se elimina).
-   - DESBLOQUEAR: el palet se vacía y vuelve al stock de libres.
+   - Palet LIBRE = soporte vacío. Se agrupan POR CÓDIGO DE PALET (CLP):
+     una fila por código con su recuento en "Nº palets". No tienen
+     matrícula, material ni orden.
+   - BLOQUEAR (manual): se coge 1 palet libre de un CÓDIGO concreto y se le
+     asigna material + unidades. La columna Orden = "BLOQUEO MANUAL".
+   - ALTA DE PALET: se indican un código y una cantidad y se suman al stock
+     de libres de ese código.
+   - AJUSTAR INVENTARIO: corrige las unidades; con 0 unidades el palet se da
+     de BAJA (se elimina).
+   - DESBLOQUEAR: vacía el palet y devuelve su código al stock de libres.
+   - DEVOLUCIÓN: palet con material que el cliente devuelve. ÚNICO caso con
+     ENTREGA rellena; sin matrícula, sin orden y sin ubicación.
 
-   Nomenclatura:
-   - Código Palet (CLP): 0496xxxx       · Matrícula: 1000xxxxxx
-   - Componente semi/terminado: 709xxxxx · Packaging: 049xxxxx
-   - Documento de compras: solo para componentes de packaging.
+   Nomenclatura: Palet (CLP) 0496xxxx · Matrícula 1000xxxxxx ·
+   Componente semi/terminado 709xxxxx · Packaging 049xxxxx (con doc. compras).
    ===================================================================== */
 
 const $ = s => document.querySelector(s);
 const USUARIO = 'ENRTEJFOR';
 $('#userBox').textContent = 'Usuario · ' + USUARIO;
+
+/* ---------- Maestro de tipos de palet (CLP) ---------- */
+const PALET_TIPOS = [
+  { palet:'04969346', desc:'Europalet 800x1200' },
+  { palet:'04969347', desc:'Palet industrial 1000x1200' },
+  { palet:'04969348', desc:'Medio palet 600x800' },
+  { palet:'04969349', desc:'Palet plástico 800x600' },
+];
+const TIPO_PAL = Object.fromEntries(PALET_TIPOS.map(t => [t.palet, t.desc]));
 
 /* ---------- Maestro de materiales (para el bloqueo manual) ---------- */
 /* docCompras: solo lo tienen los componentes de packaging (049xxxxx)        */
@@ -412,33 +443,34 @@ const MATERIALES = [
 ];
 const MAT = Object.fromEntries(MATERIALES.map(m => [m.material, m]));
 
-/* ---------- Palets BLOQUEADOS (datos de ejemplo) ---------- */
-/* Los palets libres NO se almacenan como registros: son un contador (LIBRES). */
+/* ---------- Palets OCUPADOS: bloqueados y devoluciones (datos de ejemplo) ---------- */
+/* Los palets libres NO son registros: son contadores por código (LIBRES).        */
 let PALETS = [
-  { palet:'04969346', matricula:'1000405546', material:'70900045', desc:'SEMI Champú base 400 ml',     tipo:'SEMITERMINADO', udsPalet:240,  udsOcup:220,  orden:'100045001',     statusOrden:'Notificada',     entrega:'',         docCompras:'',           ubic:'SE-A-01-03' },
-  { palet:'04969347', matricula:'1000405547', material:'70900046', desc:'SEMI Gel base 750 ml',        tipo:'SEMITERMINADO', udsPalet:180,  udsOcup:180,  orden:'100045010',     statusOrden:'Notif. parcial', entrega:'',         docCompras:'',           ubic:'SE-A-02-01' },
-  { palet:'04969348', matricula:'1000405548', material:'70900046', desc:'SEMI Gel base 750 ml',        tipo:'SEMITERMINADO', udsPalet:180,  udsOcup:140,  orden:'100045010',     statusOrden:'Notif. parcial', entrega:'',         docCompras:'',           ubic:'SE-A-02-02' },
-  { palet:'04969349', matricula:'1000405549', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO',     udsPalet:120,  udsOcup:120,  orden:'100046002',     statusOrden:'Notificada',     entrega:'80012345', docCompras:'',           ubic:'PT-B-04-01' },
-  { palet:'04969350', matricula:'1000405550', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO',     udsPalet:120,  udsOcup:60,   orden:'100046002',     statusOrden:'Notificada',     entrega:'',         docCompras:'',           ubic:'PT-B-04-02' },
-  { palet:'04969351', matricula:'1000405551', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO',     udsPalet:96,   udsOcup:96,   orden:'100046020',     statusOrden:'Liberada',       entrega:'80012360', docCompras:'',           ubic:'PT-B-07-01' },
-  { palet:'04969352', matricula:'1000405552', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO',     udsPalet:96,   udsOcup:8,    orden:'100046020',     statusOrden:'Liberada',       entrega:'',         docCompras:'',           ubic:'PT-B-07-02' },
-  { palet:'04969353', matricula:'1000405553', material:'04900550', desc:'PACK Caja cartón 400x300',    tipo:'PACKAGING',     udsPalet:5000, udsOcup:5000, orden:'BLOQUEO MANUAL', statusOrden:'',               entrega:'',         docCompras:'4500098001', ubic:'MP-C-02-04' },
-  { palet:'04969354', matricula:'1000405554', material:'04900551', desc:'PACK Film retráctil',         tipo:'PACKAGING',     udsPalet:8000, udsOcup:3200, orden:'BLOQUEO MANUAL', statusOrden:'',               entrega:'',         docCompras:'4500098002', ubic:'MP-C-02-05' },
+  /* --- Bloqueados (entrega vacía) --- */
+  { palet:'04969346', matricula:'1000405546', material:'70900045', desc:'SEMI Champú base 400 ml',     tipo:'SEMITERMINADO', udsPalet:240,  udsOcup:220,  situacion:'BLOQUEADO', orden:'100045001',     statusOrden:'Notificada',     entrega:'', docCompras:'',           ubic:'SE-A-01-03' },
+  { palet:'04969346', matricula:'1000405547', material:'70900046', desc:'SEMI Gel base 750 ml',        tipo:'SEMITERMINADO', udsPalet:180,  udsOcup:180,  situacion:'BLOQUEADO', orden:'100045010',     statusOrden:'Notif. parcial', entrega:'', docCompras:'',           ubic:'SE-A-02-01' },
+  { palet:'04969347', matricula:'1000405548', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO',     udsPalet:120,  udsOcup:120,  situacion:'BLOQUEADO', orden:'100046002',     statusOrden:'Notificada',     entrega:'', docCompras:'',           ubic:'PT-B-04-01' },
+  { palet:'04969347', matricula:'1000405549', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO',     udsPalet:96,   udsOcup:96,   situacion:'BLOQUEADO', orden:'100046020',     statusOrden:'Liberada',       entrega:'', docCompras:'',           ubic:'PT-B-07-01' },
+  { palet:'04969348', matricula:'1000405550', material:'04900550', desc:'PACK Caja cartón 400x300',    tipo:'PACKAGING',     udsPalet:5000, udsOcup:5000, situacion:'BLOQUEADO', orden:'BLOQUEO MANUAL', statusOrden:'',               entrega:'', docCompras:'4500098001', ubic:'MP-C-02-04' },
+  { palet:'04969348', matricula:'1000405551', material:'04900551', desc:'PACK Film retráctil',         tipo:'PACKAGING',     udsPalet:8000, udsOcup:3200, situacion:'BLOQUEADO', orden:'BLOQUEO MANUAL', statusOrden:'',               entrega:'', docCompras:'4500098002', ubic:'MP-C-02-05' },
+  /* --- Devoluciones: con entrega y material, SIN matrícula / orden / ubicación --- */
+  { palet:'04969347', matricula:'', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO', udsPalet:120, udsOcup:80, situacion:'DEVOLUCION', orden:'', statusOrden:'', entrega:'80012345', docCompras:'', ubic:'' },
+  { palet:'04969346', matricula:'', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO', udsPalet:96,  udsOcup:96, situacion:'DEVOLUCION', orden:'', statusOrden:'', entrega:'80012360', docCompras:'', ubic:'' },
 ];
+PALETS.forEach((p, i) => p._id = i + 1);
+let nextId = PALETS.length + 1;
 
-/* nº de palets LIBRES (vacíos, sin asignar) */
-let LIBRES = 8;
+/* nº de palets LIBRES por código de palet (CLP) */
+let LIBRES = { '04969346': 6, '04969347': 4, '04969348': 3 };
 
-/* generadores de código de palet y matrícula para nuevos bloqueos */
-let seqPalet = 9355;          // 0496'9355' (siguiente al último de ejemplo)
-let seqMatricula = 1000405555;
-function nuevoPalet(){ return '0496' + (seqPalet++); }
+/* generador de matrícula para nuevos bloqueos */
+let seqMatricula = 1000405552;
 function nuevaMatricula(){ return String(seqMatricula++); }
 
 /* ---------- Estado de la sesión ---------- */
-const seleccion = new Set();   // palets bloqueados marcados
-let currentRows = [];          // palets bloqueados mostrados
-let showFree = false;          // si se muestra la fila agrupada de libres
+const seleccion = new Set();   // _id de palets ocupados marcados
+let currentRows = [];          // palets ocupados (bloqueados + devoluciones) mostrados
+let freeRows = [];             // [{codigo, count}] filas de libres mostradas
 const LOG = [];                // movimientos de la sesión
 
 /* ---------- Utilidades ---------- */
@@ -447,16 +479,14 @@ function ahora(){
   const d = new Date();
   return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
-function hoy(){
-  const d = new Date();
-  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
-}
+function hoy(){ const d = new Date(); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; }
 function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function nf(n){ return Number(n).toLocaleString('es-ES'); }
 
 const SITU_BADGE = {
-  BLOQUEADO: '<span class="badge warn">Bloqueado</span>',
-  LIBRE:     '<span class="badge ok">Libre</span>',
+  BLOQUEADO:  '<span class="badge warn">Bloqueado</span>',
+  LIBRE:      '<span class="badge ok">Libre</span>',
+  DEVOLUCION: '<span class="badge info">Devolución</span>',
 };
 function tipoTag(t){
   if (t === 'SEMITERMINADO') return '<span class="tipo semi">Semi</span>';
@@ -480,43 +510,52 @@ function ejecutar(){
   const fp = $('#fPalet').value.trim().toUpperCase();
   const fc = $('#fComp').value.trim().toUpperCase();
   const fs = $('#fSitu').value;
-  const fo = $('#fOrden').value.trim();
+  const fo = $('#fOrden').value.trim().toUpperCase();
   const fe = $('#fEntrega').value.trim();
 
+  // palets ocupados (bloqueados + devoluciones)
   currentRows = PALETS.filter(p =>
-    (fs === '' || fs === 'BLOQUEADO') &&
+    (fs === '' || fs === p.situacion) &&
+    (p.situacion === 'BLOQUEADO' || p.situacion === 'DEVOLUCION') &&
     (!fp || p.palet.toUpperCase().includes(fp)) &&
     (!fc || p.material.toUpperCase().includes(fc)) &&
-    (!fo || (p.orden || '').toUpperCase().includes(fo.toUpperCase())) &&
+    (!fo || (p.orden || '').toUpperCase().includes(fo)) &&
     (!fe || (p.entrega || '').includes(fe))
   );
 
-  // la fila agrupada de libres solo aparece si no se filtra por atributos que un libre no tiene
-  showFree = LIBRES > 0 && !fp && !fc && !fo && !fe && (fs === '' || fs === 'LIBRE');
+  // filas de libres (una por código): solo si no se filtra por atributos que un libre no tiene
+  freeRows = [];
+  if ((fs === '' || fs === 'LIBRE') && !fc && !fo && !fe){
+    freeRows = Object.keys(LIBRES)
+      .filter(c => LIBRES[c] > 0 && (!fp || c.toUpperCase().includes(fp)))
+      .sort()
+      .map(c => ({ codigo: c, count: LIBRES[c] }));
+  }
 
-  [...seleccion].forEach(id => { if (!currentRows.some(p => p.palet === id)) seleccion.delete(id); });
+  [...seleccion].forEach(id => { if (!currentRows.some(p => String(p._id) === id)) seleccion.delete(id); });
 
   render();
   resumen();
   updateSelCount();
 
-  const total = currentRows.length + (showFree ? 1 : 0);
+  const total = currentRows.length + freeRows.length;
   if (!total) setStatus('No se han encontrado palets para los criterios introducidos.', 'warn');
-  else setStatus(`${currentRows.length} palet(s) bloqueado(s)` + (showFree ? ` · ${LIBRES} libre(s) agrupados.` : '.'), 'ok');
+  else setStatus(`${currentRows.length} palet(s) ocupado(s) · ${freeRows.length} código(s) con libres.`, 'ok');
 }
 
-function filaBloqueado(p){
+function filaOcupado(p){
+  const sel = seleccion.has(String(p._id));
   return `
-    <tr data-palet="${p.palet}" class="${seleccion.has(p.palet) ? 'rsel' : ''}">
-      <td class="chk"><input type="checkbox" data-palet="${p.palet}" ${seleccion.has(p.palet) ? 'checked' : ''}></td>
+    <tr data-id="${p._id}" class="${sel ? 'rsel' : ''}">
+      <td class="chk"><input type="checkbox" data-id="${p._id}" ${sel ? 'checked' : ''}></td>
       <td class="mono">${p.palet}</td>
-      <td class="mono">${p.matricula}</td>
+      <td class="mono">${p.matricula || '—'}</td>
       <td class="mono">${p.material}</td>
       <td class="nom">${esc(p.desc)}</td>
       <td>${tipoTag(p.tipo)}</td>
       <td class="num">${nf(p.udsPalet)}</td>
       <td class="num">${nf(p.udsOcup)}</td>
-      <td>${SITU_BADGE.BLOQUEADO}</td>
+      <td>${SITU_BADGE[p.situacion]}</td>
       <td class="num">1</td>
       <td class="mono">${p.orden || '—'}</td>
       <td>${statusOrdenPill(p.statusOrden)}</td>
@@ -525,19 +564,19 @@ function filaBloqueado(p){
       <td class="mono">${p.ubic || '—'}</td>
     </tr>`;
 }
-function filaLibres(){
+function filaLibre(codigo, count){
   return `
     <tr class="librerow">
       <td class="chk">—</td>
+      <td class="mono">${codigo}</td>
       <td class="mono">—</td>
       <td class="mono">—</td>
-      <td class="mono">—</td>
-      <td class="nom muted-cell">Palets libres (sin asignar)</td>
+      <td class="nom muted-cell">${TIPO_PAL[codigo] ? esc(TIPO_PAL[codigo]) : 'Palets libres (sin asignar)'}</td>
       <td>—</td>
       <td class="num">—</td>
       <td class="num">—</td>
       <td>${SITU_BADGE.LIBRE}</td>
-      <td class="num"><b>${LIBRES}</b></td>
+      <td class="num"><b>${count}</b></td>
       <td class="mono">—</td>
       <td>—</td>
       <td class="mono">—</td>
@@ -547,32 +586,34 @@ function filaLibres(){
 }
 function render(){
   const tb = $('#tbody');
-  const out = currentRows.map(filaBloqueado);
-  if (showFree) out.push(filaLibres());
+  const out = currentRows.map(filaOcupado);
+  freeRows.forEach(f => out.push(filaLibre(f.codigo, f.count)));
   if (!out.length){
     tb.innerHTML = `<tr><td class="empty" colspan="15">Sin registros. Ajuste los criterios de selección y pulse Ejecutar.</td></tr>`;
     $('#chkAll').checked = false;
     return;
   }
   tb.innerHTML = out.join('');
-  $('#chkAll').checked = currentRows.length > 0 && currentRows.every(p => seleccion.has(p.palet));
+  $('#chkAll').checked = currentRows.length > 0 && currentRows.every(p => seleccion.has(String(p._id)));
 }
 
 function resumen(){
+  const bloq = currentRows.filter(p => p.situacion === 'BLOQUEADO').length;
+  const dev  = currentRows.filter(p => p.situacion === 'DEVOLUCION').length;
+  const libresShown = freeRows.reduce((s, f) => s + f.count, 0);
   const u = currentRows.reduce((s, p) => s + p.udsOcup, 0);
   $('#summary').innerHTML =
-    `Resultado: <b>${currentRows.length}</b> palet(s) bloqueado(s) &nbsp;·&nbsp; ` +
-    `Palets libres: <b>${LIBRES}</b> &nbsp;·&nbsp; ` +
-    `Unidades ocupadas: <b>${nf(u)}</b>`;
+    `Resultado: <b>${bloq}</b> bloqueado(s) &nbsp;·&nbsp; <b>${dev}</b> devolución(es) &nbsp;·&nbsp; ` +
+    `<b>${libresShown}</b> palet(s) libre(s) &nbsp;·&nbsp; Unidades ocupadas: <b>${nf(u)}</b>`;
 }
 
 function updateSelCount(){ $('#selCount').innerHTML = 'Seleccionados: <b>' + seleccion.size + '</b>'; }
-function selectedRows(){ return currentRows.filter(p => seleccion.has(p.palet)); }
+function selectedRows(){ return currentRows.filter(p => seleccion.has(String(p._id))); }
 
 /* ---------- Log de movimientos ---------- */
 function logMov(p, accion, sitDe, sitA, udsDe, udsA, doc, motivo){
   LOG.unshift({
-    fecha: ahora(), usuario: USUARIO, palet: p.palet, matricula: p.matricula || '—', material: p.material || '—',
+    fecha: ahora(), usuario: USUARIO, palet: p.palet || '—', matricula: p.matricula || '—', material: p.material || '—',
     accion, sitDe, sitA, udsDe, udsA, doc: doc || '', motivo: motivo || ''
   });
   renderLog();
@@ -583,11 +624,10 @@ function renderLog(){
     tb.innerHTML = `<tr><td class="empty-cell" colspan="10">Sin movimientos en esta sesión.</td></tr>`;
     return;
   }
-  const accCls = { 'Bloqueo':'bloquear', 'Desbloqueo':'desbloquear', 'Baja por inventario':'baja', 'Ajuste de unidades':'ajuste' };
+  const accCls = { 'Bloqueo':'bloquear', 'Desbloqueo':'desbloquear', 'Alta de palets':'alta', 'Baja por inventario':'baja', 'Ajuste de unidades':'ajuste' };
   tb.innerHTML = LOG.map(m => {
     const sit = (m.sitDe && m.sitA && m.sitDe !== m.sitA) ? `${m.sitDe} &#8594; ${m.sitA}` : (m.sitA || m.sitDe || '—');
-    const uds = (m.udsDe !== undefined && m.udsDe !== null)
-      ? `${nf(m.udsDe)} &#8594; ${nf(m.udsA)}` : '—';
+    const uds = (m.udsDe !== undefined && m.udsDe !== null) ? `${nf(m.udsDe)} &#8594; ${nf(m.udsA)}` : '—';
     return `<tr>
       <td class="mono">${m.fecha}</td>
       <td>${m.usuario}</td>
@@ -603,44 +643,59 @@ function renderLog(){
   }).join('');
 }
 
-/* ---------- Modal de ajuste ---------- */
-let modalAction = null;   // 'bloquear' | 'desbloquear' | 'ajustar'
+/* ---------- Modal ---------- */
+let modalAction = null;   // 'bloquear' | 'desbloquear' | 'ajustar' | 'alta'
 let modalTarget = null;   // palet objetivo para 'ajustar'
 
 function abrirModal(action){
   modalAction = action;
   modalTarget = null;
-  ['rowMaterial','rowUnidades'].forEach(id => $('#' + id).style.display = 'none');
+  ['rowCodigoBloq','rowCodigoAlta','rowCantidad','rowMaterial','rowUnidades'].forEach(id => $('#' + id).style.display = 'none');
   $('#mMotivo').value = '';
   $('#mCalc').textContent = '';
   $('#mMaterialInfo').innerHTML = '';
+  $('#mCodigoAltaInfo').innerHTML = '';
 
   if (action === 'bloquear'){
-    if (LIBRES < 1){ setStatus('No hay palets libres disponibles para bloquear.', 'err'); return; }
+    const libres = Object.keys(LIBRES).filter(c => LIBRES[c] > 0).sort();
+    if (!libres.length){ setStatus('No hay palets libres disponibles para bloquear.', 'err'); return; }
     $('#modalTitle').textContent = 'Bloquear palet (manual)';
-    $('#modalInfo').innerHTML = `Se bloqueará <b>1</b> palet del stock de libres (<b>${LIBRES}</b> disponibles).<br>` +
-      `Indique el material y las unidades que tendrá el palet. La orden quedará como <b>BLOQUEO MANUAL</b>.`;
-    $('#rowMaterial').style.display = 'flex';
-    $('#rowUnidades').style.display = 'flex';
-    $('#mUnidadesLabel').textContent = 'Unidades del palet';
+    $('#modalInfo').innerHTML = 'Se bloqueará <b>1</b> palet libre del código seleccionado. Indique material y unidades. ' +
+      'La orden quedará como <b>BLOQUEO MANUAL</b>.';
+    $('#mCodigoBloq').innerHTML = libres.map(c =>
+      `<option value="${c}">${c}${TIPO_PAL[c] ? ' — ' + esc(TIPO_PAL[c]) : ''} (${LIBRES[c]} libres)</option>`).join('');
     $('#mMaterial').value = '';
     $('#mUnidades').value = '';
+    $('#mUnidadesLabel').textContent = 'Unidades del palet';
+    $('#rowCodigoBloq').style.display = 'flex';
+    $('#rowMaterial').style.display = 'flex';
+    $('#rowUnidades').style.display = 'flex';
     actualizarMaterialInfo();
+
+  } else if (action === 'alta'){
+    $('#modalTitle').textContent = 'Alta de palets (libres)';
+    $('#modalInfo').innerHTML = 'Dé de alta palets <b>libres</b>: indique el código de palet y la cantidad. ' +
+      'Se sumarán al stock de libres de ese código.';
+    $('#mCodigoAlta').value = '';
+    $('#mCantidad').value = '';
+    $('#rowCodigoAlta').style.display = 'flex';
+    $('#rowCantidad').style.display = 'flex';
+    actualizarCodigoAltaInfo();
 
   } else if (action === 'desbloquear'){
     const sel = selectedRows();
-    if (!sel.length){ setStatus('Seleccione al menos un palet bloqueado para desbloquear.', 'err'); return; }
+    if (!sel.length){ setStatus('Seleccione al menos un palet ocupado para desbloquear.', 'err'); return; }
     $('#modalTitle').textContent = 'Desbloquear palets';
-    $('#modalInfo').innerHTML = `Se desbloquearán <b>${sel.length}</b> palet(s): ` + sel.map(p => p.palet).join(', ') +
-      '<br><br>Los palets se vacían y vuelven al stock de <b>libres</b> (pierden matrícula, material y orden).';
+    $('#modalInfo').innerHTML = `Se desbloquearán <b>${sel.length}</b> palet(s): ` + sel.map(p => p.matricula || p.palet).join(', ') +
+      '<br><br>Los palets se vacían y su código vuelve al stock de <b>libres</b>.';
 
   } else if (action === 'ajustar'){
     const sel = selectedRows();
-    if (sel.length !== 1){ setStatus('El ajuste de unidades se realiza palet a palet: seleccione un único palet bloqueado.', 'err'); return; }
+    if (sel.length !== 1){ setStatus('El ajuste de unidades se realiza palet a palet: seleccione un único palet.', 'err'); return; }
     const p = sel[0];
     modalTarget = p;
-    $('#modalTitle').textContent = 'Ajuste de inventario — ' + p.palet;
-    $('#modalInfo').innerHTML = `Palet <b>${p.palet}</b> · Matrícula <b>${p.matricula}</b><br>` +
+    $('#modalTitle').textContent = 'Ajuste de inventario — ' + (p.matricula || p.palet);
+    $('#modalInfo').innerHTML = `Palet <b>${p.palet}</b> · Matrícula <b>${p.matricula || '—'}</b> · ${SITU_BADGE[p.situacion]}<br>` +
       `Componente <b>${p.material}</b> · ${esc(p.desc)}<br>` +
       `Uds/Palet: <b>${nf(p.udsPalet)}</b> · Uds ocupadas actuales: <b>${nf(p.udsOcup)}</b>`;
     $('#rowUnidades').style.display = 'flex';
@@ -651,7 +706,8 @@ function abrirModal(action){
 
   $('#overlay').classList.add('show');
   setTimeout(() => {
-    const f = action === 'bloquear' ? $('#mMaterial') : action === 'ajustar' ? $('#mUnidades') : $('#mMotivo');
+    const f = action === 'bloquear' ? $('#mCodigoBloq') : action === 'alta' ? $('#mCodigoAlta')
+            : action === 'ajustar' ? $('#mUnidades') : $('#mMotivo');
     if (f) f.focus();
   }, 30);
 }
@@ -665,7 +721,13 @@ function actualizarMaterialInfo(){
     : '<span class="muted">Seleccione el material que tendrá el palet.</span>';
   actualizarCalc();
 }
-
+function actualizarCodigoAltaInfo(){
+  const c = $('#mCodigoAlta').value.trim();
+  const act = LIBRES[c] || 0;
+  $('#mCodigoAltaInfo').innerHTML = c
+    ? (TIPO_PAL[c] ? `${esc(TIPO_PAL[c])} · ` : '') + `Actualmente <b>${act}</b> libre(s) de este código.`
+    : '<span class="muted">Indique el código de palet (CLP).</span>';
+}
 function actualizarCalc(){
   let udsPalet = 0;
   if (modalAction === 'bloquear'){ const m = MAT[$('#mMaterial').value]; if (!m){ $('#mCalc').textContent = ''; return; } udsPalet = m.udsPalet; }
@@ -688,29 +750,41 @@ function confirmarModal(){
   let msg = '';
 
   if (accion === 'bloquear'){
+    const codigo = $('#mCodigoBloq').value;
+    if (!codigo || !(LIBRES[codigo] > 0)){ setStatus('Seleccione un código de palet con libres disponibles.', 'err'); return; }
     const m = MAT[$('#mMaterial').value];
     if (!m){ setStatus('Seleccione el material del palet.', 'err'); return; }
     const v = parseInt($('#mUnidades').value, 10);
     if (isNaN(v) || v < 1){ setStatus('Indique las unidades del palet (mayor que 0).', 'err'); return; }
     if (v > m.udsPalet){ setStatus(`Las unidades (${v}) superan la capacidad del palet (${m.udsPalet}).`, 'err'); return; }
     const nuevo = {
-      palet: nuevoPalet(), matricula: nuevaMatricula(), material: m.material, desc: m.desc, tipo: m.tipo,
-      udsPalet: m.udsPalet, udsOcup: v, orden: 'BLOQUEO MANUAL', statusOrden: '', entrega: '',
-      docCompras: m.docCompras || '', ubic: ''
+      _id: nextId++, palet: codigo, matricula: nuevaMatricula(), material: m.material, desc: m.desc, tipo: m.tipo,
+      udsPalet: m.udsPalet, udsOcup: v, situacion: 'BLOQUEADO', orden: 'BLOQUEO MANUAL', statusOrden: '',
+      entrega: '', docCompras: m.docCompras || '', ubic: ''
     };
     PALETS.push(nuevo);
-    LIBRES--;
+    LIBRES[codigo]--;
     logMov(nuevo, 'Bloqueo', 'LIBRE', 'BLOQUEADO', 0, v, 'BLOQUEO MANUAL', motivo);
-    msg = `Palet ${nuevo.palet} bloqueado (BLOQUEO MANUAL) con ${nf(v)} uds de ${m.material}. Libres restantes: ${LIBRES}.`;
+    msg = `Palet ${codigo} (matrícula ${nuevo.matricula}) bloqueado con ${nf(v)} uds de ${m.material}. Libres de ${codigo}: ${LIBRES[codigo]}.`;
+
+  } else if (accion === 'alta'){
+    const codigo = $('#mCodigoAlta').value.trim();
+    if (!codigo){ setStatus('Indique el código de palet a dar de alta.', 'err'); return; }
+    const n = parseInt($('#mCantidad').value, 10);
+    if (isNaN(n) || n < 1){ setStatus('Indique el número de palets a dar de alta (mayor que 0).', 'err'); return; }
+    LIBRES[codigo] = (LIBRES[codigo] || 0) + n;
+    logMov({ palet: codigo, matricula: '—', material: '—' }, 'Alta de palets', '', 'LIBRE', null, null, `${codigo} (+${n})`, motivo);
+    msg = `Alta de ${n} palet(s) libre(s) del código ${codigo}. Total libres de ${codigo}: ${LIBRES[codigo]}.`;
 
   } else if (accion === 'desbloquear'){
     const sel = selectedRows();
-    let n = 0;
+    let nP = 0;
     sel.forEach(p => {
-      logMov(p, 'Desbloqueo', 'BLOQUEADO', 'LIBRE', p.udsOcup, 0, p.orden || 'BLOQUEO MANUAL', motivo);
-      removePalet(p); LIBRES++; n++;
+      logMov(p, 'Desbloqueo', p.situacion, 'LIBRE', p.udsOcup, 0, p.orden || p.entrega || '—', motivo);
+      LIBRES[p.palet] = (LIBRES[p.palet] || 0) + 1;
+      removePalet(p); nP++;
     });
-    msg = `${n} palet(s) desbloqueado(s) y devuelto(s) al stock de libres. Libres: ${LIBRES}.`;
+    msg = `${nP} palet(s) desbloqueado(s); su código vuelve al stock de libres.`;
 
   } else if (accion === 'ajustar'){
     const p = modalTarget;
@@ -718,14 +792,14 @@ function confirmarModal(){
     if (isNaN(v) || v < 0){ setStatus('Introduzca un número de unidades válido.', 'err'); return; }
     if (v > p.udsPalet){ setStatus(`Las unidades (${v}) superan la capacidad del palet (${p.udsPalet}).`, 'err'); return; }
     if (v === 0){
-      logMov(p, 'Baja por inventario', 'BLOQUEADO', 'BAJA', p.udsOcup, 0, p.orden || 'BLOQUEO MANUAL', motivo);
+      logMov(p, 'Baja por inventario', p.situacion, 'BAJA', p.udsOcup, 0, p.orden || p.entrega || '—', motivo);
       removePalet(p);
-      msg = `Palet ${p.palet} dado de baja (0 unidades). Eliminado del inventario.`;
+      msg = `Palet ${p.matricula || p.palet} dado de baja (0 unidades). Eliminado del inventario.`;
     } else {
       const antes = p.udsOcup;
       p.udsOcup = v;
-      logMov(p, 'Ajuste de unidades', 'BLOQUEADO', 'BLOQUEADO', antes, v, p.orden || 'BLOQUEO MANUAL', motivo);
-      msg = `Palet ${p.palet}: unidades ajustadas de ${nf(antes)} a ${nf(v)}.`;
+      logMov(p, 'Ajuste de unidades', p.situacion, p.situacion, antes, v, p.orden || p.entrega || '—', motivo);
+      msg = `Palet ${p.matricula || p.palet}: unidades ajustadas de ${nf(antes)} a ${nf(v)}.`;
     }
   }
 
@@ -735,12 +809,12 @@ function confirmarModal(){
   setStatus(msg, 'ok');
 }
 
-/* ---------- Exportar a CSV (como el "Exportar" de un ALV) ---------- */
+/* ---------- Exportar a CSV ---------- */
 function exportar(){
-  if (!currentRows.length && !showFree){ setStatus('No hay datos que exportar.', 'warn'); return; }
+  if (!currentRows.length && !freeRows.length){ setStatus('No hay datos que exportar.', 'warn'); return; }
   const cab = ['Palet','Matricula','Componente','Descripcion','Tipo','Uds/Palet','Uds Ocupadas','Situacion','Nº palets','Orden','Status Orden','Entrega','Doc. compras','Ubicacion'];
-  const filas = currentRows.map(p => [p.palet,p.matricula,p.material,p.desc,p.tipo,p.udsPalet,p.udsOcup,'BLOQUEADO','1',p.orden,p.statusOrden,p.entrega,p.docCompras,p.ubic]);
-  if (showFree) filas.push(['','','','Palets libres (sin asignar)','','','','LIBRE',String(LIBRES),'','','','','']);
+  const filas = currentRows.map(p => [p.palet,p.matricula,p.material,p.desc,p.tipo,p.udsPalet,p.udsOcup,p.situacion,'1',p.orden,p.statusOrden,p.entrega,p.docCompras,p.ubic]);
+  freeRows.forEach(f => filas.push([f.codigo,'','',(TIPO_PAL[f.codigo]||''),'','','','LIBRE',String(f.count),'','','','','']));
   const csv = [cab, ...filas].map(r => r.map(c => `"${String(c ?? '').replace(/"/g,'""')}"`).join(';')).join('\r\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -765,12 +839,14 @@ $('#btnClear').addEventListener('click', () => {
 $('#aLock').addEventListener('click',   () => abrirModal('bloquear'));
 $('#aUnlock').addEventListener('click', () => abrirModal('desbloquear'));
 $('#aEdit').addEventListener('click',   () => abrirModal('ajustar'));
+$('#aAlta').addEventListener('click',   () => abrirModal('alta'));
 $('#aExport').addEventListener('click', exportar);
 
 $('#mCancel').addEventListener('click', cerrarModal);
 $('#mOk').addEventListener('click', confirmarModal);
 $('#mUnidades').addEventListener('input', actualizarCalc);
 $('#mMaterial').addEventListener('change', actualizarMaterialInfo);
+$('#mCodigoAlta').addEventListener('input', actualizarCodigoAltaInfo);
 $('#overlay').addEventListener('click', e => { if (e.target === $('#overlay')) cerrarModal(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && $('#overlay').classList.contains('show')) cerrarModal();
@@ -779,19 +855,19 @@ document.addEventListener('keydown', e => {
 
 $('#btnClearLog').addEventListener('click', () => { LOG.length = 0; renderLog(); setStatus('Log de la sesión vaciado.', 'info'); });
 
-/* selección de filas (delegación; la fila de libres no tiene checkbox) */
+/* selección de filas (delegación; las filas de libres no tienen checkbox) */
 $('#tbody').addEventListener('change', e => {
   const cb = e.target.closest('input[type="checkbox"]');
   if (!cb) return;
-  const id = cb.dataset.palet;
+  const id = cb.dataset.id;
   if (cb.checked) seleccion.add(id); else seleccion.delete(id);
   const tr = cb.closest('tr'); if (tr) tr.classList.toggle('rsel', cb.checked);
-  $('#chkAll').checked = currentRows.length > 0 && currentRows.every(p => seleccion.has(p.palet));
+  $('#chkAll').checked = currentRows.length > 0 && currentRows.every(p => seleccion.has(String(p._id)));
   updateSelCount();
 });
 $('#chkAll').addEventListener('change', e => {
   const on = e.target.checked;
-  currentRows.forEach(p => on ? seleccion.add(p.palet) : seleccion.delete(p.palet));
+  currentRows.forEach(p => on ? seleccion.add(String(p._id)) : seleccion.delete(String(p._id)));
   render();
   updateSelCount();
 });
@@ -799,6 +875,7 @@ $('#chkAll').addEventListener('change', e => {
 /* ---------- Inicio ---------- */
 $('#mMaterial').innerHTML = '<option value="">(Seleccione material)</option>' +
   MATERIALES.map(m => `<option value="${m.material}">${m.material} — ${esc(m.desc)}</option>`).join('');
+$('#dlCodigos').innerHTML = PALET_TIPOS.map(t => `<option value="${t.palet}">${esc(t.desc)}</option>`).join('');
 
 renderLog();
 ejecutar();
