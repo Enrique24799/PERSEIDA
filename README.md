@@ -73,23 +73,31 @@ palets. Reproduce el modelo de negocio en el que a cada material se le cuelga un
 de materiales:
 
 - Al **notificar** una orden se **bloquean** palets = `ceil(uds_notificadas / uds_por_palet)`.
-- Si el semielaborado se **consume** en otra orden, se **desbloquean** palets en función de las
+- Si el semielaborado se **consume** en otra orden, los palets quedan **libres** en función de las
   unidades dadas de baja frente a las unidades iniciales del palet.
 - El producto final vuelve a **bloquear** palet al notificarse.
-- Al **expedir**, el palet se da de **baja** (situación *Expedido*) contra una entrega.
+- Al **expedir**, el palet se da de **baja** y **desaparece** de la lista (contra una entrega).
+
+### Nomenclatura
+
+- **Código Palet (CLP):** `0496xxxx` (packaging / soporte de carga).
+- **Matrícula:** `1000xxxxxx` (matrícula única del palet físico).
+- **Componente** semielaborado / terminado: `709xxxxx`; **packaging:** `049xxxxx`.
 
 ### Pantalla de selección (parámetros de entrada)
 
 Se introduce **uno** de estos campos (admite combinar varios; coincidencia parcial en los códigos):
-`Código Palet`, `Código Componente`, `Situación Palet` (Bloqueado / Desbloqueado / Expedido),
-`Orden Fabricación` y `Entrega`. Botones **Ejecutar** (F8) y **Limpiar**.
+`Código Palet`, `Código Componente`, `Situación Palet` (Bloqueado / Libre), `Orden Fabricación` y
+`Entrega`. Botones **Ejecutar** (F8) y **Limpiar**. El ALV muestra además **Status Orden Fab.** y
+**Status Entrega**; los palets **expedidos** (dados de baja) no se listan.
 
 ### Ajustes de inventario
 
 Sobre los palets marcados en el ALV:
 
-- **Bloquear** / **Desbloquear** — cambia la situación del palet.
-- **Dar de baja (Expedir)** — pone el palet en *Expedido* contra una entrega (obligatoria).
+- **Bloquear** / **Desbloquear** — cambia la situación del palet (Bloqueado ↔ Libre).
+- **Dar de baja (Expedir)** — expide el palet contra una entrega (obligatoria); el palet
+  desaparece de la lista.
 - **Ajustar inventario** — corrige las unidades ocupadas de un palet (muestra los palets
   equivalentes `ceil(uds / uds_palet)`).
 

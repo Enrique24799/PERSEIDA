@@ -16,7 +16,7 @@
     --neutral: #8494a6;
     --semi: #6f42c1;
     --term: #2f80ed;
-    --comp: #b56a07;
+    --pack: #b56a07;
   }
   * { box-sizing: border-box; }
   body {
@@ -133,7 +133,14 @@
   .tipo { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
   .tipo.semi { background: #efe7fb; color: var(--semi); }
   .tipo.term { background: #e7f0fd; color: var(--term); }
-  .tipo.comp { background: #fbeed8; color: var(--comp); }
+  .tipo.pack { background: #fbeed8; color: var(--pack); }
+
+  /* píldoras de status (orden de fabricación / entrega) */
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 600; }
+  .pill.p-g { background: #e3f5ea; color: #1e7a44; }   /* verde */
+  .pill.p-w { background: #fbeed8; color: #9a6a07; }   /* ámbar */
+  .pill.p-b { background: #e7f0fd; color: #1f5fc0; }   /* azul  */
+  .pill.p-n { background: #eceff3; color: #5b6b7d; }   /* gris  */
 
   /* ---------- Log de movimientos ---------- */
   .logwrap {
@@ -220,19 +227,18 @@
       <div class="controls">
         <div class="field">
           <label for="fPalet">Código Palet</label>
-          <input type="text" id="fPalet" placeholder="PAL00000201" />
+          <input type="text" id="fPalet" placeholder="04969349" />
         </div>
         <div class="field">
           <label for="fComp">Código Componente</label>
-          <input type="text" id="fComp" placeholder="40020100" />
+          <input type="text" id="fComp" placeholder="70920100" />
         </div>
         <div class="field">
           <label for="fSitu">Situación Palet</label>
           <select id="fSitu">
             <option value="">(Todas)</option>
             <option value="BLOQUEADO">Bloqueado</option>
-            <option value="DESBLOQUEADO">Desbloqueado</option>
-            <option value="EXPEDIDO">Expedido / Baja</option>
+            <option value="LIBRE">Libre</option>
           </select>
         </div>
         <div class="field">
@@ -250,7 +256,8 @@
       </div>
       <div class="hint">
         Introduzca uno de los campos como parámetro de entrada (puede combinar varios). Si deja todo
-        en blanco se listan todos los palets. Los códigos admiten coincidencia parcial.
+        en blanco se listan todos los palets. Los códigos admiten coincidencia parcial. Los palets
+        expedidos (dados de baja) no se muestran.
       </div>
     </fieldset>
   </div>
@@ -277,17 +284,17 @@
         <tr>
           <th class="chk"><input type="checkbox" id="chkAll" title="Marcar todo" /></th>
           <th>Palet</th>
+          <th>Matrícula</th>
           <th>Componente</th>
           <th>Descripción</th>
-          <th>Lote</th>
           <th>Tipo</th>
           <th>Uds/Pal.</th>
           <th>Uds Ocup.</th>
           <th>Situación</th>
           <th>Orden Fab.</th>
+          <th>Status Orden</th>
           <th>Entrega</th>
-          <th>Centro</th>
-          <th>Almacén</th>
+          <th>Status Entrega</th>
           <th>Ubicación</th>
           <th>Últ. mov.</th>
         </tr>
@@ -309,6 +316,7 @@
             <th>Fecha/Hora</th>
             <th>Usuario</th>
             <th>Palet</th>
+            <th>Matrícula</th>
             <th>Componente</th>
             <th>Acción</th>
             <th>Situación</th>
@@ -365,17 +373,19 @@
    dependencias externas.
 
    Modelo de negocio simulado:
-   - A cada material (componente / semielaborado / terminado) se le cuelga
+   - A cada material (packaging / semielaborado / terminado) se le cuelga
      un palet en su lista de materiales con sus "unidades por palet".
    - Al NOTIFICAR una orden se BLOQUEAN palets = ceil(uds_notificadas / uds_palet).
-   - Si el semielaborado se consume en otra orden, se DESBLOQUEAN palets en
+   - Si el semielaborado se consume en otra orden, los palets quedan LIBRES en
      función de las unidades dadas de baja / las unidades iniciales del palet.
    - El producto final vuelve a BLOQUEAR palet al notificarse.
-   - Al EXPEDIR, el palet se da de BAJA (situación EXPEDIDO) contra una entrega.
+   - Al EXPEDIR, el palet se da de BAJA y DESAPARECE de la lista (contra entrega).
 
-   Esta transacción permite consultar el estado y realizar AJUSTES de
-   inventario (bloquear, desbloquear, dar de baja y corregir unidades),
-   dejando traza en el log de movimientos.
+   Nomenclatura:
+   - Código Palet (CLP): 0496xxxx        (packaging / soporte de carga)
+   - Matrícula:          1000xxxxxx       (matrícula única del palet físico)
+   - Componente semi/terminado: 709xxxxx
+   - Componente packaging:      049xxxxx
    ===================================================================== */
 
 const $ = s => document.querySelector(s);
@@ -383,32 +393,32 @@ const USUARIO = 'ENRTEJFOR';           // usuario SAP (derivado del login)
 $('#userBox').textContent = 'Usuario · ' + USUARIO;
 
 /* ---------- Maestro de palets (datos de ejemplo) ---------- */
-/* situacion: BLOQUEADO | DESBLOQUEADO | EXPEDIDO
-   tipo:      SEMITERMINADO | TERMINADO | COMPONENTE                       */
+/* situacion: BLOQUEADO | LIBRE | EXPEDIDO (EXPEDIDO no se muestra: desaparece)
+   tipo:      SEMITERMINADO | TERMINADO | PACKAGING                          */
 const PALETS = [
-  /* --- Semielaborado Champú base · OF 100045001 (notificada y luego consumida) --- */
-  { palet:'PAL00000101', material:'30010045', desc:'SEMI Champú base 400 ml', lote:'2406A01', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:240, situacion:'DESBLOQUEADO', orden:'100045001', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-01-01', fecha:'05/06/2026' },
-  { palet:'PAL00000102', material:'30010045', desc:'SEMI Champú base 400 ml', lote:'2406A01', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:240, situacion:'DESBLOQUEADO', orden:'100045001', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-01-02', fecha:'05/06/2026' },
-  { palet:'PAL00000103', material:'30010045', desc:'SEMI Champú base 400 ml', lote:'2406A01', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:220, situacion:'BLOQUEADO',    orden:'100045001', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-01-03', fecha:'05/06/2026' },
+  /* --- Semielaborado Champú base (70900045) · OF 100045001 (consumido por el terminado) --- */
+  { palet:'04969346', matricula:'1000405546', material:'70900045', desc:'SEMI Champú base 400 ml', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:240, situacion:'LIBRE',     orden:'100045001', statusOrden:'Notificada',     entrega:'', statusEntrega:'', ubic:'SE-A-01-01', fecha:'05/06/2026' },
+  { palet:'04969347', matricula:'1000405547', material:'70900045', desc:'SEMI Champú base 400 ml', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:240, situacion:'LIBRE',     orden:'100045001', statusOrden:'Notificada',     entrega:'', statusEntrega:'', ubic:'SE-A-01-02', fecha:'05/06/2026' },
+  { palet:'04969348', matricula:'1000405548', material:'70900045', desc:'SEMI Champú base 400 ml', tipo:'SEMITERMINADO', udsPalet:240, udsOcup:220, situacion:'BLOQUEADO', orden:'100045001', statusOrden:'Notificada',     entrega:'', statusEntrega:'', ubic:'SE-A-01-03', fecha:'05/06/2026' },
 
-  /* --- Producto terminado Champú · OF 100046002 (consume el semi y se notifica) --- */
-  { palet:'PAL00000201', material:'40020100', desc:'PT Champú Hidratante 400 ml', lote:'2406B11', tipo:'TERMINADO', udsPalet:120, udsOcup:120, situacion:'EXPEDIDO',  orden:'100046002', entrega:'80012345', centro:'1000', almacen:'PT01', ubic:'PT-B-04-01', fecha:'11/06/2026' },
-  { palet:'PAL00000202', material:'40020100', desc:'PT Champú Hidratante 400 ml', lote:'2406B11', tipo:'TERMINADO', udsPalet:120, udsOcup:120, situacion:'EXPEDIDO',  orden:'100046002', entrega:'80012345', centro:'1000', almacen:'PT01', ubic:'PT-B-04-02', fecha:'11/06/2026' },
-  { palet:'PAL00000203', material:'40020100', desc:'PT Champú Hidratante 400 ml', lote:'2406B11', tipo:'TERMINADO', udsPalet:120, udsOcup:60,  situacion:'BLOQUEADO', orden:'100046002', entrega:'',         centro:'1000', almacen:'PT01', ubic:'PT-B-04-03', fecha:'11/06/2026' },
+  /* --- Producto terminado Champú (70920100) · OF 100046002 (notificada, con entrega) --- */
+  { palet:'04969349', matricula:'1000405549', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO', udsPalet:120, udsOcup:120, situacion:'BLOQUEADO', orden:'100046002', statusOrden:'Notificada', entrega:'80012345', statusEntrega:'En picking', ubic:'PT-B-04-01', fecha:'11/06/2026' },
+  { palet:'04969350', matricula:'1000405550', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO', udsPalet:120, udsOcup:120, situacion:'BLOQUEADO', orden:'100046002', statusOrden:'Notificada', entrega:'80012345', statusEntrega:'En picking', ubic:'PT-B-04-02', fecha:'11/06/2026' },
+  { palet:'04969351', matricula:'1000405551', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO', udsPalet:120, udsOcup:60,  situacion:'BLOQUEADO', orden:'100046002', statusOrden:'Notificada', entrega:'',         statusEntrega:'',           ubic:'PT-B-04-03', fecha:'11/06/2026' },
 
-  /* --- Semielaborado Gel base · OF 100045010 --- */
-  { palet:'PAL00000110', material:'30010046', desc:'SEMI Gel base 750 ml', lote:'2406A07', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:180, situacion:'BLOQUEADO', orden:'100045010', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-02-01', fecha:'06/06/2026' },
-  { palet:'PAL00000111', material:'30010046', desc:'SEMI Gel base 750 ml', lote:'2406A07', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:180, situacion:'BLOQUEADO', orden:'100045010', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-02-02', fecha:'06/06/2026' },
-  { palet:'PAL00000112', material:'30010046', desc:'SEMI Gel base 750 ml', lote:'2406A07', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:140, situacion:'BLOQUEADO', orden:'100045010', entrega:'', centro:'1000', almacen:'SE01', ubic:'SE-A-02-03', fecha:'06/06/2026' },
+  /* --- Semielaborado Gel base (70900046) · OF 100045010 --- */
+  { palet:'04969352', matricula:'1000405552', material:'70900046', desc:'SEMI Gel base 750 ml', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:180, situacion:'BLOQUEADO', orden:'100045010', statusOrden:'Notif. parcial', entrega:'', statusEntrega:'', ubic:'SE-A-02-01', fecha:'06/06/2026' },
+  { palet:'04969353', matricula:'1000405553', material:'70900046', desc:'SEMI Gel base 750 ml', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:180, situacion:'BLOQUEADO', orden:'100045010', statusOrden:'Notif. parcial', entrega:'', statusEntrega:'', ubic:'SE-A-02-02', fecha:'06/06/2026' },
+  { palet:'04969354', matricula:'1000405554', material:'70900046', desc:'SEMI Gel base 750 ml', tipo:'SEMITERMINADO', udsPalet:180, udsOcup:140, situacion:'LIBRE',     orden:'100045010', statusOrden:'Notif. parcial', entrega:'', statusEntrega:'', ubic:'SE-A-02-03', fecha:'06/06/2026' },
 
-  /* --- Producto terminado Gel ducha · OF 100046020 --- */
-  { palet:'PAL00000210', material:'40020101', desc:'PT Gel de Ducha Aloe 750 ml', lote:'2406B22', tipo:'TERMINADO', udsPalet:96, udsOcup:96, situacion:'EXPEDIDO',  orden:'100046020', entrega:'80012360', centro:'1000', almacen:'PT01', ubic:'PT-B-07-01', fecha:'12/06/2026' },
-  { palet:'PAL00000211', material:'40020101', desc:'PT Gel de Ducha Aloe 750 ml', lote:'2406B22', tipo:'TERMINADO', udsPalet:96, udsOcup:96, situacion:'BLOQUEADO', orden:'100046020', entrega:'',         centro:'1000', almacen:'PT01', ubic:'PT-B-07-02', fecha:'12/06/2026' },
-  { palet:'PAL00000212', material:'40020101', desc:'PT Gel de Ducha Aloe 750 ml', lote:'2406B22', tipo:'TERMINADO', udsPalet:96, udsOcup:8,  situacion:'BLOQUEADO', orden:'100046020', entrega:'',         centro:'1000', almacen:'PT01', ubic:'PT-B-07-03', fecha:'12/06/2026' },
+  /* --- Producto terminado Gel ducha (70920101) · OF 100046020 --- */
+  { palet:'04969355', matricula:'1000405555', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO', udsPalet:96, udsOcup:96, situacion:'BLOQUEADO', orden:'100046020', statusOrden:'Liberada', entrega:'80012360', statusEntrega:'Creada', ubic:'PT-B-07-01', fecha:'12/06/2026' },
+  { palet:'04969356', matricula:'1000405556', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO', udsPalet:96, udsOcup:96, situacion:'BLOQUEADO', orden:'100046020', statusOrden:'Liberada', entrega:'80012360', statusEntrega:'Creada', ubic:'PT-B-07-02', fecha:'12/06/2026' },
+  { palet:'04969357', matricula:'1000405557', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO', udsPalet:96, udsOcup:8,  situacion:'BLOQUEADO', orden:'100046020', statusOrden:'Liberada', entrega:'',         statusEntrega:'',       ubic:'PT-B-07-03', fecha:'12/06/2026' },
 
-  /* --- Componente Tapón rosca --- */
-  { palet:'PAL00000301', material:'20005500', desc:'COMP Tapón rosca 28 mm', lote:'2405C03', tipo:'COMPONENTE', udsPalet:5000, udsOcup:5000, situacion:'DESBLOQUEADO', orden:'100046002', entrega:'', centro:'1000', almacen:'MP01', ubic:'MP-C-02-04', fecha:'09/06/2026' },
-  { palet:'PAL00000302', material:'20005500', desc:'COMP Tapón rosca 28 mm', lote:'2405C03', tipo:'COMPONENTE', udsPalet:5000, udsOcup:1200, situacion:'BLOQUEADO',    orden:'100046020', entrega:'', centro:'1000', almacen:'MP01', ubic:'MP-C-02-05', fecha:'10/06/2026' },
+  /* --- Componente Packaging — Caja de cartón (04900550) --- */
+  { palet:'04969358', matricula:'1000405558', material:'04900550', desc:'PACK Caja cartón 400x300', tipo:'PACKAGING', udsPalet:5000, udsOcup:5000, situacion:'LIBRE',     orden:'100046002', statusOrden:'Notificada', entrega:'', statusEntrega:'', ubic:'MP-C-02-04', fecha:'09/06/2026' },
+  { palet:'04969359', matricula:'1000405559', material:'04900550', desc:'PACK Caja cartón 400x300', tipo:'PACKAGING', udsPalet:5000, udsOcup:1200, situacion:'BLOQUEADO', orden:'100046020', statusOrden:'Liberada',   entrega:'', statusEntrega:'', ubic:'MP-C-02-05', fecha:'10/06/2026' },
 ];
 
 /* ---------- Estado de la sesión ---------- */
@@ -429,14 +439,23 @@ function hoy(){
 function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 const SITU_BADGE = {
-  BLOQUEADO:    '<span class="badge warn">Bloqueado</span>',
-  DESBLOQUEADO: '<span class="badge ok">Desbloqueado</span>',
-  EXPEDIDO:     '<span class="badge neutral">Expedido / Baja</span>',
+  BLOQUEADO: '<span class="badge warn">Bloqueado</span>',
+  LIBRE:     '<span class="badge ok">Libre</span>',
+  EXPEDIDO:  '<span class="badge neutral">Expedido / Baja</span>',   // no se muestra: los expedidos desaparecen
 };
 function tipoTag(t){
   if (t === 'SEMITERMINADO') return '<span class="tipo semi">Semi</span>';
   if (t === 'TERMINADO')     return '<span class="tipo term">Terminado</span>';
-  return '<span class="tipo comp">Componente</span>';
+  return '<span class="tipo pack">Packaging</span>';
+}
+function statusOrdenPill(s){
+  const m = { 'Liberada':'p-b', 'Notif. parcial':'p-w', 'Notificada':'p-g', 'Cierre técnico':'p-n' };
+  return s ? `<span class="pill ${m[s] || 'p-n'}">${esc(s)}</span>` : '—';
+}
+function statusEntregaPill(s){
+  if (!s) return '—';
+  const m = { 'Creada':'p-b', 'En picking':'p-w', 'Preparada':'p-g' };
+  return `<span class="pill ${m[s] || 'p-n'}">${esc(s)}</span>`;
 }
 function setStatus(msg, type){
   const sb = $('#statusbar');
@@ -454,6 +473,7 @@ function ejecutar(){
   const fe = $('#fEntrega').value.trim();
 
   currentRows = PALETS.filter(p =>
+    p.situacion !== 'EXPEDIDO' &&                               // los expedidos (baja) no se muestran
     (!fp || p.palet.toUpperCase().includes(fp)) &&
     (!fc || p.material.toUpperCase().includes(fc)) &&
     (!fs || p.situacion === fs) &&
@@ -483,17 +503,17 @@ function render(rows){
     <tr data-palet="${p.palet}" class="${seleccion.has(p.palet) ? 'rsel' : ''}">
       <td class="chk"><input type="checkbox" data-palet="${p.palet}" ${seleccion.has(p.palet) ? 'checked' : ''}></td>
       <td class="mono">${p.palet}</td>
+      <td class="mono">${p.matricula}</td>
       <td class="mono">${p.material}</td>
       <td class="nom">${esc(p.desc)}</td>
-      <td class="mono">${p.lote}</td>
       <td>${tipoTag(p.tipo)}</td>
       <td class="num">${p.udsPalet.toLocaleString('es-ES')}</td>
       <td class="num">${p.udsOcup.toLocaleString('es-ES')}</td>
       <td>${SITU_BADGE[p.situacion]}</td>
       <td class="mono">${p.orden || '—'}</td>
+      <td>${statusOrdenPill(p.statusOrden)}</td>
       <td class="mono">${p.entrega || '—'}</td>
-      <td>${p.centro}</td>
-      <td>${p.almacen}</td>
+      <td>${statusEntregaPill(p.statusEntrega)}</td>
       <td class="mono">${p.ubic}</td>
       <td>${p.fecha}</td>
     </tr>`).join('');
@@ -504,13 +524,12 @@ function render(rows){
 
 function resumen(rows){
   const b = rows.filter(p => p.situacion === 'BLOQUEADO').length;
-  const d = rows.filter(p => p.situacion === 'DESBLOQUEADO').length;
-  const e = rows.filter(p => p.situacion === 'EXPEDIDO').length;
+  const l = rows.filter(p => p.situacion === 'LIBRE').length;
   const u = rows.reduce((s, p) => s + p.udsOcup, 0);
   $('#summary').innerHTML =
     `Resultado: <b>${rows.length}</b> palet(s) &nbsp;·&nbsp; ` +
-    `Bloqueados: <b>${b}</b> &nbsp;·&nbsp; Desbloqueados: <b>${d}</b> &nbsp;·&nbsp; ` +
-    `Expedidos: <b>${e}</b> &nbsp;·&nbsp; Unidades ocupadas: <b>${u.toLocaleString('es-ES')}</b>`;
+    `Bloqueados: <b>${b}</b> &nbsp;·&nbsp; Libres: <b>${l}</b> &nbsp;·&nbsp; ` +
+    `Unidades ocupadas: <b>${u.toLocaleString('es-ES')}</b>`;
 }
 
 function updateSelCount(){
@@ -521,7 +540,7 @@ function selectedRows(){ return currentRows.filter(p => seleccion.has(p.palet));
 /* ---------- Log de movimientos ---------- */
 function logMov(p, accion, sitDe, sitA, udsDe, udsA, doc, motivo){
   LOG.unshift({
-    fecha: ahora(), usuario: USUARIO, palet: p.palet, material: p.material,
+    fecha: ahora(), usuario: USUARIO, palet: p.palet, matricula: p.matricula, material: p.material,
     accion, sitDe, sitA, udsDe, udsA, doc: doc || '', motivo: motivo || ''
   });
   renderLog();
@@ -529,7 +548,7 @@ function logMov(p, accion, sitDe, sitA, udsDe, udsA, doc, motivo){
 function renderLog(){
   const tb = $('#logbody');
   if (!LOG.length){
-    tb.innerHTML = `<tr><td class="empty-cell" colspan="9">Sin movimientos en esta sesión.</td></tr>`;
+    tb.innerHTML = `<tr><td class="empty-cell" colspan="10">Sin movimientos en esta sesión.</td></tr>`;
     return;
   }
   const accCls = { 'Bloqueo':'bloquear', 'Desbloqueo':'desbloquear', 'Baja / Expedición':'baja', 'Ajuste de unidades':'ajuste' };
@@ -541,6 +560,7 @@ function renderLog(){
       <td class="mono">${m.fecha}</td>
       <td>${m.usuario}</td>
       <td class="mono">${m.palet}</td>
+      <td class="mono">${m.matricula}</td>
       <td class="mono">${m.material}</td>
       <td class="acc ${accCls[m.accion] || ''}">${m.accion}</td>
       <td>${sit}</td>
@@ -569,19 +589,20 @@ function abrirModal(action){
   if (action === 'ajustar'){
     if (sel.length !== 1){ setStatus('El ajuste de unidades se realiza palet a palet: seleccione un único palet.', 'err'); return; }
     const p = sel[0];
-    if (p.situacion === 'EXPEDIDO'){ setStatus('No se pueden ajustar unidades de un palet ya expedido (dado de baja).', 'err'); return; }
     modalTarget = p;
     $('#modalTitle').textContent = 'Ajuste de inventario — ' + p.palet;
-    $('#modalInfo').innerHTML = `Componente <b>${p.material}</b> · ${esc(p.desc)}<br>` +
+    $('#modalInfo').innerHTML = `Palet <b>${p.palet}</b> · Matrícula <b>${p.matricula}</b><br>` +
+      `Componente <b>${p.material}</b> · ${esc(p.desc)}<br>` +
       `Uds/Palet: <b>${p.udsPalet.toLocaleString('es-ES')}</b> · Uds ocupadas actuales: <b>${p.udsOcup.toLocaleString('es-ES')}</b>`;
     $('#rowUnidades').style.display = 'flex';
     $('#mUnidades').value = p.udsOcup;
     actualizarCalc();
   } else {
-    const titulos = { bloquear:'Bloquear palets', desbloquear:'Desbloquear palets', baja:'Dar de baja / Expedir palets' };
+    const titulos = { bloquear:'Bloquear palets', desbloquear:'Desbloquear palets (dejar Libre)', baja:'Dar de baja / Expedir palets' };
     $('#modalTitle').textContent = titulos[action];
-    $('#modalInfo').innerHTML = `Acción sobre <b>${sel.length}</b> palet(s) seleccionado(s): ` +
-      sel.map(p => p.palet).join(', ');
+    let info = `Acción sobre <b>${sel.length}</b> palet(s) seleccionado(s): ` + sel.map(p => p.palet).join(', ');
+    if (action === 'baja') info += '<br><br>Al expedir, los palets se dan de <b>baja</b> y dejan de mostrarse en la lista.';
+    $('#modalInfo').innerHTML = info;
     if (action === 'baja'){
       $('#rowEntrega').style.display = 'flex';
       const ent = [...new Set(sel.map(p => p.entrega).filter(Boolean))];
@@ -620,21 +641,19 @@ function confirmarModal(){
   }
 
   // Acciones de cambio de situación (bloquear / desbloquear / baja)
-  let ok = 0; const ko = [];
+  let ok = 0;
   if (modalAction === 'baja'){
     const entrega = $('#mEntrega').value.trim();
     if (!entrega){ setStatus('Para dar de baja (expedir) es obligatorio indicar la entrega.', 'err'); return; }
     sel.forEach(p => {
-      if (p.situacion === 'EXPEDIDO'){ ko.push(p.palet); return; }
       const de = p.situacion;
-      p.situacion = 'EXPEDIDO'; p.entrega = entrega; p.fecha = hoy();
+      p.situacion = 'EXPEDIDO'; p.entrega = entrega; p.statusEntrega = 'Salida mercancías'; p.fecha = hoy();
       logMov(p, 'Baja / Expedición', de, 'EXPEDIDO', null, null, entrega, motivo);
       ok++;
     });
   } else if (modalAction === 'bloquear'){
     sel.forEach(p => {
-      if (p.situacion === 'EXPEDIDO'){ ko.push(p.palet); return; }
-      if (p.situacion === 'BLOQUEADO'){ return; }
+      if (p.situacion === 'BLOQUEADO') return;
       const de = p.situacion;
       p.situacion = 'BLOQUEADO'; p.fecha = hoy();
       logMov(p, 'Bloqueo', de, 'BLOQUEADO', null, null, p.orden, motivo);
@@ -642,11 +661,10 @@ function confirmarModal(){
     });
   } else if (modalAction === 'desbloquear'){
     sel.forEach(p => {
-      if (p.situacion === 'EXPEDIDO'){ ko.push(p.palet); return; }
-      if (p.situacion === 'DESBLOQUEADO'){ return; }
+      if (p.situacion === 'LIBRE') return;
       const de = p.situacion;
-      p.situacion = 'DESBLOQUEADO'; p.fecha = hoy();
-      logMov(p, 'Desbloqueo', de, 'DESBLOQUEADO', null, null, p.orden, motivo);
+      p.situacion = 'LIBRE'; p.fecha = hoy();
+      logMov(p, 'Desbloqueo', de, 'LIBRE', null, null, p.orden, motivo);
       ok++;
     });
   }
@@ -654,16 +672,15 @@ function confirmarModal(){
   cerrarModal();
   seleccion.clear();
   ejecutar();
-  let msg = `${ok} palet(s) actualizado(s).`;
-  if (ko.length) msg += ` ${ko.length} omitido(s) por estar expedidos: ${ko.join(', ')}.`;
-  setStatus(msg, ko.length ? 'warn' : 'ok');
+  if (modalAction === 'baja') setStatus(`${ok} palet(s) expedido(s) y dados de baja. Ya no se muestran en la lista.`, 'ok');
+  else setStatus(`${ok} palet(s) actualizado(s).`, 'ok');
 }
 
 /* ---------- Exportar a CSV (como el "Exportar" de un ALV) ---------- */
 function exportar(){
   if (!currentRows.length){ setStatus('No hay datos que exportar.', 'warn'); return; }
-  const cab = ['Palet','Componente','Descripcion','Lote','Tipo','Uds/Palet','Uds Ocupadas','Situacion','Orden','Entrega','Centro','Almacen','Ubicacion','Ult.Mov'];
-  const filas = currentRows.map(p => [p.palet,p.material,p.desc,p.lote,p.tipo,p.udsPalet,p.udsOcup,p.situacion,p.orden,p.entrega,p.centro,p.almacen,p.ubic,p.fecha]);
+  const cab = ['Palet','Matricula','Componente','Descripcion','Tipo','Uds/Palet','Uds Ocupadas','Situacion','Orden','Status Orden','Entrega','Status Entrega','Ubicacion','Ult.Mov'];
+  const filas = currentRows.map(p => [p.palet,p.matricula,p.material,p.desc,p.tipo,p.udsPalet,p.udsOcup,p.situacion,p.orden,p.statusOrden,p.entrega,p.statusEntrega,p.ubic,p.fecha]);
   const csv = [cab, ...filas].map(r => r.map(c => `"${String(c ?? '').replace(/"/g,'""')}"`).join(';')).join('\r\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
