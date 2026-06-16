@@ -69,45 +69,45 @@ si procede, `runAlgo()` por la llamada al algoritmo real.
 ## `AJUSTE_PALETS.html` — Ajuste de palets (control de inventario)
 
 Simulación de una transacción SAP (`ZPAL_AJUS`) para **controlar y ajustar** el inventario de
-palets. Reproduce el modelo de negocio en el que a cada material se le cuelga un palet en su lista
-de materiales:
+palets. A cada material se le cuelga un palet en su lista de materiales; al notificar/consumir
+órdenes los palets se bloquean o quedan libres, y esta transacción permite además ajustarlos
+manualmente.
 
-- Al **notificar** una orden se **bloquean** palets = `ceil(uds_notificadas / uds_por_palet)`.
-- Si el semielaborado se **consume** en otra orden, los palets quedan **libres** en función de las
-  unidades dadas de baja frente a las unidades iniciales del palet.
-- El producto final vuelve a **bloquear** palet al notificarse.
-- Al **expedir**, el palet se da de **baja** y **desaparece** de la lista (contra una entrega).
+### Modelo
+
+- Un palet **libre** es un soporte vacío: **no tiene matrícula, ni material, ni orden**. Todos los
+  libres se muestran **agrupados** en una sola fila, con su recuento en la columna **Nº palets**
+  (en los bloqueados, esa columna vale `1`).
+- **Bloquear** (manual): se coge 1 palet del stock de libres y se le asigna un **material** y sus
+  **unidades**. Como no va asociado a una orden, la columna **Orden** muestra `BLOQUEO MANUAL`.
+- **Ajustar inventario**: corrige las unidades de un palet bloqueado. Si se ponen **0 unidades**, el
+  palet se da de **baja** (se elimina).
+- **Desbloquear**: el palet se vacía y vuelve al stock de libres.
 
 ### Nomenclatura
 
-- **Código Palet (CLP):** `0496xxxx` (packaging / soporte de carga).
-- **Matrícula:** `1000xxxxxx` (matrícula única del palet físico).
+- **Código Palet (CLP):** `0496xxxx` · **Matrícula:** `1000xxxxxx`.
 - **Componente** semielaborado / terminado: `709xxxxx`; **packaging:** `049xxxxx`.
+- **Documento de compras:** solo lo tienen los componentes de **packaging**.
 
 ### Pantalla de selección (parámetros de entrada)
 
 Se introduce **uno** de estos campos (admite combinar varios; coincidencia parcial en los códigos):
 `Código Palet`, `Código Componente`, `Situación Palet` (Bloqueado / Libre), `Orden Fabricación` y
-`Entrega`. Botones **Ejecutar** (F8) y **Limpiar**. El ALV muestra además **Status Orden Fab.** y
-**Status Entrega**; los palets **expedidos** (dados de baja) no se listan.
+`Entrega`. Botones **Ejecutar** (F8) y **Limpiar**.
 
 ### Ajustes de inventario
 
-Sobre los palets marcados en el ALV:
+- **Bloquear** — en el pop-up se elige el **material** y las **unidades** del palet (muestra
+  descripción, tipo, uds/palet y, en packaging, el documento de compras). Crea un palet bloqueado
+  con `BLOQUEO MANUAL`.
+- **Desbloquear** — vacía los palets seleccionados y los devuelve al stock de libres.
+- **Ajustar inventario** — corrige las unidades de un palet; con **0** unidades lo da de baja.
 
-- **Bloquear** — en el pop-up se elige la **orden de fabricación** contra la que se bloquea; el
-  palet **hereda** de ella el material, la descripción, el tipo, las uds/palet y el status de
-  orden, y pasa a *Bloqueado*.
-- **Desbloquear** — deja el palet en *Libre*.
-- **Dar de baja (Expedir)** — al teclear la **entrega** se muestra el **cliente** heredado; el
-  palet se expide (baja) y desaparece de la lista.
-- **Ajustar inventario** — corrige las unidades ocupadas de un palet (muestra los palets
-  equivalentes `ceil(uds / uds_palet)`).
-
-Las órdenes (con su material/status) y las entregas (con su cliente) se definen en los maestros
-`ORDENES` y `ENTREGAS` del `<script>`.
+Las columnas son: Palet, Matrícula, Componente, Descripción, Tipo, Uds/Pal., Uds Ocup., Situación,
+**Nº palets**, Orden Fab., Status Orden, Entrega, **Doc. compras** y Ubicación.
 
 Cada ajuste queda registrado en el **log de movimientos** (fecha/hora, usuario, palet, acción,
 situación anterior → nueva, unidades, documento y motivo). Incluye **Exportar** a CSV y barra de
-estado tipo SAP. Los datos son de **ejemplo**; para datos reales basta sustituir el array `PALETS`
-del `<script>` por la consulta correspondiente.
+estado tipo SAP. Los datos son de **ejemplo**; para datos reales basta sustituir el array `PALETS`,
+el contador `LIBRES` y el maestro `MATERIALES` del `<script>`.
