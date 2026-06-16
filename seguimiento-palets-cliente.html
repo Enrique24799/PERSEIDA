@@ -87,7 +87,7 @@ select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgb
   border-radius: 5px;
   cursor: pointer;
 }
-.btn-primary  { background: var(--blue); color: #fff; }
+.btn-primary   { background: var(--blue); color: #fff; }
 .btn-primary:hover { background: #2b73d4; }
 .btn-secondary { background: #f4f7fb; color: var(--ink); border: 1px solid var(--border); display: inline-flex; gap: 5px; align-items: center; }
 .btn-secondary:hover { background: #e7eef7; }
@@ -110,8 +110,8 @@ select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgb
 .stat-label  { font-size: 11px; color: #41546a; }
 .stat.ok   strong { color: var(--ok); }
 .stat.warn strong { color: var(--warn); }
-.stat.bad  strong { color: var(--bad); }
 .stat.blue strong { color: var(--blue); }
+.stat.purple strong { color: #7b2d9c; }
 .sep { width: 1px; height: 30px; background: var(--border); }
 
 /* ── Table ── */
@@ -121,7 +121,7 @@ select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgb
   border-top: none;
   border-radius: 0 0 8px 8px;
   overflow: auto;
-  max-height: 72vh;
+  max-height: 70vh;
 }
 
 table {
@@ -154,8 +154,9 @@ tbody tr:hover { background: #f4f9ff; }
 td { padding: 7px 10px; color: var(--ink); vertical-align: middle; }
 td.num    { text-align: right; font-variant-numeric: tabular-nums; color: #41546a; }
 td.center { text-align: center; }
+td.mono   { font-family: monospace; font-size: 11px; color: #41546a; }
 
-/* ── Status Badges ── */
+/* ── Badges ── */
 .badge {
   display: inline-block;
   padding: 2px 9px;
@@ -163,34 +164,10 @@ td.center { text-align: center; }
   font-size: 11px;
   font-weight: 600;
 }
-.badge.ok   { background: #e4f4ec; color: #1c8a52; }
-.badge.warn { background: #fff4d6; color: #8a6200; }
-.badge.bad  { background: #fde8e8; color: #b22222; }
-.badge.blue { background: #e7f0fd; color: #2f80ed; }
-
-/* ── Palet Type Badges ── */
-.tipo-palet {
-  display: inline-block;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-}
-.tipo-palet.euro { background: #e7f0fd; color: #2f80ed; }
-.tipo-palet.amer { background: #fbeed8; color: #b56a07; }
-.tipo-palet.ind  { background: #f0e4f4; color: #7b2d9c; }
-
-/* ── Days counter ── */
-.dias { font-variant-numeric: tabular-nums; font-weight: 600; }
-.dias.ok   { color: var(--ok); }
-.dias.warn { color: var(--warn); }
-.dias.bad  { color: var(--bad); }
-
-/* ── Row highlight for status ── */
-tr.vencido       { background: #fdf3f2; }
-tr.vencido:hover { background: #fbe9e7; }
-tr.alerta        { background: #fffbf0; }
-tr.alerta:hover  { background: #fff5e0; }
+.badge.ok      { background: #e4f4ec; color: #1c8a52; }
+.badge.warn    { background: #fff4d6; color: #8a6200; }
+.badge.alq     { background: #e7f0fd; color: #2f80ed; }
+.badge.cmp     { background: #f0e4f4; color: #7b2d9c; }
 
 /* ── Client column ── */
 td.cliente { font-weight: 600; color: #1f2d3d; }
@@ -205,9 +182,9 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
   cursor: pointer;
   color: var(--ink);
 }
-.act-btn:hover        { background: #e7eef7; }
-.act-btn.green        { background: #e4f4ec; border-color: #a8d8bc; color: #1c8a52; }
-.act-btn.green:hover  { background: #cef0db; }
+.act-btn:hover       { background: #e7eef7; }
+.act-btn.green       { background: #e4f4ec; border-color: #a8d8bc; color: #1c8a52; }
+.act-btn.green:hover { background: #cef0db; }
 
 /* ── Empty state ── */
 .empty { text-align: center; padding: 32px; color: #aab4c0; font-size: 13px; }
@@ -232,7 +209,7 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
 .modal {
   background: #fff;
   border-radius: 8px;
-  width: 480px;
+  width: 560px;
   max-width: 96vw;
   box-shadow: 0 8px 32px rgba(0,0,0,.18);
   overflow: hidden;
@@ -266,7 +243,8 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
   gap: 12px;
   margin-bottom: 12px;
 }
-.modal-row.full { grid-template-columns: 1fr; }
+.modal-row.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.modal-row.full  { grid-template-columns: 1fr; }
 
 .modal-field label {
   display: block;
@@ -292,7 +270,7 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
 .modal-field input:focus,
 .modal-field select:focus,
 .modal-field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(47,128,237,.15); }
-.modal-field textarea { resize: vertical; min-height: 60px; }
+.modal-field textarea { resize: vertical; min-height: 56px; }
 
 .modal-footer {
   display: flex;
@@ -302,19 +280,6 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
   border-top: 1px solid var(--border);
   background: #f8fafc;
 }
-
-/* ── Info note ── */
-.info-note {
-  background: #fff8e6;
-  border: 1px solid #f0dca0;
-  border-radius: 6px;
-  padding: 7px 11px;
-  color: #7a6314;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 </style>
 </head>
 <body>
@@ -323,7 +288,7 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
   <!-- Titlebar -->
   <div class="titlebar">
     <h1>Seguimiento de Palets por Cliente</h1>
-    <span class="ver">v1.0</span>
+    <span class="ver">v2.0</span>
   </div>
 
   <!-- Filter Panel -->
@@ -331,124 +296,129 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
     <fieldset>
       <legend>Cliente</legend>
       <div class="field-row">
-        <select id="fil-cliente" style="width:190px">
-          <option value="">— Todos —</option>
-        </select>
+        <input type="text" id="fil-cliente" placeholder="ID o nombre..." style="width:180px"
+               oninput="applyFilters()">
       </div>
     </fieldset>
 
     <fieldset>
       <legend>Tipo de Palet</legend>
       <div class="field-row">
-        <select id="fil-tipo" style="width:140px">
+        <select id="fil-tipo" style="width:140px" onchange="applyFilters()">
           <option value="">— Todos —</option>
-          <option value="EURO">EURO</option>
-          <option value="AMER">Americana</option>
-          <option value="IND">Industrial</option>
+          <option value="ALQ">Alquiler</option>
+          <option value="CMP">Compra</option>
         </select>
       </div>
     </fieldset>
 
     <fieldset>
-      <legend>Estado</legend>
+      <legend>Facturado</legend>
       <div class="field-row">
-        <select id="fil-estado" style="width:155px">
+        <select id="fil-fact" style="width:140px" onchange="applyFilters()">
           <option value="">— Todos —</option>
-          <option value="prestado">En préstamo</option>
-          <option value="alerta">Próximo a vencer</option>
-          <option value="vencido">Vencido</option>
-          <option value="devuelto">Devuelto</option>
+          <option value="N">Pendiente</option>
+          <option value="S">Facturado</option>
         </select>
       </div>
     </fieldset>
 
     <fieldset>
-      <legend>Rango de Fechas Salida</legend>
+      <legend>Fecha Salida</legend>
       <div class="field-row">
-        <input type="date" id="fil-desde" style="width:145px">
+        <input type="date" id="fil-desde" style="width:145px" onchange="applyFilters()">
         <span style="color:#8494a6;font-size:12px">hasta</span>
-        <input type="date" id="fil-hasta" style="width:145px">
+        <input type="date" id="fil-hasta" style="width:145px" onchange="applyFilters()">
       </div>
     </fieldset>
 
     <div style="display:flex;gap:8px;align-items:flex-end">
-      <button class="btn btn-primary" onclick="applyFilters()">Filtrar</button>
       <button class="btn btn-secondary" onclick="clearFilters()">&#8635; Limpiar</button>
-      <button class="btn btn-secondary" onclick="openNuevoPalet()">&#65291; Nuevo registro</button>
+      <button class="btn btn-primary" onclick="openNuevo()">&#65291; Nueva expedicin</button>
     </div>
 
-    <div style="margin-left:auto;align-self:center;padding-top:4px">
+    <div style="margin-left:auto;align-self:center">
       <div class="legend">
-        <div class="leg-item"><div class="leg-dot" style="background:#e7f0fd;border:1.5px solid #2f80ed"></div>En préstamo</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#fff4d6;border:1.5px solid #e0a800"></div>Próx. a vencer</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#fde8e8;border:1.5px solid #d9534f"></div>Vencido</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#e4f4ec;border:1.5px solid #27ae60"></div>Devuelto</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#e7f0fd;border:1.5px solid #2f80ed"></div>Alquiler</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#f0e4f4;border:1.5px solid #7b2d9c"></div>Compra</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#fff4d6;border:1.5px solid #e0a800"></div>Pendiente facturar</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#e4f4ec;border:1.5px solid #27ae60"></div>Facturado</div>
       </div>
     </div>
   </div>
 
   <!-- Summary Bar -->
   <div class="summary">
+    <div class="stat">
+      <div>
+        <div><strong id="st-total">—</strong></div>
+        <div class="stat-label">Expediciones</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat">
+      <div>
+        <div><strong id="st-uds">—</strong></div>
+        <div class="stat-label">Uds. expedidas</div>
+      </div>
+    </div>
+    <div class="sep"></div>
     <div class="stat blue">
       <div>
-        <div><strong id="st-prestados">—</strong></div>
-        <div class="stat-label">En préstamo</div>
+        <div><strong id="st-alq">—</strong></div>
+        <div class="stat-label">En alquiler</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat purple">
+      <div>
+        <div><strong id="st-cmp">—</strong></div>
+        <div class="stat-label">En compra</div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="stat warn">
       <div>
-        <div><strong id="st-alerta">—</strong></div>
-        <div class="stat-label">Próx. a vencer</div>
-      </div>
-    </div>
-    <div class="sep"></div>
-    <div class="stat bad">
-      <div>
-        <div><strong id="st-vencidos">—</strong></div>
-        <div class="stat-label">Vencidos</div>
+        <div><strong id="st-pend">—</strong></div>
+        <div class="stat-label">Pendientes facturar</div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="stat ok">
       <div>
-        <div><strong id="st-devueltos">—</strong></div>
-        <div class="stat-label">Devueltos</div>
+        <div><strong id="st-fact">—</strong></div>
+        <div class="stat-label">Facturadas</div>
       </div>
     </div>
     <div class="sep"></div>
     <div class="stat">
       <div>
-        <div><strong id="st-uds-pend">—</strong></div>
-        <div class="stat-label">Uds. pendientes</div>
-      </div>
-    </div>
-    <div class="sep"></div>
-    <div class="stat">
-      <div>
-        <div><strong id="st-total">—</strong></div>
-        <div class="stat-label">Total registros</div>
+        <div><strong id="st-importe">—</strong></div>
+        <div class="stat-label">Importe total</div>
       </div>
     </div>
   </div>
 
   <!-- Table -->
   <div class="tbl-wrap">
-    <table id="main-table">
+    <table>
       <thead>
         <tr>
-          <th>Cliente</th>
-          <th>Ref. Palet</th>
-          <th>Tipo</th>
-          <th class="num">Uds.</th>
+          <th>ID Cliente</th>
+          <th>Nombre Cliente</th>
+          <th>Cd. Palet</th>
+          <th>Nombre Palet</th>
+          <th>Matrcula</th>
+          <th class="center">Tipo</th>
+          <th>Material Expedido</th>
+          <th class="num">Uds. Exp.</th>
           <th>F. Salida</th>
-          <th>F. Prev. Retorno</th>
-          <th>F. Retorno Real</th>
-          <th class="num">Días en poder</th>
-          <th class="center">Estado</th>
-          <th>Responsable</th>
-          <th>Observaciones</th>
-          <th class="center">Acciones</th>
+          <th>N Entrega</th>
+          <th>Pedido Venta</th>
+          <th class="num">Precio/Ud.</th>
+          <th class="num">Importe</th>
+          <th class="center">Facturado</th>
+          <th class="center">Accin</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -457,306 +427,288 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
 
 </div><!-- /.app -->
 
-<!-- Modal: Nuevo Registro -->
+<!-- Modal: Nueva Expedicin -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-head">
-      <span id="modal-title">Nuevo Registro de Palet</span>
+      <span>Nueva Expedicin de Palet</span>
       <button class="close-btn" onclick="closeModal()">&#10005;</button>
     </div>
     <div class="modal-body">
+
       <div class="modal-row">
         <div class="modal-field">
-          <label>Cliente *</label>
-          <select id="m-cliente"></select>
+          <label>ID Cliente *</label>
+          <input type="text" id="m-id-cli" placeholder="C-001">
         </div>
         <div class="modal-field">
-          <label>Referencia Palet *</label>
-          <input type="text" id="m-ref" placeholder="Ej: PAL-2026-001">
+          <label>Nombre Cliente *</label>
+          <input type="text" id="m-nom-cli" placeholder="Razn social">
         </div>
       </div>
+
+      <div class="modal-row cols3">
+        <div class="modal-field">
+          <label>Cdigo Palet *</label>
+          <input type="text" id="m-cod-pal" placeholder="PL-001">
+        </div>
+        <div class="modal-field">
+          <label>Nombre Palet</label>
+          <input type="text" id="m-nom-pal" placeholder="Palet Europeo 120x80">
+        </div>
+        <div class="modal-field">
+          <label>Matrcula Palet</label>
+          <input type="text" id="m-mat-pal" placeholder="MAT-00000">
+        </div>
+      </div>
+
       <div class="modal-row">
         <div class="modal-field">
           <label>Tipo de Palet</label>
           <select id="m-tipo">
-            <option value="EURO">EURO</option>
-            <option value="AMER">Americana</option>
-            <option value="IND">Industrial</option>
+            <option value="ALQ">Alquiler</option>
+            <option value="CMP">Compra</option>
           </select>
         </div>
         <div class="modal-field">
-          <label>Unidades</label>
-          <input type="text" id="m-uds" placeholder="Ej: 10">
+          <label>Material Expedido</label>
+          <input type="text" id="m-material" placeholder="Descripcin del material">
         </div>
       </div>
-      <div class="modal-row">
+
+      <div class="modal-row cols3">
+        <div class="modal-field">
+          <label>Uds. Expedidas</label>
+          <input type="text" id="m-uds" placeholder="0">
+        </div>
+        <div class="modal-field">
+          <label>Precio / Ud. (€)</label>
+          <input type="text" id="m-precio" placeholder="0.00">
+        </div>
         <div class="modal-field">
           <label>Fecha Salida *</label>
           <input type="date" id="m-fsalida">
         </div>
+      </div>
+
+      <div class="modal-row">
         <div class="modal-field">
-          <label>Fecha Prevista Retorno *</label>
-          <input type="date" id="m-fprev">
+          <label>N Entrega</label>
+          <input type="text" id="m-entrega" placeholder="ENT-000000">
+        </div>
+        <div class="modal-field">
+          <label>Pedido de Venta</label>
+          <input type="text" id="m-pedido" placeholder="PV-000000">
         </div>
       </div>
-      <div class="modal-row full">
-        <div class="modal-field">
-          <label>Responsable</label>
-          <input type="text" id="m-resp" placeholder="Nombre del responsable de la entrega">
-        </div>
-      </div>
+
       <div class="modal-row full">
         <div class="modal-field">
           <label>Observaciones</label>
-          <textarea id="m-obs" placeholder="Notas adicionales sobre el préstamo..."></textarea>
+          <textarea id="m-obs" placeholder="Notas adicionales..."></textarea>
         </div>
       </div>
+
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveModal()">Guardar registro</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Registrar Devolución -->
-<div class="modal-overlay" id="modal-dev-overlay">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <span>Registrar Devolución</span>
-      <button class="close-btn" onclick="closeDevModal()">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <div class="info-note" style="margin-bottom:14px">
-        <span>&#9432;</span>
-        <span id="dev-info-txt">—</span>
-      </div>
-      <div class="modal-row">
-        <div class="modal-field">
-          <label>Fecha de Devolución</label>
-          <input type="date" id="dev-fecha">
-        </div>
-        <div class="modal-field">
-          <label>Unidades devueltas</label>
-          <input type="text" id="dev-uds" placeholder="Uds.">
-        </div>
-      </div>
-      <div class="modal-row full">
-        <div class="modal-field">
-          <label>Observaciones</label>
-          <textarea id="dev-obs" placeholder="Estado de los palets al retorno, incidencias..."></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeDevModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarDevolucion()">&#10003; Confirmar devolución</button>
+      <button class="btn btn-primary" onclick="saveModal()">Guardar expedicin</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── Demo data ───────────────────────────────────────────────────────────────────────────────
+// ─── Datos demo ───────────────────────────────────────────────────────────────────────────────
 
-const CLIENTES = [
-  'Mercadona S.A.', 'Carrefour España', 'Lidl Supermercados',
-  'Alcampo Logística', 'DIA Distribución', 'Eroski Coop.',
-  'El Corte Inglés', 'Consum S. Coop.', 'Caprabo S.A.', 'Auchan Retail'
+const CLIENTES_DEMO = [
+  { id: 'C-001', nombre: 'Mercadona S.A.' },
+  { id: 'C-002', nombre: 'Carrefour España' },
+  { id: 'C-003', nombre: 'Lidl Supermercados' },
+  { id: 'C-004', nombre: 'Alcampo Logística' },
+  { id: 'C-005', nombre: 'DIA Distribución' },
+  { id: 'C-006', nombre: 'Eroski Coop.' },
+  { id: 'C-007', nombre: 'El Corte Inglés' },
+  { id: 'C-008', nombre: 'Consum S. Coop.' },
 ];
 
-const TIPOS_POOL = ['EURO','EURO','EURO','AMER','IND'];
+const PALETS_DEMO = [
+  { codigo: 'PL-001', nombre: 'Palet Europeo 120x80',    tipo: 'ALQ', precio: 4.50 },
+  { codigo: 'PL-002', nombre: 'Palet Americano 120x100', tipo: 'ALQ', precio: 5.20 },
+  { codigo: 'PL-003', nombre: 'Palet Industrial 120x120',tipo: 'CMP', precio: 12.00 },
+  { codigo: 'PL-004', nombre: 'Palet Europeo 120x80',    tipo: 'CMP', precio: 9.80 },
+  { codigo: 'PL-005', nombre: 'Palet Químico 120x80',    tipo: 'ALQ', precio: 6.00 },
+];
 
-const RESPONSABLES = ['Carlos M.', 'Laura S.', 'Pedro R.', 'Ana G.', 'David F.', 'María T.'];
-
-const NOTAS_POOL = [
-  'Entrega en muelle 3', 'Pendiente albarán de recogida', '',
-  'Palets retractilados', 'Recogida acordada con transportista',
-  '', 'Urgente — avisar con 24h', '', 'Ver email adjunto', ''
+const MATERIALES_DEMO = [
+  'Detergente líquido 5L', 'Zumo naranja 1L', 'Agua mineral 1.5L',
+  'Aceite girasol 1L', 'Leche entera 1L', 'Harina de trigo 1kg',
+  'Arroz largo 1kg', 'Cerveza lata 33cl', 'Vino tinto 75cl', 'Conservas tomate 400g'
 ];
 
 const TODAY = new Date('2026-06-16T00:00:00');
 
-function addDays(d, n) {
-  const r = new Date(d); r.setDate(r.getDate() + n); return r;
-}
-function fmtDate(d) {
-  if (!d) return null;
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-function isoDate(d) { return d.toISOString().slice(0, 10); }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function fmtDate(d)    { return d ? d.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—'; }
+function isoDate(d)    { return d.toISOString().slice(0, 10); }
+function fmtEur(n)     { return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
 
-// Seeded random for reproducibility
-let _seed = 42;
-function rand() { _seed = (_seed * 1664525 + 1013904223) & 0xffffffff; return (_seed >>> 0) / 4294967296; }
-function rFloor(n) { return Math.floor(rand() * n); }
-function rPick(arr) { return arr[rFloor(arr.length)]; }
+let _s = 7;
+function rand()     { _s = (_s * 1664525 + 1013904223) & 0xffffffff; return (_s >>> 0) / 4294967296; }
+function rI(n)      { return Math.floor(rand() * n); }
+function rPick(arr) { return arr[rI(arr.length)]; }
 
 let DATA = [];
-let _devTarget = null;
 
 (function generate() {
-  let seq = 1;
-  CLIENTES.forEach(cli => {
-    const numRecs = 3 + rFloor(5);
-    for (let i = 0; i < numRecs; i++) {
-      const diasAtras  = rFloor(100);
-      const fSalida    = addDays(TODAY, -diasAtras);
-      const prestDias  = 10 + rFloor(25);
-      const fPrev      = addDays(fSalida, prestDias);
-      const tipo       = rPick(TIPOS_POOL);
-      const uds        = 1 + rFloor(24);
-      const resp       = rPick(RESPONSABLES);
-      const nota       = rPick(NOTAS_POOL);
-      const diasTransc = Math.round((TODAY - fSalida) / 86400000);
-
-      let estado, fRetorno = null;
-      const diffDias = Math.round((fPrev - TODAY) / 86400000);
-
-      if (rand() < 0.28) {
-        const retDias = Math.floor(prestDias * (0.4 + rand() * 0.8));
-        fRetorno = addDays(fSalida, retDias);
-        estado = 'devuelto';
-      } else if (diffDias < 0) {
-        estado = 'vencido';
-      } else if (diffDias <= 5) {
-        estado = 'alerta';
-      } else {
-        estado = 'prestado';
-      }
+  let entSeq = 800100, pvSeq = 10500, matSeq = 10000;
+  CLIENTES_DEMO.forEach(cli => {
+    const n = 3 + rI(7);
+    for (let i = 0; i < n; i++) {
+      const pal       = rPick(PALETS_DEMO);
+      const diasAtras = rI(120);
+      const fSalida   = addDays(TODAY, -diasAtras);
+      const uds       = 1 + rI(20);
+      const precio    = pal.precio;
+      const importe   = +(uds * precio).toFixed(2);
+      const facturado = rand() < 0.45 ? 'S' : 'N';
+      const matricula = `MAT-${String(matSeq++).padStart(5,'0')}`;
 
       DATA.push({
-        id: `PAL-2026-${String(seq++).padStart(3, '0')}`,
-        cliente: cli, tipo, uds,
-        fSalida, fPrev, fRetorno, estado,
-        diasTransc, resp, nota
+        idCliente:   cli.id,
+        nomCliente:  cli.nombre,
+        codPalet:    pal.codigo,
+        nomPalet:    pal.nombre,
+        matricula,
+        tipo:        pal.tipo,
+        material:    rPick(MATERIALES_DEMO),
+        uds,
+        precio,
+        importe,
+        fSalida,
+        entrega:     `ENT-${entSeq++}`,
+        pedidoVenta: `PV-${String(pvSeq++).padStart(6,'0')}`,
+        facturado,
+        obs:         ''
       });
     }
   });
+  DATA.sort((a, b) => b.fSalida - a.fSalida);
 })();
 
-// ─── Filter & render ──────────────────────────────────────────────────────────────────────
+// ─── Filtros ──────────────────────────────────────────────────────────────────────────────────────
 
 let filtered = [];
 
-const ORD_ESTADO = { vencido: 0, alerta: 1, prestado: 2, devuelto: 3 };
-
 function applyFilters() {
-  const cli    = document.getElementById('fil-cliente').value;
-  const tipo   = document.getElementById('fil-tipo').value;
-  const estado = document.getElementById('fil-estado').value;
-  const desde  = document.getElementById('fil-desde').value;
-  const hasta  = document.getElementById('fil-hasta').value;
+  const cli  = document.getElementById('fil-cliente').value.trim().toLowerCase();
+  const tipo = document.getElementById('fil-tipo').value;
+  const fact = document.getElementById('fil-fact').value;
+  const desde= document.getElementById('fil-desde').value;
+  const hasta= document.getElementById('fil-hasta').value;
 
   filtered = DATA.filter(r => {
-    if (cli    && r.cliente !== cli)    return false;
-    if (tipo   && r.tipo    !== tipo)   return false;
-    if (estado && r.estado  !== estado) return false;
+    if (cli  && !r.idCliente.toLowerCase().includes(cli)
+             && !r.nomCliente.toLowerCase().includes(cli)) return false;
+    if (tipo && r.tipo      !== tipo) return false;
+    if (fact && r.facturado !== fact) return false;
     if (desde) { const d = new Date(desde + 'T00:00:00'); if (r.fSalida < d) return false; }
     if (hasta) { const h = new Date(hasta + 'T23:59:59'); if (r.fSalida > h) return false; }
     return true;
   });
 
-  filtered.sort((a, b) =>
-    (ORD_ESTADO[a.estado] - ORD_ESTADO[b.estado]) || (b.diasTransc - a.diasTransc)
-  );
-
   render();
 }
 
 function clearFilters() {
-  ['fil-cliente','fil-tipo','fil-estado','fil-desde','fil-hasta']
+  ['fil-cliente','fil-tipo','fil-fact','fil-desde','fil-hasta']
     .forEach(id => document.getElementById(id).value = '');
   applyFilters();
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────────────────────
 
-function estadoBadge(estado) {
-  const MAP = {
-    prestado: ['blue', 'En préstamo'],
-    alerta:   ['warn', 'Próx. vencer'],
-    vencido:  ['bad',  'Vencido'],
-    devuelto: ['ok',   'Devuelto']
-  };
-  const [cls, lbl] = MAP[estado] || ['blue', estado];
-  return `<span class="badge ${cls}">${lbl}</span>`;
-}
-
 function tipoBadge(tipo) {
-  const MAP = { EURO: ['euro','EURO'], AMER: ['amer','Americana'], IND: ['ind','Industrial'] };
-  const [cls, lbl] = MAP[tipo] || ['euro', tipo];
-  return `<span class="tipo-palet ${cls}">${lbl}</span>`;
+  return tipo === 'ALQ'
+    ? '<span class="badge alq">Alquiler</span>'
+    : '<span class="badge cmp">Compra</span>';
 }
 
-function diasCell(r) {
-  if (r.estado === 'devuelto' && r.fRetorno) {
-    const d = Math.round((r.fRetorno - r.fSalida) / 86400000);
-    return `<span class="dias ok">${d} d</span>`;
-  }
-  const d = r.diasTransc;
-  const cls = r.estado === 'vencido' ? 'bad' : r.estado === 'alerta' ? 'warn' : '';
-  return `<span class="dias ${cls}">${d} d</span>`;
-}
-
-function rowCls(estado) {
-  if (estado === 'vencido') return ' class="vencido"';
-  if (estado === 'alerta')  return ' class="alerta"';
-  return '';
+function factBadge(f) {
+  return f === 'S'
+    ? '<span class="badge ok">Facturado</span>'
+    : '<span class="badge warn">Pendiente</span>';
 }
 
 function render() {
-  const st = { prestado: 0, alerta: 0, vencido: 0, devuelto: 0, udsPend: 0 };
+  const st = { total: 0, uds: 0, alq: 0, cmp: 0, pend: 0, fact: 0, importe: 0 };
   filtered.forEach(r => {
-    st[r.estado]++;
-    if (r.estado !== 'devuelto') st.udsPend += r.uds;
+    st.total++;
+    st.uds     += r.uds;
+    st.importe += r.importe;
+    if (r.tipo === 'ALQ') st.alq++; else st.cmp++;
+    if (r.facturado === 'S') st.fact++; else st.pend++;
   });
-  document.getElementById('st-prestados').textContent = st.prestado;
-  document.getElementById('st-alerta').textContent    = st.alerta;
-  document.getElementById('st-vencidos').textContent  = st.vencido;
-  document.getElementById('st-devueltos').textContent = st.devuelto;
-  document.getElementById('st-uds-pend').textContent  = st.udsPend;
-  document.getElementById('st-total').textContent     = filtered.length;
+
+  document.getElementById('st-total').textContent   = st.total;
+  document.getElementById('st-uds').textContent     = st.uds;
+  document.getElementById('st-alq').textContent     = st.alq;
+  document.getElementById('st-cmp').textContent     = st.cmp;
+  document.getElementById('st-pend').textContent    = st.pend;
+  document.getElementById('st-fact').textContent    = st.fact;
+  document.getElementById('st-importe').textContent = fmtEur(st.importe);
 
   const tbody = document.getElementById('tbody');
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="12" class="empty">No se encontraron registros con los filtros aplicados.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15" class="empty">No se encontraron expediciones con los filtros aplicados.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map(r => {
-    const devBtn = r.estado !== 'devuelto'
-      ? `<button class="act-btn green" onclick="abrirDevolucion('${r.id}')">&#10003; Devuelto</button>`
+  tbody.innerHTML = filtered.map((r, idx) => {
+    const accion = r.facturado === 'N'
+      ? `<button class="act-btn green" onclick="marcarFacturado(${idx})">&#10003; Facturar</button>`
       : `<span style="color:#aab4c0;font-size:11px">—</span>`;
 
-    return `<tr${rowCls(r.estado)}>
-      <td class="cliente">${r.cliente}</td>
-      <td style="font-family:monospace;font-size:11px;color:#41546a">${r.id}</td>
-      <td>${tipoBadge(r.tipo)}</td>
-      <td class="num">${r.uds}</td>
+    return `<tr>
+      <td class="mono">${r.idCliente}</td>
+      <td class="cliente">${r.nomCliente}</td>
+      <td class="mono">${r.codPalet}</td>
+      <td style="color:#41546a">${r.nomPalet}</td>
+      <td class="mono">${r.matricula}</td>
+      <td class="center">${tipoBadge(r.tipo)}</td>
+      <td style="color:#41546a;max-width:180px;white-space:normal">${r.material}</td>
+      <td class="num" style="font-weight:600">${r.uds}</td>
       <td>${fmtDate(r.fSalida)}</td>
-      <td>${fmtDate(r.fPrev)}</td>
-      <td>${r.fRetorno ? fmtDate(r.fRetorno) : '<span style="color:#aab4c0">—</span>'}</td>
-      <td class="num">${diasCell(r)}</td>
-      <td class="center">${estadoBadge(r.estado)}</td>
-      <td style="color:#41546a">${r.resp}</td>
-      <td style="color:#5b6b7d;max-width:180px;white-space:normal;font-size:11px">${r.nota || '<span style="color:#aab4c0">—</span>'}</td>
-      <td class="center">${devBtn}</td>
+      <td class="mono">${r.entrega}</td>
+      <td class="mono">${r.pedidoVenta}</td>
+      <td class="num">${fmtEur(r.precio)}</td>
+      <td class="num" style="font-weight:600">${fmtEur(r.importe)}</td>
+      <td class="center">${factBadge(r.facturado)}</td>
+      <td class="center">${accion}</td>
     </tr>`;
   }).join('');
 }
 
-// ─── Modal: Nuevo Registro ────────────────────────────────────────────────────────────────────────
+function marcarFacturado(idx) {
+  filtered[idx].facturado = 'S';
+  render();
+}
 
-function openNuevoPalet() {
-  const n = DATA.length + 1;
-  document.getElementById('m-ref').value     = `PAL-2026-${String(n).padStart(3,'0')}`;
-  document.getElementById('m-cliente').value = '';
-  document.getElementById('m-tipo').value    = 'EURO';
+// ─── Modal ────────────────────────────────────────────────────────────────────────────────────────
+
+function openNuevo() {
+  document.getElementById('m-id-cli').value  = '';
+  document.getElementById('m-nom-cli').value = '';
+  document.getElementById('m-cod-pal').value = '';
+  document.getElementById('m-nom-pal').value = '';
+  document.getElementById('m-mat-pal').value = `MAT-${String(10000 + DATA.length).padStart(5,'0')}`;
+  document.getElementById('m-tipo').value    = 'ALQ';
+  document.getElementById('m-material').value= '';
   document.getElementById('m-uds').value     = '';
+  document.getElementById('m-precio').value  = '';
   document.getElementById('m-fsalida').value = isoDate(TODAY);
-  document.getElementById('m-fprev').value   = isoDate(addDays(TODAY, 14));
-  document.getElementById('m-resp').value    = '';
+  document.getElementById('m-entrega').value = `ENT-${800100 + DATA.length}`;
+  document.getElementById('m-pedido').value  = `PV-${String(10500 + DATA.length).padStart(6,'0')}`;
   document.getElementById('m-obs').value     = '';
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -766,88 +718,45 @@ function closeModal() {
 }
 
 function saveModal() {
-  const cli   = document.getElementById('m-cliente').value;
-  const ref   = document.getElementById('m-ref').value.trim();
-  const tipo  = document.getElementById('m-tipo').value;
-  const uds   = parseInt(document.getElementById('m-uds').value) || 1;
-  const fSal  = document.getElementById('m-fsalida').value;
-  const fPrev = document.getElementById('m-fprev').value;
-  const resp  = document.getElementById('m-resp').value.trim();
-  const nota  = document.getElementById('m-obs').value.trim();
+  const idCli  = document.getElementById('m-id-cli').value.trim();
+  const nomCli = document.getElementById('m-nom-cli').value.trim();
+  const codPal = document.getElementById('m-cod-pal').value.trim();
+  const fSal   = document.getElementById('m-fsalida').value;
 
-  if (!cli || !ref || !fSal || !fPrev) {
-    alert('Por favor, completa los campos obligatorios: Cliente, Referencia y Fechas.');
+  if (!idCli || !nomCli || !codPal || !fSal) {
+    alert('Por favor, completa los campos obligatorios: ID Cliente, Nombre Cliente, Cdigo Palet y Fecha Salida.');
     return;
   }
 
-  const fSalidaD = new Date(fSal + 'T00:00:00');
-  const fPrevD   = new Date(fPrev + 'T00:00:00');
-  const diffDias = Math.round((fPrevD - TODAY) / 86400000);
-  let estado;
-  if (diffDias < 0) estado = 'vencido';
-  else if (diffDias <= 5) estado = 'alerta';
-  else estado = 'prestado';
+  const uds    = parseInt(document.getElementById('m-uds').value)     || 0;
+  const precio = parseFloat(document.getElementById('m-precio').value) || 0;
 
   DATA.unshift({
-    id: ref, cliente: cli, tipo, uds,
-    fSalida: fSalidaD, fPrev: fPrevD, fRetorno: null, estado,
-    diasTransc: Math.round((TODAY - fSalidaD) / 86400000),
-    resp, nota
+    idCliente:   idCli,
+    nomCliente:  nomCli,
+    codPalet:    codPal,
+    nomPalet:    document.getElementById('m-nom-pal').value.trim(),
+    matricula:   document.getElementById('m-mat-pal').value.trim(),
+    tipo:        document.getElementById('m-tipo').value,
+    material:    document.getElementById('m-material').value.trim(),
+    uds,
+    precio,
+    importe:     +(uds * precio).toFixed(2),
+    fSalida:     new Date(fSal + 'T00:00:00'),
+    entrega:     document.getElementById('m-entrega').value.trim(),
+    pedidoVenta: document.getElementById('m-pedido').value.trim(),
+    facturado:   'N',
+    obs:         document.getElementById('m-obs').value.trim()
   });
 
   closeModal();
   applyFilters();
 }
 
-// ─── Modal: Devolución ────────────────────────────────────────────────────────────────────────────
-
-function abrirDevolucion(id) {
-  _devTarget = DATA.find(r => r.id === id);
-  if (!_devTarget) return;
-  document.getElementById('dev-info-txt').textContent =
-    `Palet ${_devTarget.id} — ${_devTarget.cliente} — ${_devTarget.uds} uds. ${_devTarget.tipo}`;
-  document.getElementById('dev-fecha').value = isoDate(TODAY);
-  document.getElementById('dev-uds').value   = _devTarget.uds;
-  document.getElementById('dev-obs').value   = '';
-  document.getElementById('modal-dev-overlay').classList.add('open');
-}
-
-function closeDevModal() {
-  document.getElementById('modal-dev-overlay').classList.remove('open');
-  _devTarget = null;
-}
-
-function confirmarDevolucion() {
-  if (!_devTarget) return;
-  const fDev = document.getElementById('dev-fecha').value;
-  if (!fDev) { alert('Indica la fecha de devolución.'); return; }
-  _devTarget.fRetorno  = new Date(fDev + 'T00:00:00');
-  _devTarget.estado    = 'devuelto';
-  closeDevModal();
-  applyFilters();
-}
-
-// ─── Close overlays on backdrop click ─────────────────────────────────────────────────────────
-
 document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
-document.getElementById('modal-dev-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeDevModal();
-});
 
-// ─── Init ───────────────────────────────────────────────────────────────────────────────────────
-
-function populateClientes() {
-  const filSel = document.getElementById('fil-cliente');
-  const mSel   = document.getElementById('m-cliente');
-  [...CLIENTES].sort().forEach(c => {
-    filSel.appendChild(new Option(c, c));
-    mSel.appendChild(new Option(c, c));
-  });
-}
-
-populateClientes();
 applyFilters();
 </script>
 </body>
