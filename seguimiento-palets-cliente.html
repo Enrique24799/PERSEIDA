@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seguimiento de Palets por Cliente</title>
+<style>
+:root {
+  --head-bg: #2f5f8f;
+  --border:  #d7dee8;
+  --grid:    #eef2f7;
+  --ink:     #243140;
+  --ok:      #27ae60;
+  --warn:    #e0a800;
+  --bad:     #d9534f;
+  --blue:    #2f80ed;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--grid);
+  font: 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+}
+
+.app { padding: 14px 16px 28px; }
+
+/* ── Titlebar ── */
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #37618f, #2f5f8f);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px 8px 0 0;
+}
+.titlebar h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .2px; }
+.titlebar .ver { font-size: 11px; opacity: .75; }
+
+/* ── Filter Panel ── */
+.panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: none;
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-end;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px 10px;
+  margin: 0;
+}
+legend {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5b6b7d;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 0 4px;
+}
+
+.field-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+select, input[type=text], input[type=date] {
+  font: 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+  color: var(--ink);
+  border: 1px solid #b9c6d6;
+  border-radius: 5px;
+  padding: 6px 9px;
+  background: #fff;
+  outline: none;
+}
+select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(47,128,237,.15); }
+
+.btn {
+  font: 600 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.btn-primary  { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: #2b73d4; }
+.btn-secondary { background: #f4f7fb; color: var(--ink); border: 1px solid var(--border); display: inline-flex; gap: 5px; align-items: center; }
+.btn-secondary:hover { background: #e7eef7; }
+
+/* ── Summary Bar ── */
+.summary {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: none;
+  padding: 8px 14px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: #51637a;
+}
+.stat { display: flex; align-items: center; gap: 6px; }
+.stat strong { font-size: 18px; font-weight: 700; color: var(--ink); }
+.stat-label  { font-size: 11px; color: #41546a; }
+.stat.ok   strong { color: var(--ok); }
+.stat.warn strong { color: var(--warn); }
+.stat.bad  strong { color: var(--bad); }
+.stat.blue strong { color: var(--blue); }
+.sep { width: 1px; height: 30px; background: var(--border); }
+
+/* ── Table ── */
+.tbl-wrap {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: auto;
+  max-height: 72vh;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #eef3f9;
+  border-bottom: 2px solid var(--border);
+  padding: 7px 10px;
+  font-weight: 600;
+  color: #41546a;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  z-index: 2;
+}
+thead th.num    { text-align: right; }
+thead th.center { text-align: center; }
+
+tbody tr { border-bottom: 1px solid #eef2f7; transition: background .1s; }
+tbody tr:hover { background: #f4f9ff; }
+
+td { padding: 7px 10px; color: var(--ink); vertical-align: middle; }
+td.num    { text-align: right; font-variant-numeric: tabular-nums; color: #41546a; }
+td.center { text-align: center; }
+
+/* ── Status Badges ── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge.ok   { background: #e4f4ec; color: #1c8a52; }
+.badge.warn { background: #fff4d6; color: #8a6200; }
+.badge.bad  { background: #fde8e8; color: #b22222; }
+.badge.blue { background: #e7f0fd; color: #2f80ed; }
+
+/* ── Palet Type Badges ── */
+.tipo-palet {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.tipo-palet.euro { background: #e7f0fd; color: #2f80ed; }
+.tipo-palet.amer { background: #fbeed8; color: #b56a07; }
+.tipo-palet.ind  { background: #f0e4f4; color: #7b2d9c; }
+
+/* ── Days counter ── */
+.dias { font-variant-numeric: tabular-nums; font-weight: 600; }
+.dias.ok   { color: var(--ok); }
+.dias.warn { color: var(--warn); }
+.dias.bad  { color: var(--bad); }
+
+/* ── Row highlight for status ── */
+tr.vencido       { background: #fdf3f2; }
+tr.vencido:hover { background: #fbe9e7; }
+tr.alerta        { background: #fffbf0; }
+tr.alerta:hover  { background: #fff5e0; }
+
+/* ── Client column ── */
+td.cliente { font-weight: 600; color: #1f2d3d; }
+
+/* ── Action buttons ── */
+.act-btn {
+  font: 600 11px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: #f4f7fb;
+  cursor: pointer;
+  color: var(--ink);
+}
+.act-btn:hover        { background: #e7eef7; }
+.act-btn.green        { background: #e4f4ec; border-color: #a8d8bc; color: #1c8a52; }
+.act-btn.green:hover  { background: #cef0db; }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 32px; color: #aab4c0; font-size: 13px; }
+
+/* ── Legend ── */
+.legend { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #5b6b7d; }
+.leg-dot  { width: 12px; height: 12px; border-radius: 3px; }
+
+/* ── Modal overlay ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(36,49,64,.45);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 480px;
+  max-width: 96vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+.modal-head {
+  background: linear-gradient(180deg, #37618f, #2f5f8f);
+  color: #fff;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-head .close-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  opacity: .8;
+}
+.modal-head .close-btn:hover { opacity: 1; }
+
+.modal-body { padding: 16px; }
+
+.modal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.modal-row.full { grid-template-columns: 1fr; }
+
+.modal-field label {
+  display: block;
+  font-size: 11px;
+  color: #5b6b7d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 4px;
+}
+.modal-field input,
+.modal-field select,
+.modal-field textarea {
+  font: 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+  color: var(--ink);
+  border: 1px solid #b9c6d6;
+  border-radius: 5px;
+  padding: 7px 9px;
+  background: #fff;
+  outline: none;
+  width: 100%;
+}
+.modal-field input:focus,
+.modal-field select:focus,
+.modal-field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(47,128,237,.15); }
+.modal-field textarea { resize: vertical; min-height: 60px; }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+/* ── Info note ── */
+.info-note {
+  background: #fff8e6;
+  border: 1px solid #f0dca0;
+  border-radius: 6px;
+  padding: 7px 11px;
+  color: #7a6314;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Titlebar -->
+  <div class="titlebar">
+    <h1>Seguimiento de Palets por Cliente</h1>
+    <span class="ver">v1.0</span>
+  </div>
+
+  <!-- Filter Panel -->
+  <div class="panel">
+    <fieldset>
+      <legend>Cliente</legend>
+      <div class="field-row">
+        <select id="fil-cliente" style="width:190px">
+          <option value="">— Todos —</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tipo de Palet</legend>
+      <div class="field-row">
+        <select id="fil-tipo" style="width:140px">
+          <option value="">— Todos —</option>
+          <option value="EURO">EURO</option>
+          <option value="AMER">Americana</option>
+          <option value="IND">Industrial</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Estado</legend>
+      <div class="field-row">
+        <select id="fil-estado" style="width:155px">
+          <option value="">— Todos —</option>
+          <option value="prestado">En préstamo</option>
+          <option value="alerta">Próximo a vencer</option>
+          <option value="vencido">Vencido</option>
+          <option value="devuelto">Devuelto</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Rango de Fechas Salida</legend>
+      <div class="field-row">
+        <input type="date" id="fil-desde" style="width:145px">
+        <span style="color:#8494a6;font-size:12px">hasta</span>
+        <input type="date" id="fil-hasta" style="width:145px">
+      </div>
+    </fieldset>
+
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button class="btn btn-primary" onclick="applyFilters()">Filtrar</button>
+      <button class="btn btn-secondary" onclick="clearFilters()">&#8635; Limpiar</button>
+      <button class="btn btn-secondary" onclick="openNuevoPalet()">&#65291; Nuevo registro</button>
+    </div>
+
+    <div style="margin-left:auto;align-self:center;padding-top:4px">
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#e7f0fd;border:1.5px solid #2f80ed"></div>En préstamo</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#fff4d6;border:1.5px solid #e0a800"></div>Próx. a vencer</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#fde8e8;border:1.5px solid #d9534f"></div>Vencido</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#e4f4ec;border:1.5px solid #27ae60"></div>Devuelto</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Bar -->
+  <div class="summary">
+    <div class="stat blue">
+      <div>
+        <div><strong id="st-prestados">—</strong></div>
+        <div class="stat-label">En préstamo</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat warn">
+      <div>
+        <div><strong id="st-alerta">—</strong></div>
+        <div class="stat-label">Próx. a vencer</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat bad">
+      <div>
+        <div><strong id="st-vencidos">—</strong></div>
+        <div class="stat-label">Vencidos</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat ok">
+      <div>
+        <div><strong id="st-devueltos">—</strong></div>
+        <div class="stat-label">Devueltos</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat">
+      <div>
+        <div><strong id="st-uds-pend">—</strong></div>
+        <div class="stat-label">Uds. pendientes</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat">
+      <div>
+        <div><strong id="st-total">—</strong></div>
+        <div class="stat-label">Total registros</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-wrap">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Ref. Palet</th>
+          <th>Tipo</th>
+          <th class="num">Uds.</th>
+          <th>F. Salida</th>
+          <th>F. Prev. Retorno</th>
+          <th>F. Retorno Real</th>
+          <th class="num">Días en poder</th>
+          <th class="center">Estado</th>
+          <th>Responsable</th>
+          <th>Observaciones</th>
+          <th class="center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /.app -->
+
+<!-- Modal: Nuevo Registro -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span id="modal-title">Nuevo Registro de Palet</span>
+      <button class="close-btn" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Cliente *</label>
+          <select id="m-cliente"></select>
+        </div>
+        <div class="modal-field">
+          <label>Referencia Palet *</label>
+          <input type="text" id="m-ref" placeholder="Ej: PAL-2026-001">
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Tipo de Palet</label>
+          <select id="m-tipo">
+            <option value="EURO">EURO</option>
+            <option value="AMER">Americana</option>
+            <option value="IND">Industrial</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Unidades</label>
+          <input type="text" id="m-uds" placeholder="Ej: 10">
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Fecha Salida *</label>
+          <input type="date" id="m-fsalida">
+        </div>
+        <div class="modal-field">
+          <label>Fecha Prevista Retorno *</label>
+          <input type="date" id="m-fprev">
+        </div>
+      </div>
+      <div class="modal-row full">
+        <div class="modal-field">
+          <label>Responsable</label>
+          <input type="text" id="m-resp" placeholder="Nombre del responsable de la entrega">
+        </div>
+      </div>
+      <div class="modal-row full">
+        <div class="modal-field">
+          <label>Observaciones</label>
+          <textarea id="m-obs" placeholder="Notas adicionales sobre el préstamo..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveModal()">Guardar registro</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Devolución -->
+<div class="modal-overlay" id="modal-dev-overlay">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span>Registrar Devolución</span>
+      <button class="close-btn" onclick="closeDevModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-note" style="margin-bottom:14px">
+        <span>&#9432;</span>
+        <span id="dev-info-txt">—</span>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Fecha de Devolución</label>
+          <input type="date" id="dev-fecha">
+        </div>
+        <div class="modal-field">
+          <label>Unidades devueltas</label>
+          <input type="text" id="dev-uds" placeholder="Uds.">
+        </div>
+      </div>
+      <div class="modal-row full">
+        <div class="modal-field">
+          <label>Observaciones</label>
+          <textarea id="dev-obs" placeholder="Estado de los palets al retorno, incidencias..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeDevModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDevolucion()">&#10003; Confirmar devolución</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Demo data ────────────────────────────────────────────────────────────────
+
+const CLIENTES = [
+  'Mercadona S.A.', 'Carrefour España', 'Lidl Supermercados',
+  'Alcampo Logística', 'DIA Distribución', 'Eroski Coop.',
+  'El Corte Inglés', 'Consum S. Coop.', 'Caprabo S.A.', 'Auchan Retail'
+];
+
+const TIPOS_POOL = ['EURO','EURO','EURO','AMER','IND'];
+
+const RESPONSABLES = ['Carlos M.', 'Laura S.', 'Pedro R.', 'Ana G.', 'David F.', 'María T.'];
+
+const NOTAS_POOL = [
+  'Entrega en muelle 3', 'Pendiente albarán de recogida', '',
+  'Palets retractilados', 'Recogida acordada con transportista',
+  '', 'Urgente — avisar con 24h', '', 'Ver email adjunto', ''
+];
+
+const TODAY = new Date('2026-06-16T00:00:00');
+
+function addDays(d, n) {
+  const r = new Date(d); r.setDate(r.getDate() + n); return r;
+}
+function fmtDate(d) {
+  if (!d) return null;
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// Seeded random for reproducibility
+let _seed = 42;
+function rand() { _seed = (_seed * 1664525 + 1013904223) & 0xffffffff; return (_seed >>> 0) / 4294967296; }
+function rFloor(n) { return Math.floor(rand() * n); }
+function rPick(arr) { return arr[rFloor(arr.length)]; }
+
+let DATA = [];
+let _devTarget = null;
+
+(function generate() {
+  let seq = 1;
+  CLIENTES.forEach(cli => {
+    const numRecs = 3 + rFloor(5);
+    for (let i = 0; i < numRecs; i++) {
+      const diasAtras  = rFloor(100);
+      const fSalida    = addDays(TODAY, -diasAtras);
+      const prestDias  = 10 + rFloor(25);
+      const fPrev      = addDays(fSalida, prestDias);
+      const tipo       = rPick(TIPOS_POOL);
+      const uds        = 1 + rFloor(24);
+      const resp       = rPick(RESPONSABLES);
+      const nota       = rPick(NOTAS_POOL);
+      const diasTransc = Math.round((TODAY - fSalida) / 86400000);
+
+      let estado, fRetorno = null;
+      const diffDias = Math.round((fPrev - TODAY) / 86400000);
+
+      if (rand() < 0.28) {
+        // Devuelto
+        const retDias = Math.floor(prestDias * (0.4 + rand() * 0.8));
+        fRetorno = addDays(fSalida, retDias);
+        estado = 'devuelto';
+      } else if (diffDias < 0) {
+        estado = 'vencido';
+      } else if (diffDias <= 5) {
+        estado = 'alerta';
+      } else {
+        estado = 'prestado';
+      }
+
+      DATA.push({
+        id: `PAL-2026-${String(seq++).padStart(3, '0')}`,
+        cliente: cli, tipo, uds,
+        fSalida, fPrev, fRetorno, estado,
+        diasTransc, resp, nota
+      });
+    }
+  });
+})();
+
+// ─── Filter & render ──────────────────────────────────────────────────────────
+
+let filtered = [];
+
+const ORD_ESTADO = { vencido: 0, alerta: 1, prestado: 2, devuelto: 3 };
+
+function applyFilters() {
+  const cli    = document.getElementById('fil-cliente').value;
+  const tipo   = document.getElementById('fil-tipo').value;
+  const estado = document.getElementById('fil-estado').value;
+  const desde  = document.getElementById('fil-desde').value;
+  const hasta  = document.getElementById('fil-hasta').value;
+
+  filtered = DATA.filter(r => {
+    if (cli    && r.cliente !== cli)    return false;
+    if (tipo   && r.tipo    !== tipo)   return false;
+    if (estado && r.estado  !== estado) return false;
+    if (desde) { const d = new Date(desde + 'T00:00:00'); if (r.fSalida < d) return false; }
+    if (hasta) { const h = new Date(hasta + 'T23:59:59'); if (r.fSalida > h) return false; }
+    return true;
+  });
+
+  filtered.sort((a, b) =>
+    (ORD_ESTADO[a.estado] - ORD_ESTADO[b.estado]) || (b.diasTransc - a.diasTransc)
+  );
+
+  render();
+}
+
+function clearFilters() {
+  ['fil-cliente','fil-tipo','fil-estado','fil-desde','fil-hasta']
+    .forEach(id => document.getElementById(id).value = '');
+  applyFilters();
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+
+function estadoBadge(estado) {
+  const MAP = {
+    prestado: ['blue', 'En préstamo'],
+    alerta:   ['warn', 'Próx. vencer'],
+    vencido:  ['bad',  'Vencido'],
+    devuelto: ['ok',   'Devuelto']
+  };
+  const [cls, lbl] = MAP[estado] || ['blue', estado];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+function tipoBadge(tipo) {
+  const MAP = { EURO: ['euro','EURO'], AMER: ['amer','Americana'], IND: ['ind','Industrial'] };
+  const [cls, lbl] = MAP[tipo] || ['euro', tipo];
+  return `<span class="tipo-palet ${cls}">${lbl}</span>`;
+}
+
+function diasCell(r) {
+  if (r.estado === 'devuelto' && r.fRetorno) {
+    const d = Math.round((r.fRetorno - r.fSalida) / 86400000);
+    return `<span class="dias ok">${d} d</span>`;
+  }
+  const d = r.diasTransc;
+  const cls = r.estado === 'vencido' ? 'bad' : r.estado === 'alerta' ? 'warn' : '';
+  return `<span class="dias ${cls}">${d} d</span>`;
+}
+
+function rowCls(estado) {
+  if (estado === 'vencido') return ' class="vencido"';
+  if (estado === 'alerta')  return ' class="alerta"';
+  return '';
+}
+
+function render() {
+  // Stats
+  const st = { prestado: 0, alerta: 0, vencido: 0, devuelto: 0, udsPend: 0 };
+  filtered.forEach(r => {
+    st[r.estado]++;
+    if (r.estado !== 'devuelto') st.udsPend += r.uds;
+  });
+  document.getElementById('st-prestados').textContent = st.prestado;
+  document.getElementById('st-alerta').textContent    = st.alerta;
+  document.getElementById('st-vencidos').textContent  = st.vencido;
+  document.getElementById('st-devueltos').textContent = st.devuelto;
+  document.getElementById('st-uds-pend').textContent  = st.udsPend;
+  document.getElementById('st-total').textContent     = filtered.length;
+
+  const tbody = document.getElementById('tbody');
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="12" class="empty">No se encontraron registros con los filtros aplicados.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
+    const devBtn = r.estado !== 'devuelto'
+      ? `<button class="act-btn green" onclick="abrirDevolucion('${r.id}')">&#10003; Devuelto</button>`
+      : `<span style="color:#aab4c0;font-size:11px">—</span>`;
+
+    return `<tr${rowCls(r.estado)}>
+      <td class="cliente">${r.cliente}</td>
+      <td style="font-family:monospace;font-size:11px;color:#41546a">${r.id}</td>
+      <td>${tipoBadge(r.tipo)}</td>
+      <td class="num">${r.uds}</td>
+      <td>${fmtDate(r.fSalida)}</td>
+      <td>${fmtDate(r.fPrev)}</td>
+      <td>${r.fRetorno ? fmtDate(r.fRetorno) : '<span style="color:#aab4c0">—</span>'}</td>
+      <td class="num">${diasCell(r)}</td>
+      <td class="center">${estadoBadge(r.estado)}</td>
+      <td style="color:#41546a">${r.resp}</td>
+      <td style="color:#5b6b7d;max-width:180px;white-space:normal;font-size:11px">${r.nota || '<span style="color:#aab4c0">—</span>'}</td>
+      <td class="center">${devBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Modal: Nuevo Registro ────────────────────────────────────────────────────
+
+function openNuevoPalet() {
+  const n = DATA.length + 1;
+  document.getElementById('m-ref').value     = `PAL-2026-${String(n).padStart(3,'0')}`;
+  document.getElementById('m-cliente').value = '';
+  document.getElementById('m-tipo').value    = 'EURO';
+  document.getElementById('m-uds').value     = '';
+  document.getElementById('m-fsalida').value = isoDate(TODAY);
+  document.getElementById('m-fprev').value   = isoDate(addDays(TODAY, 14));
+  document.getElementById('m-resp').value    = '';
+  document.getElementById('m-obs').value     = '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function saveModal() {
+  const cli   = document.getElementById('m-cliente').value;
+  const ref   = document.getElementById('m-ref').value.trim();
+  const tipo  = document.getElementById('m-tipo').value;
+  const uds   = parseInt(document.getElementById('m-uds').value) || 1;
+  const fSal  = document.getElementById('m-fsalida').value;
+  const fPrev = document.getElementById('m-fprev').value;
+  const resp  = document.getElementById('m-resp').value.trim();
+  const nota  = document.getElementById('m-obs').value.trim();
+
+  if (!cli || !ref || !fSal || !fPrev) {
+    alert('Por favor, completa los campos obligatorios: Cliente, Referencia y Fechas.');
+    return;
+  }
+
+  const fSalidaD = new Date(fSal + 'T00:00:00');
+  const fPrevD   = new Date(fPrev + 'T00:00:00');
+  const diffDias = Math.round((fPrevD - TODAY) / 86400000);
+  let estado;
+  if (diffDias < 0) estado = 'vencido';
+  else if (diffDias <= 5) estado = 'alerta';
+  else estado = 'prestado';
+
+  DATA.unshift({
+    id: ref, cliente: cli, tipo, uds,
+    fSalida: fSalidaD, fPrev: fPrevD, fRetorno: null, estado,
+    diasTransc: Math.round((TODAY - fSalidaD) / 86400000),
+    resp, nota
+  });
+
+  closeModal();
+  applyFilters();
+}
+
+// ─── Modal: Devolución ────────────────────────────────────────────────────────
+
+function abrirDevolucion(id) {
+  _devTarget = DATA.find(r => r.id === id);
+  if (!_devTarget) return;
+  document.getElementById('dev-info-txt').textContent =
+    `Palet ${_devTarget.id} — ${_devTarget.cliente} — ${_devTarget.uds} uds. ${_devTarget.tipo}`;
+  document.getElementById('dev-fecha').value = isoDate(TODAY);
+  document.getElementById('dev-uds').value   = _devTarget.uds;
+  document.getElementById('dev-obs').value   = '';
+  document.getElementById('modal-dev-overlay').classList.add('open');
+}
+
+function closeDevModal() {
+  document.getElementById('modal-dev-overlay').classList.remove('open');
+  _devTarget = null;
+}
+
+function confirmarDevolucion() {
+  if (!_devTarget) return;
+  const fDev = document.getElementById('dev-fecha').value;
+  if (!fDev) { alert('Indica la fecha de devolución.'); return; }
+  _devTarget.fRetorno  = new Date(fDev + 'T00:00:00');
+  _devTarget.estado    = 'devuelto';
+  closeDevModal();
+  applyFilters();
+}
+
+// ─── Close overlays on backdrop click ─────────────────────────────────────────
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('modal-dev-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeDevModal();
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+function populateClientes() {
+  const filSel = document.getElementById('fil-cliente');
+  const mSel   = document.getElementById('m-cliente');
+  [...CLIENTES].sort().forEach(c => {
+    filSel.appendChild(new Option(c, c));
+    mSel.appendChild(new Option(c, c));
+  });
+}
+
+populateClientes();
+applyFilters();
+</script>
+</body>
+</html>
