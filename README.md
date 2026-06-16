@@ -95,11 +95,17 @@ Se introduce **uno** de estos campos (admite combinar varios; coincidencia parci
 
 Sobre los palets marcados en el ALV:
 
-- **Bloquear** / **Desbloquear** — cambia la situación del palet (Bloqueado ↔ Libre).
-- **Dar de baja (Expedir)** — expide el palet contra una entrega (obligatoria); el palet
-  desaparece de la lista.
+- **Bloquear** — en el pop-up se elige la **orden de fabricación** contra la que se bloquea; el
+  palet **hereda** de ella el material, la descripción, el tipo, las uds/palet y el status de
+  orden, y pasa a *Bloqueado*.
+- **Desbloquear** — deja el palet en *Libre*.
+- **Dar de baja (Expedir)** — al teclear la **entrega** se muestra el **cliente** heredado; el
+  palet se expide (baja) y desaparece de la lista.
 - **Ajustar inventario** — corrige las unidades ocupadas de un palet (muestra los palets
   equivalentes `ceil(uds / uds_palet)`).
+
+Las órdenes (con su material/status) y las entregas (con su cliente) se definen en los maestros
+`ORDENES` y `ENTREGAS` del `<script>`.
 
 Cada ajuste queda registrado en el **log de movimientos** (fecha/hora, usuario, palet, acción,
 situación anterior → nueva, unidades, documento y motivo). Incluye **Exportar** a CSV y barra de

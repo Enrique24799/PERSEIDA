@@ -203,6 +203,13 @@
   }
   .modal .info b { color: var(--ink); }
   .modal .calc { font-size: 12px; color: var(--term); font-weight: 600; }
+  .modal .inherit {
+    font-size: 12px; color: #51637a; background: #f4f7fb;
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; line-height: 1.6;
+  }
+  .modal .inherit b { color: var(--ink); }
+  .modal .muted { color: #8494a6; }
+  .modal select { font-size: 13px; padding: 7px 9px; border: 1px solid #b9c6d6; border-radius: 5px; width: 100%; background: #fff; }
   .modal .mfoot {
     padding: 12px 14px; border-top: 1px solid var(--border);
     display: flex; gap: 8px; justify-content: flex-end; background: #f7fafd;
@@ -345,6 +352,11 @@
     <div class="mhead" id="modalTitle">Ajuste</div>
     <div class="mbody">
       <div class="info" id="modalInfo"></div>
+      <div class="mrow" id="rowOrden" style="display:none">
+        <label for="mOrden">Orden de fabricación (bloquear contra)</label>
+        <select id="mOrden"></select>
+        <div class="inherit" id="mOrdenInfo"></div>
+      </div>
       <div class="mrow" id="rowUnidades" style="display:none">
         <label for="mUnidades">Unidades ocupadas (nuevo valor)</label>
         <input type="text" id="mUnidades" inputmode="numeric" />
@@ -352,8 +364,10 @@
       </div>
       <div class="mrow" id="rowEntrega" style="display:none">
         <label for="mEntrega">Entrega</label>
-        <input type="text" id="mEntrega" placeholder="80012345" />
+        <input type="text" id="mEntrega" list="dlEntregas" placeholder="80012345" />
+        <div class="inherit" id="mEntregaInfo"></div>
       </div>
+      <datalist id="dlEntregas"></datalist>
       <div class="mrow">
         <label for="mMotivo">Motivo del ajuste</label>
         <textarea id="mMotivo" placeholder="Indique el motivo (recuento, corrección, expedición, ...)"></textarea>
@@ -420,6 +434,30 @@ const PALETS = [
   { palet:'04969358', matricula:'1000405558', material:'04900550', desc:'PACK Caja cartón 400x300', tipo:'PACKAGING', udsPalet:5000, udsOcup:5000, situacion:'LIBRE',     orden:'100046002', statusOrden:'Notificada', entrega:'', statusEntrega:'', ubic:'MP-C-02-04', fecha:'09/06/2026' },
   { palet:'04969359', matricula:'1000405559', material:'04900550', desc:'PACK Caja cartón 400x300', tipo:'PACKAGING', udsPalet:5000, udsOcup:1200, situacion:'BLOQUEADO', orden:'100046020', statusOrden:'Liberada',   entrega:'', statusEntrega:'', ubic:'MP-C-02-05', fecha:'10/06/2026' },
 ];
+
+/* ---------- Maestro de órdenes de fabricación (para el bloqueo) ---------- */
+/* Al bloquear contra una orden, el palet HEREDA su material, descripción,
+   tipo, uds/palet y status de orden.                                        */
+const ORDENES = [
+  { orden:'100045001', material:'70900045', desc:'SEMI Champú base 400 ml',     tipo:'SEMITERMINADO', udsPalet:240, statusOrden:'Notificada' },
+  { orden:'100045010', material:'70900046', desc:'SEMI Gel base 750 ml',        tipo:'SEMITERMINADO', udsPalet:180, statusOrden:'Notif. parcial' },
+  { orden:'100045020', material:'70900047', desc:'SEMI Loción base 500 ml',     tipo:'SEMITERMINADO', udsPalet:200, statusOrden:'Liberada' },
+  { orden:'100046002', material:'70920100', desc:'PT Champú Hidratante 400 ml', tipo:'TERMINADO',     udsPalet:120, statusOrden:'Notificada' },
+  { orden:'100046020', material:'70920101', desc:'PT Gel de Ducha Aloe 750 ml', tipo:'TERMINADO',     udsPalet:96,  statusOrden:'Liberada' },
+  { orden:'100046030', material:'70920102', desc:'PT Crema de Manos 100 ml',    tipo:'TERMINADO',     udsPalet:200, statusOrden:'Notificada' },
+];
+const ORD = Object.fromEntries(ORDENES.map(o => [o.orden, o]));
+
+/* ---------- Maestro de entregas (para la baja / expedición) ---------- */
+/* Al indicar la entrega, el palet HEREDA el cliente.                    */
+const ENTREGAS = [
+  { entrega:'80012345', cliente:'Mercadona S.A.' },
+  { entrega:'80012360', cliente:'Carrefour España S.A.' },
+  { entrega:'80012370', cliente:'Grupo Día S.A.' },
+  { entrega:'80012380', cliente:'Eroski S.Coop.' },
+  { entrega:'80012390', cliente:'Alcampo S.A.' },
+];
+const ENT = Object.fromEntries(ENTREGAS.map(e => [e.entrega, e]));
 
 /* ---------- Estado de la sesión ---------- */
 const seleccion = new Set();   // palets marcados
@@ -581,10 +619,11 @@ function abrirModal(action){
 
   modalAction = action;
   modalTarget = null;
-  $('#rowUnidades').style.display = 'none';
-  $('#rowEntrega').style.display = 'none';
+  ['rowOrden','rowUnidades','rowEntrega'].forEach(id => $('#' + id).style.display = 'none');
   $('#mMotivo').value = '';
   $('#mCalc').textContent = '';
+  $('#mOrdenInfo').innerHTML = '';
+  $('#mEntregaInfo').innerHTML = '';
 
   if (action === 'ajustar'){
     if (sel.length !== 1){ setStatus('El ajuste de unidades se realiza palet a palet: seleccione un único palet.', 'err'); return; }
@@ -597,8 +636,18 @@ function abrirModal(action){
     $('#rowUnidades').style.display = 'flex';
     $('#mUnidades').value = p.udsOcup;
     actualizarCalc();
-  } else {
-    const titulos = { bloquear:'Bloquear palets', desbloquear:'Desbloquear palets (dejar Libre)', baja:'Dar de baja / Expedir palets' };
+
+  } else if (action === 'bloquear'){
+    $('#modalTitle').textContent = 'Bloquear palets';
+    $('#modalInfo').innerHTML = `Bloquear <b>${sel.length}</b> palet(s): ` + sel.map(p => p.palet).join(', ') +
+      '<br><br>El palet heredará el material, la descripción y el status de la orden seleccionada.';
+    $('#rowOrden').style.display = 'flex';
+    const ords = [...new Set(sel.map(p => p.orden).filter(Boolean))];
+    $('#mOrden').value = (ords.length === 1 && ORD[ords[0]]) ? ords[0] : '';
+    actualizarOrdenInfo();
+
+  } else {  // desbloquear / baja
+    const titulos = { desbloquear:'Desbloquear palets (dejar Libre)', baja:'Dar de baja / Expedir palets' };
     $('#modalTitle').textContent = titulos[action];
     let info = `Acción sobre <b>${sel.length}</b> palet(s) seleccionado(s): ` + sel.map(p => p.palet).join(', ');
     if (action === 'baja') info += '<br><br>Al expedir, los palets se dan de <b>baja</b> y dejan de mostrarse en la lista.';
@@ -607,10 +656,16 @@ function abrirModal(action){
       $('#rowEntrega').style.display = 'flex';
       const ent = [...new Set(sel.map(p => p.entrega).filter(Boolean))];
       $('#mEntrega').value = ent.length === 1 ? ent[0] : '';
+      actualizarEntregaInfo();
     }
   }
   $('#overlay').classList.add('show');
-  setTimeout(() => { (modalTarget ? $('#mUnidades') : (action === 'baja' ? $('#mEntrega') : $('#mMotivo'))).focus(); }, 30);
+  setTimeout(() => {
+    const f = action === 'ajustar' ? $('#mUnidades')
+            : action === 'bloquear' ? $('#mOrden')
+            : action === 'baja' ? $('#mEntrega') : $('#mMotivo');
+    if (f) f.focus();
+  }, 30);
 }
 function cerrarModal(){ $('#overlay').classList.remove('show'); modalAction = null; modalTarget = null; }
 
@@ -622,11 +677,29 @@ function actualizarCalc(){
   $('#mCalc').textContent = `Palets equivalentes = ceil(${v} / ${modalTarget.udsPalet}) = ${palets}`;
 }
 
+/* al elegir la orden, se muestra el material que heredará el palet */
+function actualizarOrdenInfo(){
+  const o = ORD[$('#mOrden').value];
+  $('#mOrdenInfo').innerHTML = o
+    ? `Material heredado: <b>${o.material}</b> · ${esc(o.desc)} ${tipoTag(o.tipo)}<br>` +
+      `Status orden: ${statusOrdenPill(o.statusOrden)} &nbsp;·&nbsp; Uds/palet: <b>${o.udsPalet.toLocaleString('es-ES')}</b>`
+    : '<span class="muted">Seleccione una orden para heredar su material.</span>';
+}
+
+/* al teclear la entrega, se muestra el cliente que heredará la baja */
+function actualizarEntregaInfo(){
+  const e = ENT[$('#mEntrega').value.trim()];
+  $('#mEntregaInfo').innerHTML = e
+    ? `Cliente heredado: <b>${esc(e.cliente)}</b>`
+    : '<span class="muted">Cliente: — (entrega no encontrada en el maestro)</span>';
+}
+
 function confirmarModal(){
+  const accion = modalAction;
   const motivo = $('#mMotivo').value.trim();
   const sel = selectedRows();
 
-  if (modalAction === 'ajustar'){
+  if (accion === 'ajustar'){
     const p = modalTarget;
     const v = parseInt($('#mUnidades').value, 10);
     if (isNaN(v) || v < 0){ setStatus('Introduzca un número de unidades válido.', 'err'); return; }
@@ -641,25 +714,33 @@ function confirmarModal(){
   }
 
   // Acciones de cambio de situación (bloquear / desbloquear / baja)
-  let ok = 0;
-  if (modalAction === 'baja'){
+  let ok = 0, msg = '';
+  if (accion === 'baja'){
     const entrega = $('#mEntrega').value.trim();
     if (!entrega){ setStatus('Para dar de baja (expedir) es obligatorio indicar la entrega.', 'err'); return; }
+    const cli = (ENT[entrega] && ENT[entrega].cliente) || '';
     sel.forEach(p => {
       const de = p.situacion;
-      p.situacion = 'EXPEDIDO'; p.entrega = entrega; p.statusEntrega = 'Salida mercancías'; p.fecha = hoy();
-      logMov(p, 'Baja / Expedición', de, 'EXPEDIDO', null, null, entrega, motivo);
+      p.situacion = 'EXPEDIDO'; p.entrega = entrega; p.cliente = cli; p.statusEntrega = 'Salida mercancías'; p.fecha = hoy();
+      logMov(p, 'Baja / Expedición', de, 'EXPEDIDO', null, null, cli ? `${entrega} · ${cli}` : entrega, motivo);
       ok++;
     });
-  } else if (modalAction === 'bloquear'){
+    msg = `${ok} palet(s) expedido(s) y dados de baja${cli ? ' (cliente ' + cli + ')' : ''}. Ya no se muestran en la lista.`;
+
+  } else if (accion === 'bloquear'){
+    const o = ORD[$('#mOrden').value];
+    if (!o){ setStatus('Seleccione la orden de fabricación contra la que bloquear.', 'err'); return; }
     sel.forEach(p => {
-      if (p.situacion === 'BLOQUEADO') return;
       const de = p.situacion;
+      p.material = o.material; p.desc = o.desc; p.tipo = o.tipo; p.udsPalet = o.udsPalet;
+      p.orden = o.orden; p.statusOrden = o.statusOrden;
       p.situacion = 'BLOQUEADO'; p.fecha = hoy();
-      logMov(p, 'Bloqueo', de, 'BLOQUEADO', null, null, p.orden, motivo);
+      logMov(p, 'Bloqueo', de, 'BLOQUEADO', null, null, o.orden, motivo);
       ok++;
     });
-  } else if (modalAction === 'desbloquear'){
+    msg = `${ok} palet(s) bloqueado(s) contra la orden ${o.orden} (material ${o.material}).`;
+
+  } else if (accion === 'desbloquear'){
     sel.forEach(p => {
       if (p.situacion === 'LIBRE') return;
       const de = p.situacion;
@@ -667,13 +748,13 @@ function confirmarModal(){
       logMov(p, 'Desbloqueo', de, 'LIBRE', null, null, p.orden, motivo);
       ok++;
     });
+    msg = `${ok} palet(s) liberado(s) (situación Libre).`;
   }
 
   cerrarModal();
   seleccion.clear();
   ejecutar();
-  if (modalAction === 'baja') setStatus(`${ok} palet(s) expedido(s) y dados de baja. Ya no se muestran en la lista.`, 'ok');
-  else setStatus(`${ok} palet(s) actualizado(s).`, 'ok');
+  setStatus(msg, 'ok');
 }
 
 /* ---------- Exportar a CSV (como el "Exportar" de un ALV) ---------- */
@@ -711,6 +792,8 @@ $('#aExport').addEventListener('click', exportar);
 $('#mCancel').addEventListener('click', cerrarModal);
 $('#mOk').addEventListener('click', confirmarModal);
 $('#mUnidades').addEventListener('input', actualizarCalc);
+$('#mOrden').addEventListener('change', actualizarOrdenInfo);
+$('#mEntrega').addEventListener('input', actualizarEntregaInfo);
 $('#overlay').addEventListener('click', e => { if (e.target === $('#overlay')) cerrarModal(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && $('#overlay').classList.contains('show')) cerrarModal();
@@ -737,6 +820,11 @@ $('#chkAll').addEventListener('change', e => {
 });
 
 /* ---------- Inicio ---------- */
+/* poblar las ayudas del modal: desplegable de órdenes y datalist de entregas */
+$('#mOrden').innerHTML = '<option value="">(Seleccione orden)</option>' +
+  ORDENES.map(o => `<option value="${o.orden}">${o.orden} — ${o.material} — ${esc(o.desc)}</option>`).join('');
+$('#dlEntregas').innerHTML = ENTREGAS.map(e => `<option value="${e.entrega}">${esc(e.cliente)}</option>`).join('');
+
 renderLog();
 ejecutar();
 </script>
