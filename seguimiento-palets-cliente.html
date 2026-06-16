@@ -313,17 +313,6 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
     </fieldset>
 
     <fieldset>
-      <legend>Facturado</legend>
-      <div class="field-row">
-        <select id="fil-fact" style="width:140px" onchange="applyFilters()">
-          <option value="">— Todos —</option>
-          <option value="N">Pendiente</option>
-          <option value="S">Facturado</option>
-        </select>
-      </div>
-    </fieldset>
-
-    <fieldset>
       <legend>Código Palet</legend>
       <div class="field-row">
         <input type="text" id="fil-codpal" placeholder="PL-001..." style="width:130px"
@@ -349,8 +338,6 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
       <div class="legend">
         <div class="leg-item"><div class="leg-dot" style="background:#e7f0fd;border:1.5px solid #2f80ed"></div>Alquiler</div>
         <div class="leg-item"><div class="leg-dot" style="background:#f0e4f4;border:1.5px solid #7b2d9c"></div>Compra</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#fff4d6;border:1.5px solid #e0a800"></div>Pendiente facturar</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#e4f4ec;border:1.5px solid #27ae60"></div>Facturado</div>
       </div>
     </div>
   </div>
@@ -384,27 +371,6 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
         <div class="stat-label">En compra</div>
       </div>
     </div>
-    <div class="sep"></div>
-    <div class="stat warn">
-      <div>
-        <div><strong id="st-pend">—</strong></div>
-        <div class="stat-label">Pendientes facturar</div>
-      </div>
-    </div>
-    <div class="sep"></div>
-    <div class="stat ok">
-      <div>
-        <div><strong id="st-fact">—</strong></div>
-        <div class="stat-label">Facturadas</div>
-      </div>
-    </div>
-    <div class="sep"></div>
-    <div class="stat">
-      <div>
-        <div><strong id="st-importe">—</strong></div>
-        <div class="stat-label">Importe total</div>
-      </div>
-    </div>
   </div>
 
   <!-- Table -->
@@ -423,10 +389,6 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
           <th>F. Salida</th>
           <th>Nº Entrega</th>
           <th>Pedido Venta</th>
-          <th class="num">Precio/Ud.</th>
-          <th class="num">Importe</th>
-          <th class="center">Facturado</th>
-          <th class="center">Acción</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -484,14 +446,10 @@ td.cliente { font-weight: 600; color: #1f2d3d; }
         </div>
       </div>
 
-      <div class="modal-row cols3">
+      <div class="modal-row">
         <div class="modal-field">
           <label>Uds. Expedidas</label>
           <input type="text" id="m-uds" placeholder="0">
-        </div>
-        <div class="modal-field">
-          <label>Precio / Ud. (€)</label>
-          <input type="text" id="m-precio" placeholder="0.00">
         </div>
         <div class="modal-field">
           <label>Fecha Salida *</label>
@@ -540,11 +498,11 @@ const CLIENTES_DEMO = [
 ];
 
 const PALETS_DEMO = [
-  { codigo: 'PL-001', nombre: 'Palet Europeo 120x80',   tipo: 'ALQ', precio: 4.50 },
-  { codigo: 'PL-002', nombre: 'Palet Americano 120x100', tipo: 'ALQ', precio: 5.20 },
-  { codigo: 'PL-003', nombre: 'Palet Industrial 120x120',tipo: 'CMP', precio: 12.00 },
-  { codigo: 'PL-004', nombre: 'Palet Europeo 120x80',    tipo: 'CMP', precio: 9.80 },
-  { codigo: 'PL-005', nombre: 'Palet Químico 120x80',    tipo: 'ALQ', precio: 6.00 },
+  { codigo: 'PL-001', nombre: 'Palet Europeo 120x80',    tipo: 'ALQ' },
+  { codigo: 'PL-002', nombre: 'Palet Americano 120x100', tipo: 'ALQ' },
+  { codigo: 'PL-003', nombre: 'Palet Industrial 120x120',tipo: 'CMP' },
+  { codigo: 'PL-004', nombre: 'Palet Europeo 120x80',    tipo: 'CMP' },
+  { codigo: 'PL-005', nombre: 'Palet Químico 120x80',    tipo: 'ALQ' },
 ];
 
 const MATERIALES_DEMO = [
@@ -558,8 +516,6 @@ const TODAY = new Date('2026-06-16T00:00:00');
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 function fmtDate(d)    { return d ? d.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—'; }
 function isoDate(d)    { return d.toISOString().slice(0, 10); }
-function fmtEur(n)     { return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
-
 // Seeded random
 let _s = 7;
 function rand()        { _s = (_s * 1664525 + 1013904223) & 0xffffffff; return (_s >>> 0) / 4294967296; }
@@ -577,9 +533,6 @@ let DATA = [];
       const diasAtras= rI(120);
       const fSalida  = addDays(TODAY, -diasAtras);
       const uds      = 1 + rI(20);
-      const precio   = pal.precio;
-      const importe  = +(uds * precio).toFixed(2);
-      const facturado= rand() < 0.45 ? 'S' : 'N';
       const matricula= `MAT-${String(matSeq++).padStart(5,'0')}`;
 
       DATA.push({
@@ -591,12 +544,9 @@ let DATA = [];
         tipo:        pal.tipo,
         material:    rPick(MATERIALES_DEMO),
         uds,
-        precio,
-        importe,
         fSalida,
         entrega:     `ENT-${entSeq++}`,
         pedidoVenta: `PV-${String(pvSeq++).padStart(6,'0')}`,
-        facturado,
         obs:         ''
       });
     }
@@ -614,7 +564,6 @@ function applyFilters() {
   const cli    = document.getElementById('fil-cliente').value.trim().toLowerCase();
   const codpal = document.getElementById('fil-codpal').value.trim().toLowerCase();
   const tipo   = document.getElementById('fil-tipo').value;
-  const fact   = document.getElementById('fil-fact').value;
   const desde  = document.getElementById('fil-desde').value;
   const hasta  = document.getElementById('fil-hasta').value;
 
@@ -623,7 +572,6 @@ function applyFilters() {
                && !r.nomCliente.toLowerCase().includes(cli)) return false;
     if (codpal && !r.codPalet.toLowerCase().includes(codpal)) return false;
     if (tipo   && r.tipo      !== tipo) return false;
-    if (fact   && r.facturado !== fact) return false;
     if (desde) { const d = new Date(desde + 'T00:00:00'); if (r.fSalida < d) return false; }
     if (hasta) { const h = new Date(hasta + 'T23:59:59'); if (r.fSalida > h) return false; }
     return true;
@@ -633,7 +581,7 @@ function applyFilters() {
 }
 
 function clearFilters() {
-  ['fil-cliente','fil-codpal','fil-tipo','fil-fact','fil-desde','fil-hasta']
+  ['fil-cliente','fil-codpal','fil-tipo','fil-desde','fil-hasta']
     .forEach(id => document.getElementById(id).value = '');
   applyFilters();
 }
@@ -646,43 +594,27 @@ function tipoBadge(tipo) {
     : '<span class="badge cmp">Compra</span>';
 }
 
-function factBadge(f) {
-  return f === 'S'
-    ? '<span class="badge ok">Facturado</span>'
-    : '<span class="badge warn">Pendiente</span>';
-}
-
 function render() {
-  const st = { total: 0, uds: 0, alq: 0, cmp: 0, pend: 0, fact: 0, importe: 0 };
+  const st = { total: 0, uds: 0, alq: 0, cmp: 0 };
   filtered.forEach(r => {
     st.total++;
-    st.uds     += r.uds;
-    st.importe += r.importe;
+    st.uds += r.uds;
     if (r.tipo === 'ALQ') st.alq++; else st.cmp++;
-    if (r.facturado === 'S') st.fact++; else st.pend++;
   });
 
   document.getElementById('st-total').textContent   = st.total;
   document.getElementById('st-uds').textContent     = st.uds;
-  document.getElementById('st-alq').textContent     = st.alq;
-  document.getElementById('st-cmp').textContent     = st.cmp;
-  document.getElementById('st-pend').textContent    = st.pend;
-  document.getElementById('st-fact').textContent    = st.fact;
-  document.getElementById('st-importe').textContent = fmtEur(st.importe);
+  document.getElementById('st-alq').textContent = st.alq;
+  document.getElementById('st-cmp').textContent = st.cmp;
 
   const tbody = document.getElementById('tbody');
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="15" class="empty">No se encontraron expediciones con los filtros aplicados.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="empty">No se encontraron expediciones con los filtros aplicados.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map((r, idx) => {
-    const accion = r.facturado === 'N'
-      ? `<button class="act-btn green" onclick="marcarFacturado(${idx})">&#10003; Facturar</button>`
-      : `<span style="color:#aab4c0;font-size:11px">—</span>`;
-
-    return `<tr>
+  tbody.innerHTML = filtered.map(r => `<tr>
       <td class="mono">${r.idCliente}</td>
       <td class="cliente">${r.nomCliente}</td>
       <td class="mono">${r.codPalet}</td>
@@ -694,18 +626,7 @@ function render() {
       <td>${fmtDate(r.fSalida)}</td>
       <td class="mono">${r.entrega}</td>
       <td class="mono">${r.pedidoVenta}</td>
-      <td class="num">${fmtEur(r.precio)}</td>
-      <td class="num" style="font-weight:600">${fmtEur(r.importe)}</td>
-      <td class="center">${factBadge(r.facturado)}</td>
-      <td class="center">${accion}</td>
-    </tr>`;
-  }).join('');
-}
-
-// Índice real en DATA para la fila visible
-function marcarFacturado(idx) {
-  filtered[idx].facturado = 'S';
-  render();
+    </tr>`).join('');
 }
 
 // ─── Modal: Nueva Expedición ──────────────────────────────────────────────────
@@ -719,7 +640,6 @@ function openNuevo() {
   document.getElementById('m-tipo').value    = 'ALQ';
   document.getElementById('m-material').value= '';
   document.getElementById('m-uds').value     = '';
-  document.getElementById('m-precio').value  = '';
   document.getElementById('m-fsalida').value = isoDate(TODAY);
   document.getElementById('m-entrega').value = `ENT-${800100 + DATA.length}`;
   document.getElementById('m-pedido').value  = `PV-${String(10500 + DATA.length).padStart(6,'0')}`;
@@ -742,8 +662,7 @@ function saveModal() {
     return;
   }
 
-  const uds    = parseInt(document.getElementById('m-uds').value)     || 0;
-  const precio = parseFloat(document.getElementById('m-precio').value) || 0;
+  const uds = parseInt(document.getElementById('m-uds').value) || 0;
 
   DATA.unshift({
     idCliente:   idCli,
@@ -754,12 +673,9 @@ function saveModal() {
     tipo:        document.getElementById('m-tipo').value,
     material:    document.getElementById('m-material').value.trim(),
     uds,
-    precio,
-    importe:     +(uds * precio).toFixed(2),
     fSalida:     new Date(fSal + 'T00:00:00'),
     entrega:     document.getElementById('m-entrega').value.trim(),
     pedidoVenta: document.getElementById('m-pedido').value.trim(),
-    facturado:   'N',
     obs:         document.getElementById('m-obs').value.trim()
   });
 
