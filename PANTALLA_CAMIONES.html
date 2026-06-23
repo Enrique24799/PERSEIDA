@@ -64,6 +64,9 @@
     display: inline-flex; align-items: center; justify-content: center;
   }
   .toolico:hover { background: #e7eef7; border-color: #b9c6d6; }
+  .toolico svg { display: block; }
+  .toolico.ico-nuevo:hover  { background: #fff7d6; border-color: #e6c200; }
+  .toolico.ico-anular:hover { background: #fdecea; border-color: #d9534f; }
   .toolbar .spacer { flex: 1 1 auto; }
 
   /* ---------- Buscador global ---------- */
@@ -231,8 +234,28 @@
     <label class="chk-todos"><input type="checkbox" id="fTodos" checked /> Todos</label>
     <button class="btn-actualizar" id="btnActualizar"><span>&#8635;</span> Actualizar</button>
     <button class="toolico" id="btnPrint" title="Imprimir">&#128424;</button>
-    <button class="toolico" id="btnExpandAll" title="Desplegar todo">&#11119;</button>
-    <button class="toolico" id="btnCollapseAll" title="Plegar todo">&#11120;</button>
+    <button class="toolico ico-nuevo" id="btnNuevoCamion" title="Nuevo camión (se abre en una pestaña nueva)">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <rect x="2.5" y="3.5" width="19" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="2.5" y1="8.5" x2="21.5" y2="8.5" stroke="currentColor" stroke-width="1.1"/>
+        <line x1="9"   y1="3.5" x2="9"    y2="17.5" stroke="currentColor" stroke-width="1.1"/>
+        <line x1="15"  y1="3.5" x2="15"   y2="17.5" stroke="currentColor" stroke-width="1.1"/>
+        <circle cx="18.5" cy="18.5" r="5" fill="#27ae60" stroke="#fff" stroke-width="1.2"/>
+        <line x1="18.5" y1="16.2" x2="18.5" y2="20.8" stroke="#fff" stroke-width="1.7"/>
+        <line x1="16.2" y1="18.5" x2="20.8" y2="18.5" stroke="#fff" stroke-width="1.7"/>
+      </svg>
+    </button>
+    <button class="toolico ico-anular" id="btnAnular" title="Anular camión seleccionado">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <rect x="2.5" y="3.5" width="19" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="2.5" y1="8.5" x2="21.5" y2="8.5" stroke="currentColor" stroke-width="1.1"/>
+        <line x1="9"   y1="3.5" x2="9"    y2="17.5" stroke="currentColor" stroke-width="1.1"/>
+        <line x1="15"  y1="3.5" x2="15"   y2="17.5" stroke="currentColor" stroke-width="1.1"/>
+        <circle cx="18.5" cy="18.5" r="5" fill="#d9534f" stroke="#fff" stroke-width="1.2"/>
+        <line x1="16.9" y1="16.9" x2="20.1" y2="20.1" stroke="#fff" stroke-width="1.7"/>
+        <line x1="20.1" y1="16.9" x2="16.9" y2="20.1" stroke="#fff" stroke-width="1.7"/>
+      </svg>
+    </button>
     <span class="spacer"></span>
   </div>
 
@@ -311,7 +334,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function nf(n){ return Number(n).toLocaleString('es-ES'); }
+function nf(n){ const x = Math.round(Number(n) || 0); const s = String(Math.abs(x)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return x < 0 ? '-' + s : s; }
 
 /* ---------- Maestro de clientes (código + dirección de envío) ---------- */
 const CLIENTES = {
@@ -587,15 +610,81 @@ $('#tbody').addEventListener('change', e => {
 $$('.filterrow input[data-col]').forEach(inp => inp.addEventListener('input', render));
 $('#btnActualizar').addEventListener('click', render);
 
-$('#btnExpandAll').addEventListener('click', () => {
-  visibles().forEach(c => openSet.add(c._id));
-  render();
-});
-$('#btnCollapseAll').addEventListener('click', () => { openSet.clear(); render(); });
 $('#btnPrint').addEventListener('click', () => window.print());
 
 // que el clic en la fila de filtros no propague a la selección
 $$('.filterrow input').forEach(inp => inp.addEventListener('click', e => e.stopPropagation()));
+
+/* =====================================================================
+   NUEVO CAMIÓN — se abre en una PESTAÑA NUEVA (no en pop-up).
+   La pestaña NUEVO_CAMION.html devuelve el camión guardado por
+   postMessage (ventana abridora) y, como respaldo, vía localStorage
+   (evento 'storage' y al recuperar el foco de esta pestaña).
+   ===================================================================== */
+const LS_KEY = 'PERSEIDA_NUEVO_CAMION';
+let lastTs = 0;
+
+$('#btnNuevoCamion').addEventListener('click', () => {
+  window.open('NUEVO_CAMION.html', '_blank');
+});
+
+$('#btnAnular').addEventListener('click', () => {
+  if (selId == null){ alert('Seleccione primero un camión (haga clic en su fila) para anularlo.'); return; }
+  const c = CAMIONES.find(x => x._id === selId);
+  if (!c) return;
+  if (c.estado === 'ANULADO'){ alert('El camión ' + c.noCamion + ' ya está anulado.'); return; }
+  if (confirm('¿Anular el camión ' + c.noCamion + '?')){
+    c.estado = 'ANULADO';
+    render();
+  }
+});
+
+function addCamionFromPayload(p){
+  if (!p || !p.header || !p.ts || p.ts <= lastTs) return;
+  lastTs = p.ts;
+  const maxN = CAMIONES.reduce((m, c) => Math.max(m, parseInt((c.noCamion.split('-')[1] || '0'), 10) || 0), 0);
+  const h = p.header;
+  const c = {
+    estado: h.estado || 'PTE CARGAR',
+    noCamion: '20260623-' + (maxN + 1),
+    cliente: h.cliente || '',
+    tipoCamion: h.tipoCamion || 'Trailer',
+    coste: h.coste || 0,
+    almacen: h.almacen || '',
+    horaCarga: h.horaCarga || FECHA_NULA,
+    fechaDescarga: h.fechaDescarga || FECHA_NULA,
+    muelle: h.muelle || 0,
+    matricula: h.matricula || '',
+    traslado: !!h.traslado,
+    comentarios: h.comentarios || '',
+    pedido: ((p.lineas && p.lineas[0] && p.lineas[0].pedido) || '').split('-')[0],
+    lineas: (p.lineas || []),
+    _id: CAMIONES.length,
+  };
+  CAMIONES.push(c);
+  selId = c._id;
+  openSet.add(c._id);
+  render();
+  try { localStorage.removeItem(LS_KEY); } catch(e){}
+  const tr = document.querySelector('tr.mainrow.sel');
+  try { if (tr && tr.scrollIntoView) tr.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e){}
+}
+
+// 1) mensaje directo desde la pestaña abierta
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (d && d.type === 'PERSEIDA_NUEVO_CAMION') addCamionFromPayload(d.payload);
+});
+// 2) respaldo: cambio en localStorage desde otra pestaña
+window.addEventListener('storage', e => {
+  if (e.key === LS_KEY && e.newValue){
+    try { addCamionFromPayload(JSON.parse(e.newValue)); } catch(_){}
+  }
+});
+// 3) respaldo: al volver el foco a esta pestaña, comprobar si hay uno pendiente
+window.addEventListener('focus', () => {
+  try { const raw = localStorage.getItem(LS_KEY); if (raw) addCamionFromPayload(JSON.parse(raw)); } catch(_){}
+});
 
 /* ---------- Inicio ---------- */
 render();

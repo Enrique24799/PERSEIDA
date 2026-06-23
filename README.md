@@ -6,6 +6,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `AJUSTE_PALETS.html` — Transacción de control y ajuste de inventario de palets.
 - `PANTALLA_CAMIONES.html` — Pantalla de camiones (carga/expedición) con detalle desplegable por camión.
+- `NUEVO_CAMION.html` — Alta de un nuevo camión (se abre en una pestaña nueva desde la pantalla anterior).
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -144,6 +145,37 @@ Al desplegar un camión se muestra una sub-tabla con columnas ajustadas: `Linea`
 ### Opciones / filtros
 
 `Fecha`, `Almacén`, casilla **Todos** (al desmarcarla se ocultan los camiones sin fecha de carga),
-botón **Actualizar**, **buscador** global y **filtros por columna**. También hay botones para
-**imprimir**, **desplegar todo** y **plegar todo**. Para datos reales basta sustituir el array
-`CAMIONES` y los maestros `CLIENTES` / `MATERIALES` del `<script>`.
+botón **Actualizar**, **buscador** global y **filtros por columna**. En la barra hay tres iconos:
+**imprimir**, **Nuevo camión** (rejilla con `+`) y **Anular camión** (rejilla con `✕`, anula el
+camión seleccionado). Para datos reales basta sustituir el array `CAMIONES` y los maestros
+`CLIENTES` / `MATERIALES` del `<script>`.
+
+### Nuevo camión (pestaña nueva)
+
+El icono **Nuevo camión** (rejilla con `+`) **abre `NUEVO_CAMION.html` en una pestaña nueva**
+(`window.open(..., '_blank')`), no en un pop-up. Al **Guardar** allí, el camión generado se inserta
+en esta rejilla y queda seleccionado y desplegado. La comunicación entre pestañas es por
+`postMessage` (ventana abridora) con respaldo en `localStorage` (evento `storage` y al recuperar el
+foco de la pantalla).
+
+## `NUEVO_CAMION.html` — Alta de un nuevo camión
+
+Formulario para **crear un camión** y asignarle sus líneas de carga. Se abre en una **pestaña
+nueva** desde `PANTALLA_CAMIONES.html`. Visor autocontenido con datos de **ejemplo**.
+
+- **Pestañas:** `Datos Camión` y `Comentarios`.
+- **Datos Camión:** `Fecha`, casilla `Camión de TRASLADO`, `Matrícula Remolque`, `Matrícula
+  Tractora`, `Coste`, `Conductor`, `Tipo Camión`, `Teléfono` y `Centro`.
+- **Líneas de Carga — Buscar por:** `Almacén` + radio `Material` / `Pedido` / `Cliente` + texto, o
+  por `Nº Doc` / `Año`. Los resultados salen en la tabla **Pedidos** (`Pedido`, `Cod./Nom. Cliente`,
+  `Fecha Pedido`, `Cod. Material`, `Material`, `Cant. Pedido/Entrega/Pdte`, `Stock`, `Pdte. Fab.`,
+  `Unidad`, `Fecha Entrega`). Al pulsar una fila se rellena **Detalle Material Consultado**
+  (`Stock` / `Pdte. Fabricar`).
+- **Agregar Selección:** marca uno o varios pedidos y pásalos a las **líneas de carga** (`Orden`,
+  `Pedido SAP`, `Entrega`, `Codigo Cliente`, `Cli. Dir. Envio`, `Cliente`, `Material`, `Dirección
+  Envio`, `Tipo Unidad`, `Palets`, `Unid X Palets`, `Completo`). Los `Palets` se calculan como
+  `ceil(cantidad / uds-por-palet)`. La casilla **Gestión de Entregas** rellena el nº de entrega.
+- **Quitar Selección** quita líneas de carga; **Guardar** genera el camión (estado `PTE CARGAR`) y
+  lo envía a la pantalla de camiones.
+
+Para datos reales basta sustituir los maestros `MATS` / `CLIS` y el array `PEDIDOS` del `<script>`.
