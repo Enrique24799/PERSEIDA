@@ -334,6 +334,7 @@
     --blue: #2f80ed;
     --magenta: #e6177f;
     --ok: #27ae60;
+    --bad: #d9534f;
   }
   * { box-sizing: border-box; }
   body {
@@ -436,12 +437,21 @@
   td.mono { font-family: "Consolas", monospace; }
   td.nom, td.mat { white-space: normal; }
   td.link { color: var(--blue); }
+  td.neg { color: var(--bad); font-weight: 700; }
+  td.clickable { cursor: pointer; }
+  td.clickable:hover { background: #eef4fc; }
+  .cell-link { color: var(--blue); cursor: pointer; text-decoration: underline; font-weight: 600; }
+  .cell-link:hover { color: #1b5fc0; }
+  .compra-link { color: var(--blue); cursor: pointer; white-space: nowrap; }
   .chkcol, th.chkcol { width: 34px; text-align: center; }
 
   /* anchos ajustados — Pedidos */
-  .p-ped { width: 110px; } .p-cod { width: 100px; } .p-nom { width: 160px; }
-  .p-fped { width: 100px; } .p-codm { width: 100px; } .p-mat { width: 200px; }
-  .p-num { width: 92px; } .p-uni { width: 64px; } .p-fent { width: 104px; }
+  .p-ped { width: 110px; } .p-cod { width: 100px; } .p-nom { width: 150px; }
+  .p-area { width: 100px; } .p-alm { width: 78px; }
+  .p-fped { width: 100px; } .p-codm { width: 100px; } .p-mat { width: 190px; }
+  .p-num { width: 90px; } .p-svd { width: 110px; } .p-fab { width: 120px; }
+  .p-falta { width: 86px; } .p-compra { width: 96px; }
+  .p-uni { width: 64px; } .p-fent { width: 104px; }
 
   /* anchos ajustados — Carga */
   .c-ord { width: 56px; } .c-ped { width: 110px; } .c-ent { width: 90px; }
@@ -474,6 +484,32 @@
   .saved.show { display: flex; }
   .saved .x { margin-left: auto; cursor: pointer; opacity: .7; font-weight: 700; }
   .saved .x:hover { opacity: 1; }
+
+  /* ---------- Modal (pop-ups) ---------- */
+  .modal-ov {
+    display: none; position: fixed; inset: 0; background: rgba(20,32,48,.45);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-ov.show { display: flex; }
+  .modal-bx {
+    background: #fff; width: 720px; max-width: 94vw; max-height: 86vh;
+    border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3);
+  }
+  .modal-hd {
+    background: linear-gradient(180deg, #37618f, #2f5f8f); color: #fff;
+    padding: 10px 14px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .modal-hd button { margin-left: auto; background: none; border: none; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; opacity: .85; }
+  .modal-hd button:hover { opacity: 1; }
+  .modal-bd { padding: 14px; overflow: auto; }
+  .modal-note { font-size: 12px; color: #51637a; margin: 0 0 10px; line-height: 1.5; }
+  .modal-note b { color: var(--ink); }
+  .modal-empty { padding: 16px; text-align: center; color: #8494a6; font-style: italic; }
+  tr.pre td { background: #e3f5ea; }
+  tr.pre:hover td { background: #d6efe0; }
+  .tag-pre { display: inline-block; background: var(--ok); color: #fff; border-radius: 9px; padding: 1px 8px; font-size: 10px; font-weight: 700; }
+  .tag-no  { display: inline-block; background: #eceff3; color: #5b6b7d; border-radius: 9px; padding: 1px 8px; font-size: 10px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -622,6 +658,8 @@
             <th class="p-ped">Pedido</th>
             <th class="p-cod">Cod. Cliente</th>
             <th class="p-nom">Nom. Cliente</th>
+            <th class="p-area">Area Entrega</th>
+            <th class="p-alm">Almacén</th>
             <th class="p-fped">Fecha Pedido</th>
             <th class="p-codm">Cod. Material</th>
             <th class="p-mat">Material</th>
@@ -629,13 +667,16 @@
             <th class="p-num">Cant. Entrega</th>
             <th class="p-num">Cant. Pdte</th>
             <th class="p-num">Stock</th>
-            <th class="p-num">Pdte. Fab.</th>
+            <th class="p-svd">Stock Verif. Disp.</th>
+            <th class="p-fab">Fabricación Verificada</th>
+            <th class="p-falta">Faltas Comp.</th>
+            <th class="p-compra">Ped. Compra</th>
             <th class="p-uni">Unidad</th>
             <th class="p-fent">Fecha Entrega</th>
           </tr>
           <tr class="filterrow">
             <th class="chkcol"></th>
-            <th></th><th></th><th></th>
+            <th></th><th></th><th></th><th></th><th></th>
             <th><span class="cal">&#128197;</span></th>
             <th></th><th></th>
             <th><span class="fic">&#9650;&#9660;</span></th>
@@ -643,7 +684,8 @@
             <th><span class="fic">&#9650;&#9660;</span></th>
             <th><span class="fic">&#9650;&#9660;</span></th>
             <th><span class="fic">&#9650;&#9660;</span></th>
-            <th></th>
+            <th><span class="fic">&#9650;&#9660;</span></th>
+            <th></th><th></th><th></th>
             <th><span class="cal">&#128197;</span></th>
           </tr>
         </thead>
@@ -699,12 +741,28 @@
 
 </div>
 
+<!-- ===================== Modal (pop-ups) ===================== -->
+<div class="modal-ov" id="modalOv">
+  <div class="modal-bx">
+    <div class="modal-hd"><span id="modalTitle">—</span><button id="modalClose" title="Cerrar">&#10005;</button></div>
+    <div class="modal-bd" id="modalBody"></div>
+  </div>
+</div>
+
 <script>
 /* =====================================================================
    NUEVO CAMIÓN (pestaña independiente).
-   Flujo: buscar pedidos (por material / pedido / cliente) -> seleccionar
-   -> "Agregar Selección" (pasan a las líneas de carga) -> "Guardar"
-   (genera el camión y lo envía a la pantalla de camiones).
+   Buscar pedidos -> seleccionar -> "Agregar Selección" -> "Guardar".
+
+   La tabla "Pedidos" incluye verificación de disponibilidad:
+   - Area Entrega (provincia del cliente) y Almacén.
+   - Stock Verif. Disp.: stock disponible a la FECHA DE ENTREGA descontando
+     las reservas de material de OTROS pedidos con entrega anterior/igual.
+   - Fabricación Verificada: suma de las órdenes planificadas que terminan
+     antes/en la fecha de entrega (pop-up con las órdenes, resaltando esas).
+   - Faltas Comp.: check de si las órdenes del material tienen faltas de
+     componentes (pop-up con órdenes y componentes en falta).
+   - Ped. Compra: pop-up con los pedidos de compra de esos componentes.
 
    Datos de EJEMPLO. Comunicación con la pantalla principal por
    postMessage (ventana abridora) + localStorage (respaldo).
@@ -715,26 +773,85 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function nf(n){ const x = Math.round(Number(n) || 0); const s = String(Math.abs(x)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return x < 0 ? '-' + s : s; }
 function pad10(n){ return String(n).padStart(10, '0'); }
+function parseDmy(s){ const p = String(s).split('/').map(Number); return new Date(p[2], p[1] - 1, p[0]); }
 
-/* ---------- Maestro de materiales (desc, uds/palet, stock, pdte. fabricar) ---------- */
+/* ---------- Maestro de materiales (desc, uds/palet, stock, pdte. fabricar, almacén) ---------- */
 const MATS = {
-  '70902545': { desc:'NELIA GEL CUIDADO HTE ROSA 900ML(750+150)', udsPalet:576, stock:54312, fab:194140 },
-  '70902554': { desc:'NELIA COLONIA FAMILIAR ROSAS 750ML',        udsPalet:480, stock:2556,  fab:15988 },
-  '70902560': { desc:'NELIA CHAMPU NUTRITIVO 400ML',              udsPalet:540, stock:9180,  fab:21600 },
-  '70907033': { desc:'BELLE CR CORP TARRO ALOE VERA 300ML',       udsPalet:960, stock:12480, fab:0 },
-  '70903688': { desc:'BELLE CREMA MANOS HIDRAT.100ML',            udsPalet:216, stock:8640,  fab:5400 },
-  '70906417': { desc:'BELLE EDT FRESH VAINILLA 100ML',            udsPalet:468, stock:3744,  fab:9360 },
-  '70905914': { desc:'BELLE MASCARILLA ORO TARRO 300ML',          udsPalet:384, stock:1536,  fab:7680 },
-  '70902150': { desc:'BELLE CHAMPU REPARADOR 400ML',              udsPalet:600, stock:18000, fab:0 },
+  '70902545': { desc:'NELIA GEL CUIDADO HTE ROSA 900ML(750+150)', udsPalet:576, stock:54312, fab:194140, alm:'FAB' },
+  '70902554': { desc:'NELIA COLONIA FAMILIAR ROSAS 750ML',        udsPalet:480, stock:2556,  fab:15988,  alm:'FAB' },
+  '70902560': { desc:'NELIA CHAMPU NUTRITIVO 400ML',              udsPalet:540, stock:9180,  fab:21600,  alm:'FAB' },
+  '70907033': { desc:'BELLE CR CORP TARRO ALOE VERA 300ML',       udsPalet:960, stock:12480, fab:0,      alm:'CT01' },
+  '70903688': { desc:'BELLE CREMA MANOS HIDRAT.100ML',            udsPalet:216, stock:8640,  fab:5400,   alm:'CT01' },
+  '70906417': { desc:'BELLE EDT FRESH VAINILLA 100ML',            udsPalet:468, stock:3744,  fab:9360,   alm:'FAB' },
+  '70905914': { desc:'BELLE MASCARILLA ORO TARRO 300ML',          udsPalet:384, stock:1536,  fab:7680,   alm:'CT01' },
+  '70902150': { desc:'BELLE CHAMPU REPARADOR 400ML',              udsPalet:600, stock:18000, fab:0,      alm:'FAB' },
 };
 
-/* ---------- Maestro de clientes (nombre + ciudad de envío) ---------- */
+/* ---------- Maestro de clientes (nombre, ciudad de envío y provincia / área de entrega) ---------- */
 const CLIS = {
-  '0000003167': { nom:'DROGUERIAS Y PERFUMERIAS ANA S', ciudad:'SEVILLA' },
-  '0000191074': { nom:'PENINSULACO S.L',                ciudad:'VALENCIA' },
-  '0000190088': { nom:'CAPRABO, S.A',                   ciudad:'BARCELONA' },
-  '0000190200': { nom:'CECOSA SUPERMERCADOS',           ciudad:'BILBAO' },
-  '0000190120': { nom:'DISTRICAM IBERICA, S.L.',        ciudad:'MADRID' },
+  '0000003167': { nom:'DROGUERIAS Y PERFUMERIAS ANA S', ciudad:'SEVILLA',   prov:'Sevilla' },
+  '0000191074': { nom:'PENINSULACO S.L',                ciudad:'VALENCIA',  prov:'Valencia' },
+  '0000190088': { nom:'CAPRABO, S.A',                   ciudad:'BARCELONA', prov:'Barcelona' },
+  '0000190200': { nom:'CECOSA SUPERMERCADOS',           ciudad:'BILBAO',    prov:'Vizcaya' },
+  '0000190120': { nom:'DISTRICAM IBERICA, S.L.',        ciudad:'MADRID',    prov:'Madrid' },
+};
+
+/* ---------- Componentes (materiales de la lista de materiales) ---------- */
+const COMPS = {
+  '40010020': 'BOTELLA PET 900ML ROSA',
+  '40010021': 'TAPON SPRAY DORADO',
+  '40010030': 'ETIQUETA NELIA ROSA',
+  '40010040': 'CAJA CARTON 12U',
+  '40010050': 'BOTELLA VIDRIO 750ML',
+  '40010060': 'VALVULA COLONIA STD',
+  '40010070': 'ESTUCHE BELLE 300ML',
+  '40010080': 'TARRO PP 100ML BLANCO',
+};
+
+/* ---------- Órdenes de fabricación por material (inicio / fin / cantidad) ---------- */
+const ORDENES = {
+  '70902545': [
+    { orden:'100460012', qty:5760, fIni:'20/06/2026', fFin:'24/06/2026' },
+    { orden:'100460045', qty:2880, fIni:'25/06/2026', fFin:'28/06/2026' },
+  ],
+  '70902554': [
+    { orden:'100460050', qty:1440, fIni:'22/06/2026', fFin:'25/06/2026' },
+  ],
+  '70902560': [
+    { orden:'100460061', qty:2160, fIni:'21/06/2026', fFin:'26/06/2026' },
+    { orden:'100460062', qty:1080, fIni:'27/06/2026', fFin:'01/07/2026' },
+  ],
+  '70907033': [ { orden:'100460070', qty:3840, fIni:'19/06/2026', fFin:'23/06/2026' } ],
+  '70903688': [ { orden:'100460080', qty:1296, fIni:'24/06/2026', fFin:'27/06/2026' } ],
+  '70906417': [ { orden:'100460090', qty:1872, fIni:'23/06/2026', fFin:'26/06/2026' } ],
+  '70905914': [ { orden:'100460100', qty:1152, fIni:'26/06/2026', fFin:'30/06/2026' } ],
+  '70902150': [ { orden:'100460110', qty:3000, fIni:'20/06/2026', fFin:'24/06/2026' } ],
+};
+
+/* ---------- Faltas de componentes por orden (solo se muestran las de falta > 0) ---------- */
+const FALTAS = {
+  '100460012': [
+    { comp:'40010020', necesario:5760, disponible:3000, falta:2760 },
+    { comp:'40010030', necesario:5760, disponible:5760, falta:0 },
+  ],
+  '100460045': [],
+  '100460050': [ { comp:'40010050', necesario:1440, disponible:900, falta:540 } ],
+  '100460061': [],
+  '100460062': [ { comp:'40010030', necesario:1080, disponible:0, falta:1080 } ],
+  '100460070': [],
+  '100460080': [ { comp:'40010080', necesario:1296, disponible:1000, falta:296 } ],
+  '100460090': [],
+  '100460100': [ { comp:'40010070', necesario:1152, disponible:500, falta:652 } ],
+  '100460110': [],
+};
+
+/* ---------- Pedidos de compra por componente (asociados a las faltas) ---------- */
+const COMPRAS = {
+  '40010020': { pc:'4500087001', cant:6000, fRec:'25/06/2026', prov:'ENVASES DEL SUR S.L.' },
+  '40010050': { pc:'4500087014', cant:2000, fRec:'24/06/2026', prov:'VIDRIOS LEVANTE S.A.' },
+  '40010030': { pc:'4500087020', cant:8000, fRec:'29/06/2026', prov:'ETIQUETAS GRAFICAS S.L.' },
+  '40010080': { pc:'4500087033', cant:5000, fRec:'26/06/2026', prov:'PLASTICOS IBERIA S.A.' },
+  '40010070': { pc:'4500087041', cant:3000, fRec:'28/06/2026', prov:'CARTONAJES NORTE S.L.' },
 };
 
 /* ---------- Pedidos (cabecera + posiciones) — datos de ejemplo ---------- */
@@ -764,9 +881,35 @@ const PEDIDOS = [
   ]},
 ];
 
+/* ---------- Cálculos de verificación de disponibilidad ---------- */
+// Reservas de OTROS pedidos del mismo material con entrega anterior o igual.
+function reservasOtros(code, fent, base, pos){
+  const E = parseDmy(fent);
+  let r = 0;
+  PEDIDOS.forEach(p => p.pos.forEach(po => {
+    if (po.mat !== code) return;
+    if (p.base === base && po.n === pos) return;     // excluye la propia línea
+    if (parseDmy(p.fent) <= E) r += po.cant;
+  }));
+  return r;
+}
+// Stock disponible verificado a la fecha de entrega = stock - reservas de otros.
+function stockVerif(code, fent, base, pos){
+  return ((MATS[code] || {}).stock || 0) - reservasOtros(code, fent, base, pos);
+}
+// Fabricación verificada = suma de órdenes que terminan antes/en la fecha de entrega.
+function fabVerificada(code, fent){
+  const E = parseDmy(fent);
+  return (ORDENES[code] || []).filter(o => parseDmy(o.fFin) <= E).reduce((s, o) => s + o.qty, 0);
+}
+// ¿Tiene alguna orden con faltas de componentes?
+function tieneFaltas(code){
+  return (ORDENES[code] || []).some(o => (FALTAS[o.orden] || []).some(f => f.falta > 0));
+}
+
 /* ---------- Estado de la pestaña ---------- */
-let RESULTS = [];   // filas de resultados de búsqueda (una por posición)
-let CARGA = [];     // líneas de carga del camión (lo que se va a guardar)
+let RESULTS = [];
+let CARGA = [];
 let gestionEntregas = false;
 let seqEntrega = 80055200;
 
@@ -782,13 +925,14 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
 function buildResults(predicate){
   const out = [];
   PEDIDOS.forEach(p => {
-    const cli = CLIS[p.cli] || { nom:'', ciudad:'' };
+    const cli = CLIS[p.cli] || { nom:'', ciudad:'', prov:'' };
     p.pos.forEach(po => {
-      const m = MATS[po.mat] || { desc:'', stock:0, fab:0 };
+      const m = MATS[po.mat] || { desc:'', stock:0, fab:0, alm:'' };
       const row = {
         base: p.base, pos: po.n,
         pedidoLabel: p.base + '-' + po.n,
-        codCli: p.cli, nomCli: cli.nom, ciudad: cli.ciudad,
+        codCli: p.cli, nomCli: cli.nom, ciudad: cli.ciudad, area: cli.prov,
+        alm: m.alm,
         fped: p.fped, fent: p.fent,
         codMat: po.mat, matDesc: m.desc,
         cant: po.cant, entrega: 0, pdte: po.cant,
@@ -803,7 +947,9 @@ function buildResults(predicate){
 function doSearch(){
   const modo = ($('input[name="modo"]:checked') || {}).value || 'pedido';
   const q = $('#fBusca').value.trim().toLowerCase();
+  const alm = $('#fAlmacen').value;
   RESULTS = buildResults(row => {
+    if (alm && row.alm !== alm) return false;
     if (!q) return true;
     if (modo === 'pedido')   return row.base.toLowerCase().includes(q) || row.pedidoLabel.toLowerCase().includes(q);
     if (modo === 'cliente')  return row.nomCli.toLowerCase().includes(q) || row.codCli.toLowerCase().includes(q);
@@ -822,7 +968,7 @@ function doSearchDoc(){
 function renderResults(){
   const tb = $('#tbodyPed');
   if (!RESULTS.length){
-    tb.innerHTML = `<tr><td colspan="14">
+    tb.innerHTML = `<tr><td colspan="19">
       <div class="empty">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
           <circle cx="10.5" cy="10.5" r="6.5"></circle>
@@ -835,12 +981,24 @@ function renderResults(){
     $('#chkAllPed').checked = false;
     return;
   }
-  tb.innerHTML = RESULTS.map((r, i) => `
+  tb.innerHTML = RESULTS.map((r, i) => {
+    const sv = stockVerif(r.codMat, r.fent, r.base, r.pos);
+    const fv = fabVerificada(r.codMat, r.fent);
+    const faltas = tieneFaltas(r.codMat);
+    const faltaTd = faltas
+      ? `<td class="p-falta center clickable" data-act="falta" data-i="${i}" title="Ver faltas de componentes"><input type="checkbox" checked disabled></td>`
+      : `<td class="p-falta center"><input type="checkbox" disabled></td>`;
+    const compraTd = faltas
+      ? `<td class="p-compra center clickable" data-act="compra" data-i="${i}" title="Ver pedidos de compra"><span class="compra-link">&#128722; Ver</span></td>`
+      : `<td class="p-compra center">&mdash;</td>`;
+    return `
     <tr data-i="${i}">
       <td class="chkcol"><input type="checkbox" class="ckPed" data-i="${i}"></td>
       <td class="p-ped mono">${esc(r.pedidoLabel)}</td>
       <td class="p-cod mono">${esc(r.codCli)}</td>
       <td class="p-nom nom">${esc(r.nomCli)}</td>
+      <td class="p-area">${esc(r.area)}</td>
+      <td class="p-alm mono">${esc(r.alm)}</td>
       <td class="p-fped">${esc(r.fped)}</td>
       <td class="p-codm mono">${esc(r.codMat)}</td>
       <td class="p-mat mat">${esc(r.matDesc)}</td>
@@ -848,14 +1006,118 @@ function renderResults(){
       <td class="p-num num">${nf(r.entrega)}</td>
       <td class="p-num num">${nf(r.pdte)}</td>
       <td class="p-num num">${nf(r.stock)}</td>
-      <td class="p-num num">${nf(r.fab)}</td>
+      <td class="p-svd num ${sv < 0 ? 'neg' : ''}">${nf(sv)}</td>
+      <td class="p-fab num"><a class="cell-link" data-act="ord" data-i="${i}" title="Ver órdenes de fabricación">${nf(fv)}</a></td>
+      ${faltaTd}
+      ${compraTd}
       <td class="p-uni link">${esc(r.unidad)}</td>
       <td class="p-fent">${esc(r.fent)}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
-/* al hacer clic en una fila de resultados, actualiza "Detalle Material Consultado" */
+/* ---------- Pop-ups (órdenes / faltas / compras) ---------- */
+function showModal(){ $('#modalOv').classList.add('show'); }
+function closeModal(){ $('#modalOv').classList.remove('show'); }
+
+function openOrdenes(i){
+  const r = RESULTS[i];
+  const ords = ORDENES[r.codMat] || [];
+  const E = parseDmy(r.fent);
+  let total = 0;
+  let rows = ords.map(o => {
+    const pre = parseDmy(o.fFin) <= E;
+    if (pre) total += o.qty;
+    return `<tr class="${pre ? 'pre' : ''}">
+      <td class="mono">${esc(o.orden)}</td>
+      <td>${esc(o.fIni)}</td>
+      <td>${esc(o.fFin)}</td>
+      <td class="num">${nf(o.qty)}</td>
+      <td class="center">${pre ? '<span class="tag-pre">Antes de entrega</span>' : '<span class="tag-no">Posterior</span>'}</td>
+    </tr>`;
+  }).join('');
+  if (!ords.length) rows = `<tr><td colspan="5" class="modal-empty">Sin órdenes de fabricación para este material.</td></tr>`;
+  $('#modalTitle').textContent = 'Órdenes de fabricación — ' + r.codMat + ' · ' + r.matDesc;
+  $('#modalBody').innerHTML = `
+    <p class="modal-note">Resaltadas en verde las órdenes que finalizan <b>antes o en</b> la fecha de entrega del pedido (<b>${esc(r.fent)}</b>).
+    La <b>Fabricación Verificada</b> es la suma de esas órdenes = <b>${nf(total)}</b>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Orden</th><th>Fecha Inicio</th><th>Fecha Fin</th><th class="num">Cantidad</th><th class="center">¿Antes de entrega?</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  showModal();
+}
+
+function openFaltas(i){
+  const r = RESULTS[i];
+  const ords = ORDENES[r.codMat] || [];
+  let rows = '';
+  ords.forEach(o => {
+    (FALTAS[o.orden] || []).filter(f => f.falta > 0).forEach(f => {
+      rows += `<tr>
+        <td class="mono">${esc(o.orden)}</td>
+        <td class="mono">${esc(f.comp)}</td>
+        <td>${esc(COMPS[f.comp] || '')}</td>
+        <td class="num">${nf(f.necesario)}</td>
+        <td class="num">${nf(f.disponible)}</td>
+        <td class="num neg">${nf(f.falta)}</td>
+      </tr>`;
+    });
+  });
+  if (!rows) rows = `<tr><td colspan="6" class="modal-empty">Sin faltas de componentes para este material.</td></tr>`;
+  $('#modalTitle').textContent = 'Faltas de componentes — ' + r.codMat + ' · ' + r.matDesc;
+  $('#modalBody').innerHTML = `
+    <p class="modal-note">Órdenes de fabricación del material y sus componentes en <b>falta</b> (Necesario / Disponible / Falta).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Orden</th><th>Componente</th><th>Descripción</th><th class="num">Necesario</th><th class="num">Disponible</th><th class="num">Falta</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  showModal();
+}
+
+function openCompras(i){
+  const r = RESULTS[i];
+  const ords = ORDENES[r.codMat] || [];
+  const comps = [];
+  ords.forEach(o => (FALTAS[o.orden] || []).filter(f => f.falta > 0).forEach(f => { if (!comps.includes(f.comp)) comps.push(f.comp); }));
+  let rows = '';
+  comps.forEach(c => {
+    const pc = COMPRAS[c];
+    if (pc) rows += `<tr>
+      <td class="mono">${esc(pc.pc)}</td>
+      <td class="mono">${esc(c)}</td>
+      <td>${esc(COMPS[c] || '')}</td>
+      <td class="num">${nf(pc.cant)}</td>
+      <td>${esc(pc.fRec)}</td>
+      <td>${esc(pc.prov)}</td>
+    </tr>`;
+  });
+  if (!rows) rows = `<tr><td colspan="6" class="modal-empty">No hay pedidos de compra asociados a las faltas de este material.</td></tr>`;
+  $('#modalTitle').textContent = 'Pedidos de compra asociados — ' + r.codMat + ' · ' + r.matDesc;
+  $('#modalBody').innerHTML = `
+    <p class="modal-note">Pedidos de compra de los componentes en falta (los de la columna «Faltas Comp.»).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Pedido Compra</th><th>Componente</th><th>Descripción</th><th class="num">Cantidad</th><th>Fecha Recepción</th><th>Proveedor</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  showModal();
+}
+
+$('#modalClose').addEventListener('click', closeModal);
+$('#modalOv').addEventListener('click', e => { if (e.target === $('#modalOv')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* clic en la tabla de Pedidos: acciones (pop-ups), detalle de material y check */
 $('#tbodyPed').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]');
+  if (act){
+    e.stopPropagation();
+    const i = Number(act.dataset.i);
+    if (act.dataset.act === 'ord') openOrdenes(i);
+    else if (act.dataset.act === 'falta') openFaltas(i);
+    else if (act.dataset.act === 'compra') openCompras(i);
+    return;
+  }
   const cb = e.target.closest('input.ckPed');
   const tr = e.target.closest('tr[data-i]');
   if (!tr) return;
@@ -877,7 +1139,7 @@ function agregarSeleccion(){
   if (!sel.length){ alert('Marque al menos un pedido en la tabla "Pedidos".'); return; }
   let added = 0;
   sel.forEach(r => {
-    if (CARGA.some(l => l.base === r.base && l.pos === r.pos)) return;  // evita duplicados
+    if (CARGA.some(l => l.base === r.base && l.pos === r.pos)) return;
     const udsPalet = (MATS[r.codMat] || {}).udsPalet || 1;
     CARGA.push({
       base: r.base, pos: r.pos,
@@ -895,7 +1157,6 @@ function agregarSeleccion(){
   });
   applyGestionEntregas();
   renderCarga();
-  // limpia la selección de resultados
   $$('.ckPed').forEach(c => { c.checked = false; c.closest('tr').classList.remove('rowsel'); });
   $('#chkAllPed').checked = false;
   if (!added) alert('Los pedidos seleccionados ya estaban en las líneas de carga.');
@@ -946,7 +1207,7 @@ $('#chkAllCarga').addEventListener('change', e => {
 
 function quitarSeleccion(){
   const keep = [];
-  $$('.ckCarga').forEach((c, i) => { if (!c.checked) keep.push(CARGA[Number(c.dataset.i)]); });
+  $$('.ckCarga').forEach(c => { if (!c.checked) keep.push(CARGA[Number(c.dataset.i)]); });
   if (keep.length === CARGA.length){ alert('Marque las líneas de carga que desea quitar.'); return; }
   CARGA = keep;
   renderCarga();
@@ -991,10 +1252,8 @@ function guardar(){
   }));
   const payload = { header, lineas, ts: Date.now() };
 
-  // 1) ventana abridora (la pantalla de camiones)
   let entregado = false;
   try { if (window.opener && !window.opener.closed){ window.opener.postMessage({ type:'PERSEIDA_NUEVO_CAMION', payload }, '*'); entregado = true; } } catch(e){}
-  // 2) respaldo por localStorage (lo recoge la pantalla al recibir el foco o por evento storage)
   try { localStorage.setItem('PERSEIDA_NUEVO_CAMION', JSON.stringify(payload)); } catch(e){}
 
   $('#savedMsg').textContent = entregado
@@ -1003,7 +1262,6 @@ function guardar(){
   $('#saved').classList.add('show');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  // deja la pestaña lista para crear otro camión
   CARGA = [];
   renderCarga();
 }
@@ -1021,7 +1279,7 @@ $('#btnGuardar').addEventListener('click', guardar);
 $('#fGestionEntregas').addEventListener('change', e => { gestionEntregas = e.target.checked; applyGestionEntregas(); renderCarga(); });
 
 /* ---------- Inicio ---------- */
-renderResults();   // estado vacío "Sin datos para mostrar"
+renderResults();
 renderCarga();
 <\/script>
 </body>

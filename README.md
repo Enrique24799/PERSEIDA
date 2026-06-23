@@ -169,9 +169,20 @@ Formulario para **crear un camión** y asignarle sus líneas de carga (datos de 
   Tractora`, `Coste`, `Conductor`, `Tipo Camión`, `Teléfono` y `Centro`.
 - **Líneas de Carga — Buscar por:** `Almacén` + radio `Material` / `Pedido` / `Cliente` + texto, o
   por `Nº Doc` / `Año`. Los resultados salen en la tabla **Pedidos** (`Pedido`, `Cod./Nom. Cliente`,
-  `Fecha Pedido`, `Cod. Material`, `Material`, `Cant. Pedido/Entrega/Pdte`, `Stock`, `Pdte. Fab.`,
-  `Unidad`, `Fecha Entrega`). Al pulsar una fila se rellena **Detalle Material Consultado**
-  (`Stock` / `Pdte. Fabricar`).
+  `Area Entrega`, `Almacén`, `Fecha Pedido`, `Cod. Material`, `Material`, `Cant. Pedido/Entrega/Pdte`,
+  `Stock`, `Stock Verif. Disp.`, `Fabricación Verificada`, `Faltas Comp.`, `Ped. Compra`, `Unidad`,
+  `Fecha Entrega`). Al pulsar una fila se rellena **Detalle Material Consultado** (`Stock` /
+  `Pdte. Fabricar`).
+- **Verificación de disponibilidad** (columnas nuevas de la tabla Pedidos):
+  - `Area Entrega` = provincia del cliente; `Almacén` = almacén del material.
+  - `Stock Verif. Disp.` = stock disponible **a la fecha de entrega** descontando las **reservas de
+    material de otros pedidos** con entrega anterior o igual (en rojo si es negativo).
+  - `Fabricación Verificada` (sustituye a *Pdte. Fab.*) = suma de las **órdenes planificadas que
+    terminan antes/en la fecha de entrega**. Al pulsar abre un **pop-up** con las órdenes (inicio /
+    fin / cantidad), resaltando en verde las que se fabrican antes de la entrega.
+  - `Faltas Comp.` = check de si las órdenes del material tienen **faltas de componentes**; al pulsar,
+    **pop-up** con las órdenes y los componentes en falta (necesario / disponible / falta).
+  - `Ped. Compra` = al pulsar, **pop-up** con los **pedidos de compra** de esos componentes en falta.
 - **Agregar Selección:** marca uno o varios pedidos y pásalos a las **líneas de carga** (`Orden`,
   `Pedido SAP`, `Entrega`, `Codigo Cliente`, `Cli. Dir. Envio`, `Cliente`, `Material`, `Dirección
   Envio`, `Tipo Unidad`, `Palets`, `Unid X Palets`, `Completo`). Los `Palets` se calculan como
@@ -179,5 +190,6 @@ Formulario para **crear un camión** y asignarle sus líneas de carga (datos de 
 - **Quitar Selección** quita líneas de carga; **Guardar** genera el camión (estado `PTE CARGAR`) y
   lo envía a la pantalla de camiones.
 
-Para datos reales basta sustituir los maestros `MATS` / `CLIS` y el array `PEDIDOS` dentro de la
-plantilla `#tplNuevoCamion`.
+Para datos reales basta sustituir los maestros `MATS` / `CLIS` / `COMPS`, las órdenes `ORDENES`, las
+`FALTAS`, los pedidos de compra `COMPRAS` y el array `PEDIDOS` dentro de la plantilla
+`#tplNuevoCamion`.
