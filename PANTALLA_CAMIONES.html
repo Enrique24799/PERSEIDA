@@ -316,7 +316,720 @@
   </div>
 </div>
 
+
+  <!-- ====== Plantilla embebida: NUEVO CAMIÓN (se abre en pestaña nueva desde este mismo HTML) ====== -->
+  <script id="tplNuevoCamion" type="text/html">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nuevo Camión — Carga y expedición</title>
+<style>
+  :root {
+    --head-bg: #2f5f8f;
+    --border: #d7dee8;
+    --grid: #eef2f7;
+    --ink: #243140;
+    --blue: #2f80ed;
+    --magenta: #e6177f;
+    --ok: #27ae60;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 0 0 24px; }
+
+  /* ---------- Titlebar ---------- */
+  .titlebar {
+    background: linear-gradient(180deg, #37618f, #2f5f8f);
+    color: #fff; padding: 10px 16px;
+    font-size: 16px; font-weight: 600; letter-spacing: .3px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .titlebar .tcode {
+    font-size: 11px; font-weight: 700; background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.35); padding: 2px 8px; border-radius: 4px;
+  }
+  .titlebar .spacer { flex: 1; }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    background: #fff; border-bottom: 1px solid var(--border);
+    display: flex; gap: 4px; padding: 0 12px;
+  }
+  .tab {
+    padding: 11px 16px 9px; font-size: 13px; color: #5b6b7d; cursor: pointer;
+    border-bottom: 3px solid transparent; font-weight: 600;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--magenta); border-bottom-color: var(--magenta); }
+  .tabpane { display: none; padding: 14px 16px; }
+  .tabpane.active { display: block; }
+
+  /* ---------- Bloques / fieldsets ---------- */
+  .block {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .block-title { font-size: 12px; color: #41546a; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin: 2px 0 12px; }
+  fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px 12px; margin: 0; }
+  legend { font-size: 11px; color: #5b6b7d; padding: 0 6px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+
+  .formgrid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px 16px; }
+  .fld { display: flex; flex-direction: column; gap: 4px; }
+  .fld label { font-size: 11px; color: #5b6b7d; font-weight: 600; }
+  .fld.span2 { grid-column: span 2; } .fld.span3 { grid-column: span 3; }
+  .fld.span4 { grid-column: span 4; } .fld.span5 { grid-column: span 5; }
+  .fld.span6 { grid-column: span 6; }
+  .fld.chkline { justify-content: flex-end; }
+  .chkline label.inline { flex-direction: row; align-items: center; gap: 7px; display: inline-flex; cursor: pointer; font-weight: 600; color: #41546a; }
+
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    font-size: 13px; padding: 7px 9px;
+    border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
+    outline: none; width: 100%; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(47,128,237,.15); }
+  textarea { resize: vertical; min-height: 120px; }
+  input[type="checkbox"], input[type="radio"] { accent-color: var(--magenta); width: 15px; height: 15px; }
+
+  /* ---------- Líneas de carga: 3 paneles ---------- */
+  .search3 { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; }
+  .radios { display: flex; align-items: center; gap: 14px; }
+  .radios label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .searchrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .searchrow .almsel { width: 130px; }
+  .searchrow .txt { flex: 1; min-width: 120px; }
+  .btn-search {
+    background: var(--magenta); color: #fff; border: 1px solid var(--magenta);
+    border-radius: 6px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-search:hover { background: #c9116d; }
+  .det-mini { display: flex; gap: 12px; }
+  .det-mini .fld { flex: 1; }
+
+  /* ---------- Tablas ---------- */
+  .tablewrap { overflow: auto; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  thead th {
+    background: #eef3f9; color: #41546a; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .3px;
+    padding: 8px 9px; text-align: left; border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead tr.filterrow th {
+    background: #f7fafd; padding: 3px 6px; border-bottom: 1px solid var(--border);
+  }
+  thead tr.filterrow .fic { color: #aab4c0; font-size: 12px; display: flex; flex-direction: column; align-items: center; line-height: .8; }
+  thead tr.filterrow .cal { color: #aab4c0; font-size: 13px; display: block; text-align: center; }
+  tbody td { padding: 7px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid); vertical-align: top; }
+  tbody tr:hover td { background: #f4f9ff; }
+  tbody tr.rowsel td { background: #fdeaf3; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.center, th.center { text-align: center; }
+  td.mono { font-family: "Consolas", monospace; }
+  td.nom, td.mat { white-space: normal; }
+  td.link { color: var(--blue); }
+  .chkcol, th.chkcol { width: 34px; text-align: center; }
+
+  /* anchos ajustados — Pedidos */
+  .p-ped { width: 110px; } .p-cod { width: 100px; } .p-nom { width: 160px; }
+  .p-fped { width: 100px; } .p-codm { width: 100px; } .p-mat { width: 200px; }
+  .p-num { width: 92px; } .p-uni { width: 64px; } .p-fent { width: 104px; }
+
+  /* anchos ajustados — Carga */
+  .c-ord { width: 56px; } .c-ped { width: 110px; } .c-ent { width: 90px; }
+  .c-cod { width: 100px; } .c-dir { width: 96px; } .c-cli { width: 150px; }
+  .c-mat { width: 220px; } .c-dire { width: 110px; } .c-tu { width: 90px; }
+  .c-pal { width: 70px; } .c-uxp { width: 96px; } .c-comp { width: 78px; }
+
+  /* ---------- Empty state ---------- */
+  .empty { padding: 34px; text-align: center; color: #8494a6; }
+  .empty svg { display: block; margin: 0 auto 8px; color: #c4d0de; }
+
+  /* ---------- Botones de acción ---------- */
+  .actions { display: flex; align-items: center; gap: 14px; margin: 12px 0; flex-wrap: wrap; }
+  .btn {
+    border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-magenta { background: var(--magenta); color: #fff; }
+  .btn-magenta:hover { background: #c9116d; }
+  .btn-ghost { background: #f4f7fb; color: var(--ink); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #e7eef7; }
+  .chk-inline { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; color: #41546a; font-weight: 600; }
+
+  /* ---------- Aviso de guardado ---------- */
+  .saved {
+    display: none; align-items: center; gap: 10px;
+    background: #e3f5ea; border: 1px solid #b6e2c6; color: #1e7a44;
+    border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-weight: 600;
+  }
+  .saved.show { display: flex; }
+  .saved .x { margin-left: auto; cursor: pointer; opacity: .7; font-weight: 700; }
+  .saved .x:hover { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== Titlebar ===================== -->
+  <div class="titlebar">
+    <span>Nuevo Camión — Carga y expedición</span>
+    <span class="tcode">ZCAM_NEW</span>
+    <span class="spacer"></span>
+  </div>
+
+  <!-- ===================== Tabs ===================== -->
+  <div class="tabs">
+    <div class="tab active" data-tab="datos">Datos Camión</div>
+    <div class="tab" data-tab="coment">Comentarios</div>
+  </div>
+
+  <!-- ===================== Aviso de guardado ===================== -->
+  <div style="padding:0 16px">
+    <div class="saved" id="saved">
+      <span>&#10004;</span>
+      <span id="savedMsg">Camión guardado.</span>
+      <span class="x" id="savedClose">&#10005;</span>
+    </div>
+  </div>
+
+  <!-- ===================== PESTAÑA: DATOS CAMIÓN ===================== -->
+  <div class="tabpane active" id="pane-datos">
+
+    <!-- Datos del camión -->
+    <div class="block">
+      <div class="formgrid">
+        <div class="fld span3">
+          <label for="fFecha">Fecha:</label>
+          <input type="date" id="fFecha" value="2026-06-23" />
+        </div>
+        <div class="fld span3 chkline">
+          <label class="inline"><input type="checkbox" id="fTraslado" /> Camión de TRASLADO</label>
+        </div>
+        <div class="fld span3">
+          <label for="fRemolque">Matrícula Remolque:</label>
+          <input type="text" id="fRemolque" />
+        </div>
+        <div class="fld span3">
+          <label for="fTractora">Matrícula Tractora:</label>
+          <input type="text" id="fTractora" />
+        </div>
+
+        <div class="fld span5">
+          <label for="fConductor">Conductor:</label>
+          <input type="text" id="fConductor" />
+        </div>
+        <div class="fld span3">
+          <label for="fTipo">Tipo Camión:</label>
+          <select id="fTipo">
+            <option value=""></option>
+            <option>Trailer</option>
+            <option>Rígido</option>
+            <option>Furgón</option>
+            <option>Frigorífico</option>
+            <option>Lona</option>
+          </select>
+        </div>
+        <div class="fld span2">
+          <label for="fTelefono">Teléfono:</label>
+          <input type="text" id="fTelefono" />
+        </div>
+        <div class="fld span2">
+          <label for="fCentro">Centro:</label>
+          <input type="text" id="fCentro" />
+        </div>
+        <div class="fld span2" style="grid-column: span 2;">
+          <label for="fCoste">Coste:</label>
+          <input type="number" id="fCoste" value="0" min="0" step="1" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Líneas de Carga: búsqueda -->
+    <fieldset style="margin-bottom:14px;background:#fff">
+      <legend>Líneas de Carga</legend>
+      <div class="search3">
+
+        <fieldset>
+          <legend>Buscar por:</legend>
+          <div class="searchrow">
+            <div class="fld" style="gap:4px">
+              <label for="fAlmacen" style="font-size:11px">Almacén:</label>
+              <select id="fAlmacen" class="almsel">
+                <option value=""></option>
+                <option value="FAB">Fábrica</option>
+                <option value="CT01">Central</option>
+                <option value="EXP1">Expediciones</option>
+              </select>
+            </div>
+            <div class="radios">
+              <label><input type="radio" name="modo" value="material" /> Material</label>
+              <label><input type="radio" name="modo" value="pedido" checked /> Pedido</label>
+              <label><input type="radio" name="modo" value="cliente" /> Cliente</label>
+            </div>
+            <input type="text" id="fBusca" class="txt" placeholder="Texto a buscar..." />
+            <button class="btn-search" id="btnBuscar" title="Buscar">&#128269;</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Detalle Material Consultado</legend>
+          <div class="det-mini">
+            <div class="fld">
+              <label for="dStock">Stock:</label>
+              <input type="text" id="dStock" value="0" readonly />
+            </div>
+            <div class="fld">
+              <label for="dFab">Pdte. Fabricar:</label>
+              <input type="text" id="dFab" value="0" readonly />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Buscar por:</legend>
+          <div class="searchrow">
+            <div class="fld" style="flex:1">
+              <label for="fNDoc" style="font-size:11px">Nº Doc:</label>
+              <input type="text" id="fNDoc" />
+            </div>
+            <div class="fld" style="flex:1">
+              <label for="fAnio" style="font-size:11px">Año:</label>
+              <input type="date" id="fAnio" value="2026-06-23" />
+            </div>
+            <button class="btn-search" id="btnBuscarDoc" title="Buscar por documento" style="align-self:flex-end">&#128269;</button>
+          </div>
+        </fieldset>
+
+      </div>
+    </fieldset>
+
+    <!-- Pedidos: resultados de búsqueda -->
+    <div class="block-title" style="padding-left:2px">Pedidos:</div>
+    <div class="tablewrap" style="margin-bottom:14px">
+      <table>
+        <thead>
+          <tr>
+            <th class="chkcol"><input type="checkbox" id="chkAllPed" title="Marcar todo" /></th>
+            <th class="p-ped">Pedido</th>
+            <th class="p-cod">Cod. Cliente</th>
+            <th class="p-nom">Nom. Cliente</th>
+            <th class="p-fped">Fecha Pedido</th>
+            <th class="p-codm">Cod. Material</th>
+            <th class="p-mat">Material</th>
+            <th class="p-num">Cant. Pedido</th>
+            <th class="p-num">Cant. Entrega</th>
+            <th class="p-num">Cant. Pdte</th>
+            <th class="p-num">Stock</th>
+            <th class="p-num">Pdte. Fab.</th>
+            <th class="p-uni">Unidad</th>
+            <th class="p-fent">Fecha Entrega</th>
+          </tr>
+          <tr class="filterrow">
+            <th class="chkcol"></th>
+            <th></th><th></th><th></th>
+            <th><span class="cal">&#128197;</span></th>
+            <th></th><th></th>
+            <th><span class="fic">&#9650;&#9660;</span></th>
+            <th><span class="fic">&#9650;&#9660;</span></th>
+            <th><span class="fic">&#9650;&#9660;</span></th>
+            <th><span class="fic">&#9650;&#9660;</span></th>
+            <th><span class="fic">&#9650;&#9660;</span></th>
+            <th></th>
+            <th><span class="cal">&#128197;</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyPed"></tbody>
+      </table>
+    </div>
+
+    <!-- Acciones: agregar selección -->
+    <div class="actions">
+      <button class="btn btn-magenta" id="btnAgregar">Agregar Selección</button>
+      <label class="chk-inline"><input type="checkbox" id="fGestionEntregas" /> Gestión de Entregas</label>
+    </div>
+
+    <!-- Carga del camión -->
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="chkcol"><input type="checkbox" id="chkAllCarga" title="Marcar todo" /></th>
+            <th class="c-ord">Orden</th>
+            <th class="c-ped">Pedido SAP</th>
+            <th class="c-ent">Entrega</th>
+            <th class="c-cod">Codigo Cliente</th>
+            <th class="c-dir">Cli. Dir. Envio</th>
+            <th class="c-cli">Cliente</th>
+            <th class="c-mat">Material</th>
+            <th class="c-dire">Dirección Envio</th>
+            <th class="c-tu">Tipo Unidad</th>
+            <th class="c-pal">Palets</th>
+            <th class="c-uxp">Unid X Palets</th>
+            <th class="c-comp center">Completo</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyCarga"></tbody>
+      </table>
+    </div>
+
+    <!-- Acciones finales -->
+    <div class="actions" style="margin-top:14px">
+      <button class="btn btn-ghost" id="btnQuitar">Quitar Selección</button>
+      <button class="btn btn-magenta" id="btnGuardar">Guardar</button>
+    </div>
+
+  </div>
+
+  <!-- ===================== PESTAÑA: COMENTARIOS ===================== -->
+  <div class="tabpane" id="pane-coment">
+    <div class="block">
+      <div class="block-title">Comentarios del camión</div>
+      <textarea id="fComentarios" placeholder="Observaciones, instrucciones para el transportista, incidencias..."></textarea>
+    </div>
+  </div>
+
+</div>
+
 <script>
+/* =====================================================================
+   NUEVO CAMIÓN (pestaña independiente).
+   Flujo: buscar pedidos (por material / pedido / cliente) -> seleccionar
+   -> "Agregar Selección" (pasan a las líneas de carga) -> "Guardar"
+   (genera el camión y lo envía a la pantalla de camiones).
+
+   Datos de EJEMPLO. Comunicación con la pantalla principal por
+   postMessage (ventana abridora) + localStorage (respaldo).
+   ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function nf(n){ const x = Math.round(Number(n) || 0); const s = String(Math.abs(x)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return x < 0 ? '-' + s : s; }
+function pad10(n){ return String(n).padStart(10, '0'); }
+
+/* ---------- Maestro de materiales (desc, uds/palet, stock, pdte. fabricar) ---------- */
+const MATS = {
+  '70902545': { desc:'NELIA GEL CUIDADO HTE ROSA 900ML(750+150)', udsPalet:576, stock:54312, fab:194140 },
+  '70902554': { desc:'NELIA COLONIA FAMILIAR ROSAS 750ML',        udsPalet:480, stock:2556,  fab:15988 },
+  '70902560': { desc:'NELIA CHAMPU NUTRITIVO 400ML',              udsPalet:540, stock:9180,  fab:21600 },
+  '70907033': { desc:'BELLE CR CORP TARRO ALOE VERA 300ML',       udsPalet:960, stock:12480, fab:0 },
+  '70903688': { desc:'BELLE CREMA MANOS HIDRAT.100ML',            udsPalet:216, stock:8640,  fab:5400 },
+  '70906417': { desc:'BELLE EDT FRESH VAINILLA 100ML',            udsPalet:468, stock:3744,  fab:9360 },
+  '70905914': { desc:'BELLE MASCARILLA ORO TARRO 300ML',          udsPalet:384, stock:1536,  fab:7680 },
+  '70902150': { desc:'BELLE CHAMPU REPARADOR 400ML',              udsPalet:600, stock:18000, fab:0 },
+};
+
+/* ---------- Maestro de clientes (nombre + ciudad de envío) ---------- */
+const CLIS = {
+  '0000003167': { nom:'DROGUERIAS Y PERFUMERIAS ANA S', ciudad:'SEVILLA' },
+  '0000191074': { nom:'PENINSULACO S.L',                ciudad:'VALENCIA' },
+  '0000190088': { nom:'CAPRABO, S.A',                   ciudad:'BARCELONA' },
+  '0000190200': { nom:'CECOSA SUPERMERCADOS',           ciudad:'BILBAO' },
+  '0000190120': { nom:'DISTRICAM IBERICA, S.L.',        ciudad:'MADRID' },
+};
+
+/* ---------- Pedidos (cabecera + posiciones) — datos de ejemplo ---------- */
+const PEDIDOS = [
+  { base:'10065062', cli:'0000003167', fped:'22/06/2026', fent:'26/06/2026', pos:[
+      { n:10, mat:'70902545', cant:2880 },
+      { n:20, mat:'70902554', cant:720 },
+  ]},
+  { base:'10065071', cli:'0000003167', fped:'22/06/2026', fent:'27/06/2026', pos:[
+      { n:10, mat:'70902560', cant:1620 },
+  ]},
+  { base:'10065085', cli:'0000191074', fped:'23/06/2026', fent:'29/06/2026', pos:[
+      { n:10, mat:'70907033', cant:1920 },
+      { n:20, mat:'70903688', cant:648 },
+      { n:30, mat:'70906417', cant:936 },
+  ]},
+  { base:'10065090', cli:'0000190088', fped:'23/06/2026', fent:'28/06/2026', pos:[
+      { n:10, mat:'70905914', cant:768 },
+      { n:20, mat:'70902150', cant:1200 },
+  ]},
+  { base:'10065104', cli:'0000190200', fped:'21/06/2026', fent:'30/06/2026', pos:[
+      { n:10, mat:'70902545', cant:1152 },
+  ]},
+  { base:'10065112', cli:'0000190120', fped:'20/06/2026', fent:'26/06/2026', pos:[
+      { n:10, mat:'70903688', cant:432 },
+      { n:20, mat:'70902554', cant:1440 },
+  ]},
+];
+
+/* ---------- Estado de la pestaña ---------- */
+let RESULTS = [];   // filas de resultados de búsqueda (una por posición)
+let CARGA = [];     // líneas de carga del camión (lo que se va a guardar)
+let gestionEntregas = false;
+let seqEntrega = 80055200;
+
+/* ---------- Pestañas ---------- */
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  $$('.tabpane').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  $('#pane-' + t.dataset.tab).classList.add('active');
+}));
+
+/* ---------- Búsqueda de pedidos ---------- */
+function buildResults(predicate){
+  const out = [];
+  PEDIDOS.forEach(p => {
+    const cli = CLIS[p.cli] || { nom:'', ciudad:'' };
+    p.pos.forEach(po => {
+      const m = MATS[po.mat] || { desc:'', stock:0, fab:0 };
+      const row = {
+        base: p.base, pos: po.n,
+        pedidoLabel: p.base + '-' + po.n,
+        codCli: p.cli, nomCli: cli.nom, ciudad: cli.ciudad,
+        fped: p.fped, fent: p.fent,
+        codMat: po.mat, matDesc: m.desc,
+        cant: po.cant, entrega: 0, pdte: po.cant,
+        stock: m.stock, fab: m.fab, unidad: 'UN',
+      };
+      if (predicate(row)) out.push(row);
+    });
+  });
+  return out;
+}
+
+function doSearch(){
+  const modo = ($('input[name="modo"]:checked') || {}).value || 'pedido';
+  const q = $('#fBusca').value.trim().toLowerCase();
+  RESULTS = buildResults(row => {
+    if (!q) return true;
+    if (modo === 'pedido')   return row.base.toLowerCase().includes(q) || row.pedidoLabel.toLowerCase().includes(q);
+    if (modo === 'cliente')  return row.nomCli.toLowerCase().includes(q) || row.codCli.toLowerCase().includes(q);
+    if (modo === 'material') return row.codMat.toLowerCase().includes(q) || row.matDesc.toLowerCase().includes(q);
+    return true;
+  });
+  renderResults();
+}
+
+function doSearchDoc(){
+  const doc = $('#fNDoc').value.trim().toLowerCase();
+  RESULTS = buildResults(row => !doc || row.base.toLowerCase().includes(doc));
+  renderResults();
+}
+
+function renderResults(){
+  const tb = $('#tbodyPed');
+  if (!RESULTS.length){
+    tb.innerHTML = `<tr><td colspan="14">
+      <div class="empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="10.5" cy="10.5" r="6.5"></circle>
+          <line x1="15.5" y1="15.5" x2="21" y2="21"></line>
+          <line x1="8" y1="8" x2="13" y2="13"></line>
+          <line x1="13" y1="8" x2="8" y2="13"></line>
+        </svg>
+        Sin datos para mostrar
+      </div></td></tr>`;
+    $('#chkAllPed').checked = false;
+    return;
+  }
+  tb.innerHTML = RESULTS.map((r, i) => `
+    <tr data-i="${i}">
+      <td class="chkcol"><input type="checkbox" class="ckPed" data-i="${i}"></td>
+      <td class="p-ped mono">${esc(r.pedidoLabel)}</td>
+      <td class="p-cod mono">${esc(r.codCli)}</td>
+      <td class="p-nom nom">${esc(r.nomCli)}</td>
+      <td class="p-fped">${esc(r.fped)}</td>
+      <td class="p-codm mono">${esc(r.codMat)}</td>
+      <td class="p-mat mat">${esc(r.matDesc)}</td>
+      <td class="p-num num">${nf(r.cant)}</td>
+      <td class="p-num num">${nf(r.entrega)}</td>
+      <td class="p-num num">${nf(r.pdte)}</td>
+      <td class="p-num num">${nf(r.stock)}</td>
+      <td class="p-num num">${nf(r.fab)}</td>
+      <td class="p-uni link">${esc(r.unidad)}</td>
+      <td class="p-fent">${esc(r.fent)}</td>
+    </tr>`).join('');
+}
+
+/* al hacer clic en una fila de resultados, actualiza "Detalle Material Consultado" */
+$('#tbodyPed').addEventListener('click', e => {
+  const cb = e.target.closest('input.ckPed');
+  const tr = e.target.closest('tr[data-i]');
+  if (!tr) return;
+  const r = RESULTS[Number(tr.dataset.i)];
+  if (r){ $('#dStock').value = nf(r.stock); $('#dFab').value = nf(r.fab); }
+  if (cb){ tr.classList.toggle('rowsel', cb.checked); syncChkAllPed(); }
+});
+function syncChkAllPed(){
+  const all = $$('.ckPed');
+  $('#chkAllPed').checked = all.length > 0 && all.every(c => c.checked);
+}
+$('#chkAllPed').addEventListener('change', e => {
+  $$('.ckPed').forEach(c => { c.checked = e.target.checked; c.closest('tr').classList.toggle('rowsel', e.target.checked); });
+});
+
+/* ---------- Agregar selección -> líneas de carga ---------- */
+function agregarSeleccion(){
+  const sel = $$('.ckPed').filter(c => c.checked).map(c => RESULTS[Number(c.dataset.i)]);
+  if (!sel.length){ alert('Marque al menos un pedido en la tabla "Pedidos".'); return; }
+  let added = 0;
+  sel.forEach(r => {
+    if (CARGA.some(l => l.base === r.base && l.pos === r.pos)) return;  // evita duplicados
+    const udsPalet = (MATS[r.codMat] || {}).udsPalet || 1;
+    CARGA.push({
+      base: r.base, pos: r.pos,
+      pedidoSap: pad10(r.base),
+      entrega: '',
+      codCli: r.codCli, cliDir: r.codCli, nomCli: r.nomCli,
+      codMat: r.codMat, material: r.codMat + ' - ' + r.matDesc,
+      dirEnvio: r.ciudad,
+      tipoUnidad: r.cant,
+      palets: Math.ceil(r.cant / udsPalet),
+      udsXpalets: udsPalet,
+      completo: false,
+    });
+    added++;
+  });
+  applyGestionEntregas();
+  renderCarga();
+  // limpia la selección de resultados
+  $$('.ckPed').forEach(c => { c.checked = false; c.closest('tr').classList.remove('rowsel'); });
+  $('#chkAllPed').checked = false;
+  if (!added) alert('Los pedidos seleccionados ya estaban en las líneas de carga.');
+}
+
+function applyGestionEntregas(){
+  CARGA.forEach(l => {
+    if (gestionEntregas){ if (!l.entrega) l.entrega = String(seqEntrega++); }
+    else l.entrega = '';
+  });
+}
+
+function renderCarga(){
+  const tb = $('#tbodyCarga');
+  if (!CARGA.length){
+    tb.innerHTML = `<tr><td colspan="13"><div class="empty">No hay líneas de carga. Busque pedidos y pulse «Agregar Selección».</div></td></tr>`;
+    $('#chkAllCarga').checked = false;
+    return;
+  }
+  tb.innerHTML = CARGA.map((l, i) => `
+    <tr data-i="${i}">
+      <td class="chkcol"><input type="checkbox" class="ckCarga" data-i="${i}"></td>
+      <td class="c-ord num">${i}</td>
+      <td class="c-ped mono">${esc(l.pedidoSap)}</td>
+      <td class="c-ent mono">${esc(l.entrega)}</td>
+      <td class="c-cod mono">${esc(l.codCli)}</td>
+      <td class="c-dir mono">${esc(l.cliDir)}</td>
+      <td class="c-cli nom">${esc(l.nomCli)}</td>
+      <td class="c-mat mat">${esc(l.material)}</td>
+      <td class="c-dire">${esc(l.dirEnvio)}</td>
+      <td class="c-tu num">${nf(l.tipoUnidad)}</td>
+      <td class="c-pal num">${nf(l.palets)}</td>
+      <td class="c-uxp num">${nf(l.udsXpalets)}</td>
+      <td class="c-comp center"><input type="checkbox" class="ckComp" data-i="${i}" ${l.completo ? 'checked' : ''}></td>
+    </tr>`).join('');
+  $('#chkAllCarga').checked = false;
+}
+
+$('#tbodyCarga').addEventListener('change', e => {
+  const comp = e.target.closest('input.ckComp');
+  if (comp){ CARGA[Number(comp.dataset.i)].completo = comp.checked; return; }
+  const ck = e.target.closest('input.ckCarga');
+  if (ck){ ck.closest('tr').classList.toggle('rowsel', ck.checked); }
+});
+$('#chkAllCarga').addEventListener('change', e => {
+  $$('.ckCarga').forEach(c => { c.checked = e.target.checked; c.closest('tr').classList.toggle('rowsel', e.target.checked); });
+});
+
+function quitarSeleccion(){
+  const keep = [];
+  $$('.ckCarga').forEach((c, i) => { if (!c.checked) keep.push(CARGA[Number(c.dataset.i)]); });
+  if (keep.length === CARGA.length){ alert('Marque las líneas de carga que desea quitar.'); return; }
+  CARGA = keep;
+  renderCarga();
+}
+
+/* ---------- Guardar -> generar camión y enviarlo a la pantalla principal ---------- */
+function leerCabecera(){
+  const fecha = $('#fFecha').value ? $('#fFecha').value.split('-').reverse().join('/') : '01/01/1900';
+  return {
+    estado: 'PTE CARGAR',
+    cliente: CARGA.length ? CARGA[0].nomCli : '',
+    tipoCamion: $('#fTipo').value || 'Trailer',
+    coste: Number($('#fCoste').value) || 0,
+    almacen: $('#fCentro').value.trim() || $('#fAlmacen').value || '',
+    horaCarga: fecha,
+    fechaDescarga: '01/01/1900',
+    muelle: 0,
+    matricula: $('#fRemolque').value.trim(),
+    tractora: $('#fTractora').value.trim(),
+    conductor: $('#fConductor').value.trim(),
+    telefono: $('#fTelefono').value.trim(),
+    traslado: $('#fTraslado').checked,
+    comentarios: $('#fComentarios').value.trim(),
+  };
+}
+
+function guardar(){
+  if (!CARGA.length){ alert('Agregue al menos una línea de carga antes de guardar.'); return; }
+  const header = leerCabecera();
+  const lineas = CARGA.map((l, i) => ({
+    linea: i + 1,
+    pedido: l.base + '-' + l.pos,
+    entrega: l.entrega ? (l.entrega + '-1') : '0-0',
+    codCliente: l.codCli,
+    nomCliente: l.nomCli,
+    material: l.material,
+    direccion: l.dirEnvio,
+    udsHechas: 0, udsTotal: l.tipoUnidad,
+    palHechas: 0, palTotal: l.palets,
+    completar: l.completo,
+    almDest: '', anioDoc: '', docTraslado: 0,
+  }));
+  const payload = { header, lineas, ts: Date.now() };
+
+  // 1) ventana abridora (la pantalla de camiones)
+  let entregado = false;
+  try { if (window.opener && !window.opener.closed){ window.opener.postMessage({ type:'PERSEIDA_NUEVO_CAMION', payload }, '*'); entregado = true; } } catch(e){}
+  // 2) respaldo por localStorage (lo recoge la pantalla al recibir el foco o por evento storage)
+  try { localStorage.setItem('PERSEIDA_NUEVO_CAMION', JSON.stringify(payload)); } catch(e){}
+
+  $('#savedMsg').textContent = entregado
+    ? 'Camión guardado y enviado a la Pantalla de Camiones (' + lineas.length + ' línea(s)). Puede cerrar esta pestaña.'
+    : 'Camión guardado (' + lineas.length + ' línea(s)). Aparecerá en la Pantalla de Camiones al volver a ella.';
+  $('#saved').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // deja la pestaña lista para crear otro camión
+  CARGA = [];
+  renderCarga();
+}
+
+$('#savedClose').addEventListener('click', () => $('#saved').classList.remove('show'));
+
+/* ---------- Eventos ---------- */
+$('#btnBuscar').addEventListener('click', doSearch);
+$('#fBusca').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+$('#btnBuscarDoc').addEventListener('click', doSearchDoc);
+$('#fNDoc').addEventListener('keydown', e => { if (e.key === 'Enter') doSearchDoc(); });
+$('#btnAgregar').addEventListener('click', agregarSeleccion);
+$('#btnQuitar').addEventListener('click', quitarSeleccion);
+$('#btnGuardar').addEventListener('click', guardar);
+$('#fGestionEntregas').addEventListener('change', e => { gestionEntregas = e.target.checked; applyGestionEntregas(); renderCarga(); });
+
+/* ---------- Inicio ---------- */
+renderResults();   // estado vacío "Sin datos para mostrar"
+renderCarga();
+<\/script>
+</body>
+</html>
+
+  </script>
+
+  <script>
 /* =====================================================================
    PANTALLA DE CAMIONES — carga y expedición (simulación).
 
@@ -625,7 +1338,15 @@ const LS_KEY = 'PERSEIDA_NUEVO_CAMION';
 let lastTs = 0;
 
 $('#btnNuevoCamion').addEventListener('click', () => {
-  window.open('NUEVO_CAMION.html', '_blank');
+  // Abre una PESTAÑA NUEVA generada desde este mismo HTML (plantilla embebida,
+  // sin depender de ningún archivo externo). about:blank hereda el origen de
+  // esta ventana, por lo que window.opener / postMessage funcionan también en file://
+  const w = window.open('', '_blank');
+  if (!w){ alert('El navegador ha bloqueado la ventana emergente. Permita las ventanas emergentes para abrir «Nuevo Camión».'); return; }
+  const doc = document.getElementById('tplNuevoCamion').textContent.split('<\\/script>').join('<' + '/script>');
+  w.document.open();
+  w.document.write(doc);
+  w.document.close();
 });
 
 $('#btnAnular').addEventListener('click', () => {

@@ -5,8 +5,8 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `AJUSTE_PALETS.html` — Transacción de control y ajuste de inventario de palets.
-- `PANTALLA_CAMIONES.html` — Pantalla de camiones (carga/expedición) con detalle desplegable por camión.
-- `NUEVO_CAMION.html` — Alta de un nuevo camión (se abre en una pestaña nueva desde la pantalla anterior).
+- `PANTALLA_CAMIONES.html` — Pantalla de camiones (carga/expedición) con detalle desplegable y alta
+  de **nuevo camión** en una pestaña nueva (formulario embebido en el mismo archivo).
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -150,18 +150,19 @@ botón **Actualizar**, **buscador** global y **filtros por columna**. En la barr
 camión seleccionado). Para datos reales basta sustituir el array `CAMIONES` y los maestros
 `CLIENTES` / `MATERIALES` del `<script>`.
 
-### Nuevo camión (pestaña nueva)
+### Nuevo camión (pestaña nueva, sin archivo externo)
 
-El icono **Nuevo camión** (rejilla con `+`) **abre `NUEVO_CAMION.html` en una pestaña nueva**
-(`window.open(..., '_blank')`), no en un pop-up. Al **Guardar** allí, el camión generado se inserta
-en esta rejilla y queda seleccionado y desplegado. La comunicación entre pestañas es por
-`postMessage` (ventana abridora) con respaldo en `localStorage` (evento `storage` y al recuperar el
-foco de la pantalla).
+El icono **Nuevo camión** (rejilla con `+`) **abre una pestaña nueva generada desde este mismo
+archivo**, no en un pop-up ni desde un fichero externo. El formulario va **embebido** en una
+plantilla `<script id="tplNuevoCamion" type="text/html">` y la pestaña se crea con
+`window.open('', '_blank')` + `document.write(...)` (así no puede faltar el archivo y funciona
+también con `file://`). Al **Guardar**, el camión generado se inserta en esta rejilla y queda
+seleccionado y desplegado. La comunicación es por `postMessage` (ventana abridora) con respaldo en
+`localStorage` (evento `storage` y al recuperar el foco de la pantalla).
 
-## `NUEVO_CAMION.html` — Alta de un nuevo camión
+#### Formulario de alta (plantilla embebida)
 
-Formulario para **crear un camión** y asignarle sus líneas de carga. Se abre en una **pestaña
-nueva** desde `PANTALLA_CAMIONES.html`. Visor autocontenido con datos de **ejemplo**.
+Formulario para **crear un camión** y asignarle sus líneas de carga (datos de **ejemplo**):
 
 - **Pestañas:** `Datos Camión` y `Comentarios`.
 - **Datos Camión:** `Fecha`, casilla `Camión de TRASLADO`, `Matrícula Remolque`, `Matrícula
@@ -178,4 +179,5 @@ nueva** desde `PANTALLA_CAMIONES.html`. Visor autocontenido con datos de **ejemp
 - **Quitar Selección** quita líneas de carga; **Guardar** genera el camión (estado `PTE CARGAR`) y
   lo envía a la pantalla de camiones.
 
-Para datos reales basta sustituir los maestros `MATS` / `CLIS` y el array `PEDIDOS` del `<script>`.
+Para datos reales basta sustituir los maestros `MATS` / `CLIS` y el array `PEDIDOS` dentro de la
+plantilla `#tplNuevoCamion`.
