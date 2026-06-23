@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pantalla de Camiones — Carga y expedición</title>
+<style>
+  :root {
+    --head-bg: #2f5f8f;
+    --border: #d7dee8;
+    --grid: #eef2f7;
+    --ink: #243140;
+    --blue: #2f80ed;
+    --magenta: #e6177f;
+    /* colores de estado */
+    --c-cargado:    #a7e0dd;   --c-cargado-ink:    #15403d;
+    --c-encarga:    #7fdc84;   --c-encarga-ink:    #14401a;
+    --c-anulado:    #f3a395;   --c-anulado-ink:    #5e1b10;
+    --c-ptecargar:  #ef4123;   --c-ptecargar-ink:  #ffffff;
+    --c-albaranado: #f4d836;   --c-albaranado-ink: #5b4a00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 0 0 40px; }
+
+  /* ---------- Barra de opciones (toolbar superior) ---------- */
+  .toolbar {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .toolbar .opt-label { font-weight: 600; color: #41546a; }
+  .toolbar .fld { display: flex; align-items: center; gap: 6px; }
+  .toolbar label { color: #41546a; }
+  input[type="text"], input[type="date"], select {
+    font-size: 13px; padding: 6px 9px;
+    border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(47,128,237,.15); }
+  select.alm { min-width: 220px; }
+  .chk-todos { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chk-todos input { accent-color: var(--magenta); width: 16px; height: 16px; }
+  button { cursor: pointer; font-family: inherit; }
+  .btn-actualizar {
+    background: var(--magenta); color: #fff; border: 1px solid var(--magenta);
+    font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-actualizar:hover { background: #c9116d; }
+  .toolico {
+    width: 34px; height: 34px; border: 1px solid var(--border); background: #f7fafd;
+    border-radius: 6px; color: #41546a; font-size: 16px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .toolico:hover { background: #e7eef7; border-color: #b9c6d6; }
+  .toolbar .spacer { flex: 1 1 auto; }
+
+  /* ---------- Buscador global ---------- */
+  .searchbar {
+    background: #fff; border-bottom: 1px solid var(--border);
+    padding: 10px 14px; display: flex; justify-content: flex-end;
+  }
+  .search-wrap { position: relative; width: 320px; max-width: 100%; }
+  .search-wrap input { width: 100%; padding-left: 32px; }
+  .search-wrap .ic { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #8494a6; }
+
+  /* ---------- Tabla principal ---------- */
+  .tablewrap {
+    background: #fff; border-bottom: 1px solid var(--border);
+    overflow: auto; max-height: 74vh;
+  }
+  table.grid { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.grid thead th {
+    position: sticky; top: 0; z-index: 6;
+    background: #ffffff; color: #41546a; font-weight: 600;
+    padding: 9px 10px; text-align: left;
+    border-bottom: 1px solid var(--border); border-right: 1px solid var(--grid);
+    white-space: nowrap;
+  }
+  table.grid thead th .th-in { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+  table.grid thead th .funnel { color: #aab4c0; font-size: 11px; cursor: pointer; }
+  table.grid thead th .funnel:hover { color: var(--blue); }
+  /* fila de filtros por columna */
+  table.grid thead tr.filterrow th {
+    position: sticky; top: 38px; z-index: 5;
+    background: #f7fafd; padding: 4px 6px; border-bottom: 1px solid var(--border);
+  }
+  table.grid thead tr.filterrow input {
+    width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid #cdd8e4; border-radius: 4px;
+  }
+  table.grid thead tr.filterrow .fic { color: #aab4c0; font-size: 12px; text-align: center; display: block; }
+
+  table.grid tbody td {
+    padding: 7px 10px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid);
+    white-space: nowrap;
+  }
+  table.grid tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.grid tbody td.center { text-align: center; }
+  table.grid tbody td.mono { font-family: "Consolas", monospace; }
+  /* columna de despliegue */
+  .col-exp { width: 34px; text-align: center; }
+  .exp-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border: 1px solid #cdd8e4; border-radius: 4px;
+    background: #fff; color: #5b6b7d; font-size: 10px; cursor: pointer; user-select: none;
+  }
+  .exp-btn:hover { background: #eef4fc; border-color: var(--blue); color: var(--blue); }
+  tr.mainrow.open .exp-btn { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* celda de estado (bloque de color que rellena la celda) */
+  td.estado { font-weight: 700; letter-spacing: .2px; }
+  td.estado.cargado    { background: var(--c-cargado);    color: var(--c-cargado-ink); }
+  td.estado.encarga    { background: var(--c-encarga);    color: var(--c-encarga-ink); }
+  td.estado.anulado    { background: var(--c-anulado);    color: var(--c-anulado-ink); }
+  td.estado.ptecargar  { background: var(--c-ptecargar);  color: var(--c-ptecargar-ink); }
+  td.estado.albaranado { background: var(--c-albaranado); color: var(--c-albaranado-ink); }
+
+  /* columnas con ancho fijo y elipsis (cliente, matrícula) */
+  td.cliente, th.cliente { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+  td.matricula, th.matricula { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+
+  tr.mainrow { cursor: pointer; }
+  tr.mainrow:hover td { background: #f4f9ff; }
+  tr.mainrow:hover td.estado.cargado    { background: #9cd7d4; }
+  tr.mainrow:hover td.estado.encarga    { background: #74d079; }
+  tr.mainrow:hover td.estado.anulado    { background: #ef9587; }
+  tr.mainrow:hover td.estado.ptecargar  { background: #e2381c; }
+  tr.mainrow:hover td.estado.albaranado { background: #eccd25; }
+
+  /* fila seleccionada: resaltado magenta a todo lo ancho */
+  tr.mainrow.sel td { background: var(--magenta) !important; color: #fff !important; }
+  tr.mainrow.sel td.mono { color: #fff !important; }
+  tr.mainrow.sel input[type="checkbox"] { accent-color: #fff; }
+
+  /* ---------- Fila de detalle desplegada ---------- */
+  tr.detailrow { display: none; }
+  tr.detailrow.show { display: table-row; }
+  tr.detailrow > td { padding: 0; background: #f0f5fb; border-bottom: 2px solid #c4d0de; }
+  .detailwrap { padding: 10px 14px 14px 44px; }
+  .detailtitle {
+    font-size: 11.5px; color: #41546a; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .4px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+  }
+  .detailtitle .pill {
+    background: #e7f0fd; color: var(--blue); border-radius: 10px; padding: 2px 9px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  }
+
+  /* sub-tabla de detalle: columnas AJUSTADAS al contenido */
+  table.detail { border-collapse: collapse; background: #fff; border: 1px solid var(--border); font-size: 12px; }
+  table.detail thead th {
+    background: #eef3f9; color: #41546a; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .3px;
+    padding: 6px 9px; text-align: left; border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table.detail tbody td {
+    padding: 5px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid);
+    vertical-align: top;
+  }
+  table.detail tbody tr:hover td { background: #f4f9ff; }
+  table.detail td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.detail td.center { text-align: center; }
+  table.detail td.mono { font-family: "Consolas", monospace; white-space: nowrap; }
+  /* anchos ajustados por columna */
+  .d-linea    { width: 46px;  text-align: center; }
+  .d-pedido   { width: 104px; }
+  .d-entrega  { width: 84px;  }
+  .d-codcli   { width: 100px; }
+  .d-nomcli   { width: 150px; white-space: normal; }
+  .d-material { width: 250px; white-space: normal; }
+  .d-direccion{ width: 170px; white-space: normal; color: #51637a; }
+  .d-uds      { width: 92px;  }
+  .d-palets   { width: 70px;  }
+  .d-completar{ width: 78px;  text-align: center; }
+  .d-almdest  { width: 92px;  }
+  .d-aniodoc  { width: 80px;  }
+  .d-doctras  { width: 92px;  }
+  .det-empty { padding: 14px; text-align: center; color: #8494a6; font-style: italic; }
+
+  /* ---------- Leyenda de estados (footer fijo) ---------- */
+  .legendbar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #fff; border-top: 1px solid var(--border);
+    padding: 8px 16px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    font-size: 12px; color: #41546a; box-shadow: 0 -2px 6px rgba(0,0,0,.04);
+  }
+  .legendbar .lg-title { font-weight: 600; display: inline-flex; align-items: center; gap: 7px; }
+  .legendbar .lg-title .dotgray { width: 11px; height: 11px; border-radius: 50%; background: var(--blue); }
+  .legendbar .items { display: flex; gap: 18px; flex-wrap: wrap; margin-left: auto; }
+  .lg-item { display: inline-flex; align-items: center; gap: 6px; }
+  .lg-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .lg-dot.pte  { background: #ef4123; }
+  .lg-dot.enc  { background: #3cb371; }
+  .lg-dot.car  { background: #6cc7e0; }
+  .lg-dot.alb  { background: #f5d800; }
+  .lg-dot.anu  { background: #e8634a; }
+
+  .nores { padding: 28px; text-align: center; color: #8494a6; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== Toolbar (Opciones) ===================== -->
+  <div class="toolbar">
+    <span class="opt-label">Opciones</span>
+    <div class="fld">
+      <input type="date" id="fFecha" value="2026-06-23" />
+    </div>
+    <div class="fld">
+      <label for="fAlmacen">Almacén:</label>
+      <select id="fAlmacen" class="alm">
+        <option value="">(Todos)</option>
+        <option value="CT01">CT01 — Almacén Central Cosmética</option>
+        <option value="CT02">CT02 — Almacén Producto Terminado</option>
+        <option value="EXP1">EXP1 — Muelle de Expediciones</option>
+      </select>
+    </div>
+    <label class="chk-todos"><input type="checkbox" id="fTodos" checked /> Todos</label>
+    <button class="btn-actualizar" id="btnActualizar"><span>&#8635;</span> Actualizar</button>
+    <button class="toolico" id="btnPrint" title="Imprimir">&#128424;</button>
+    <button class="toolico" id="btnExpandAll" title="Desplegar todo">&#11119;</button>
+    <button class="toolico" id="btnCollapseAll" title="Plegar todo">&#11120;</button>
+    <span class="spacer"></span>
+  </div>
+
+  <!-- ===================== Buscador ===================== -->
+  <div class="searchbar">
+    <div class="search-wrap">
+      <span class="ic">&#128269;</span>
+      <input type="text" id="fSearch" placeholder="Introduzca el texto a buscar..." />
+    </div>
+  </div>
+
+  <!-- ===================== Tabla de camiones ===================== -->
+  <div class="tablewrap">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th class="col-exp"></th>
+          <th><span class="th-in">Estado <span class="funnel">&#9660;</span></span></th>
+          <th><span class="th-in">No Camion <span class="funnel">&#9660;</span></span></th>
+          <th class="cliente"><span class="th-in">Cliente <span class="funnel">&#9660;</span></span></th>
+          <th><span class="th-in">Tipo Camion <span class="funnel">&#9660;</span></span></th>
+          <th><span class="th-in">Coste <span class="funnel">&#9660;</span></span></th>
+          <th><span class="th-in">Hora de Carga Prevista <span class="funnel">&#9660;</span></span></th>
+          <th><span class="th-in">Fecha Descarga Prevista <span class="funnel">&#9660;</span></span></th>
+          <th><span class="th-in">Muelle <span class="funnel">&#9660;</span></span></th>
+          <th class="matricula"><span class="th-in">Matricula Remolque <span class="funnel">&#9660;</span></span></th>
+          <th><span class="th-in">Camion Traslado <span class="funnel">&#9660;</span></span></th>
+        </tr>
+        <tr class="filterrow">
+          <th class="col-exp"></th>
+          <th><input data-col="estado" placeholder="" /></th>
+          <th><input data-col="noCamion" placeholder="" /></th>
+          <th><input data-col="cliente" placeholder="" /></th>
+          <th><input data-col="tipoCamion" placeholder="" /></th>
+          <th><input data-col="coste" placeholder="" /></th>
+          <th><span class="fic">&#128197;</span></th>
+          <th><span class="fic">&#128197;</span></th>
+          <th><input data-col="muelle" placeholder="" /></th>
+          <th><input data-col="matricula" placeholder="" /></th>
+          <th><span class="fic">&#9662;</span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ===================== Leyenda de Estados ===================== -->
+<div class="legendbar">
+  <span class="lg-title"><span class="dotgray"></span> Leyenda de Estados</span>
+  <div class="items">
+    <span class="lg-item"><span class="lg-dot pte"></span> Pte. Cargar</span>
+    <span class="lg-item"><span class="lg-dot enc"></span> En Carga</span>
+    <span class="lg-item"><span class="lg-dot car"></span> Cargado</span>
+    <span class="lg-item"><span class="lg-dot alb"></span> Albaranado</span>
+    <span class="lg-item"><span class="lg-dot anu"></span> Anulado</span>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   PANTALLA DE CAMIONES — carga y expedición (simulación).
+
+   - Pantalla principal: una fila por camión con su ESTADO (color), nº de
+     camión, cliente, tipo, coste, fechas previstas, muelle, matrícula del
+     remolque y marca de camión de traslado.
+   - Al pulsar el desplegable (>) de una fila se muestra el DETALLE de las
+     líneas del pedido (posiciones), con las columnas AJUSTADAS al contenido.
+
+   Datos de EJEMPLO. Toda la lógica corre en el navegador, sin dependencias.
+   Para datos reales basta sustituir el array CAMIONES (y, si procede, los
+   maestros MATERIALES / CLIENTES) por la consulta correspondiente.
+   ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function esc(v){ return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function nf(n){ return Number(n).toLocaleString('es-ES'); }
+
+/* ---------- Maestro de clientes (código + dirección de envío) ---------- */
+const CLIENTES = {
+  'Lidl Ireland GmbH':         { codigo:'0000180001', dir:'MAIN ROAD TALLAGHT DUBLIN 24 IE' },
+  'Lidl Northern Ireland':     { codigo:'0000180002', dir:'NUTTS CORNER ANTRIM BT29 GB' },
+  'LIDL SUPERMERCADOS':        { codigo:'0000180003', dir:'CTRA N-II KM 35,2 ALCALA H. ES' },
+  'DROGUERIAS Y PERFUMERIAS':  { codigo:'0000190050', dir:'CALLE GRAN VIA 28 MADRID ES' },
+  'DISTRICAM IBERICA, S.L.':   { codigo:'0000190120', dir:'POL.IND LAS SALINAS NAVE 5 ES' },
+  'PENINSULACO S.L':           { codigo:'0000191074', dir:'POLIND.LA SENDILLA PARCELA IE1' },
+  'CAPRABO, S.A':              { codigo:'0000190088', dir:'CALLE CIENCIES 135 HOSPITALET ES' },
+  'CECOSA SUPERMERCADOS':      { codigo:'0000190200', dir:'BARRIO GARAI 1 ELORRIO ES' },
+};
+
+/* ---------- Maestro de materiales (descripción + uds/palet) ---------- */
+const MATERIALES = {
+  '70907033': { desc:'BELLE CR CORP TARRO ALOE VERA 300ML', uds:960 },
+  '70907035': { desc:'BELLE CR CORPORAL TARRO ARGAN 300ML', uds:960 },
+  '70903688': { desc:'BELLE CREMA MANOS HIDRAT.100ML',      uds:216 },
+  '70903692': { desc:'BELLE CREMA MANOS ANTIEDAD100ML',     uds:648 },
+  '70906417': { desc:'BELLE EDT FRESH VAINILLA 100ML',      uds:468 },
+  '70905644': { desc:'BELLE CREMA FACIALPRO FIRM 50ML NEW', uds:216 },
+  '70905914': { desc:'BELLE MASCARILLA ORO TARRO 300ML',    uds:384 },
+  '70901200': { desc:'BELLE GEL DUCHA ALOE 750ML',          uds:540 },
+  '70902150': { desc:'BELLE CHAMPU REPARADOR 400ML',        uds:600 },
+  '70904300': { desc:'BELLE DESODORANTE SPRAY 200ML',       uds:1200 },
+};
+
+/* ---------- Estados ---------- */
+const EST = {
+  'CARGADO':    { cls:'cargado',    cargado:true  },
+  'EN CARGA':   { cls:'encarga',    cargado:false },
+  'ALBARANADO': { cls:'albaranado', cargado:true  },
+  'PTE CARGAR': { cls:'ptecargar',  cargado:false },
+  'ANULADO':    { cls:'anulado',    cargado:false },
+};
+const FECHA_CARGA = '23/06/2026';      // fecha de la jornada (camiones del día)
+const FECHA_NULA  = '01/01/1900';      // placeholder de fecha vacía (estilo SAP)
+
+/* ---------- Generación del detalle (líneas/posiciones del camión) ---------- */
+let seqEntrega = 80043120;
+function genLineas(cliente, pedidoBase, estado, matCodes){
+  const info = CLIENTES[cliente] || { codigo:'', dir:'' };
+  const cargado = EST[estado].cargado;
+  const enCarga = estado === 'EN CARGA';
+  return matCodes.map((cod, i) => {
+    const m = MATERIALES[cod];
+    const totalUds = m.uds;                 // 1 palet por posición
+    const hechasUds = cargado ? totalUds : (enCarga && i < Math.ceil(matCodes.length/2) ? totalUds : 0);
+    const totalPal = 1;
+    const hechasPal = cargado ? 1 : 0;
+    return {
+      linea: i + 1,
+      pedido: pedidoBase + '-' + ((i + 1) * 10),
+      entrega: cargado ? (seqEntrega++ + '-1') : '0-0',
+      codCliente: info.codigo,
+      nomCliente: cliente,
+      material: cod + ' - ' + m.desc,
+      direccion: info.dir,
+      udsHechas: hechasUds, udsTotal: totalUds,
+      palHechas: hechasPal, palTotal: totalPal,
+      completar: false,
+      almDest: '', anioDoc: '', docTraslado: 0,
+    };
+  });
+}
+
+/* ---------- Camiones (cabeceras) ---------- */
+/* matriculas de remolque de ejemplo (se truncan por ancho de columna) */
+const RAW = [
+  { est:'CARGADO',   n:8,  cli:'Lidl Ireland GmbH',        alm:'EXP1', muelle:16, mat:'LID 4471', mats:['70907033','70901200','70902150','70904300'] },
+  { est:'CARGADO',   n:9,  cli:'Lidl Ireland GmbH',        alm:'EXP1', muelle:16, mat:'L-8830-BC', mats:['70903688','70903692','70906417','70905644'] },
+  { est:'CARGADO',   n:10, cli:'Lidl Ireland GmbH',        alm:'EXP1', muelle:16, mat:'Ñ-2213-DF', mats:['70905914','70907035','70901200'] },
+  { est:'CARGADO',   n:11, cli:'Lidl Ireland GmbH',        alm:'EXP1', muelle:16, mat:'F-9054-GH', mats:['70902150','70904300','70907033','70903688'] },
+  { est:'EN CARGA',  n:12, cli:'Lidl Ireland GmbH',        alm:'EXP1', muelle:16, mat:'J-1187-KL', mats:['70903692','70906417','70905644','70905914'] },
+  { est:'CARGADO',   n:13, cli:'Lidl Northern Ireland',    alm:'EXP1', muelle:16, mat:'G-6620-MN', mats:['70907035','70901200','70902150'] },
+  { est:'CARGADO',   n:14, cli:'LIDL SUPERMERCADOS',       alm:'CT02', muelle:55, mat:'LI 3398 PQ', mats:['70904300','70907033','70903688','70903692'] },
+  { est:'ANULADO',   n:15, cli:'',                          alm:'',     muelle:0,  mat:'', mats:[] },
+  { est:'ANULADO',   n:16, cli:'',                          alm:'',     muelle:0,  mat:'', mats:[] },
+  { est:'PTE CARGAR',n:17, cli:'DROGUERIAS Y PERFUMERIAS', alm:'CT01', muelle:0,  mat:'', mats:['70906417','70905644','70905914'] },
+  { est:'ANULADO',   n:18, cli:'DROGUERIAS Y PERFUMERIAS', alm:'',     muelle:0,  mat:'', mats:[] },
+  { est:'PTE CARGAR',n:19, cli:'',                          alm:'CT01', muelle:0,  mat:'', mats:['70907035','70901200'] },
+  { est:'PTE CARGAR',n:20, cli:'DISTRICAM IBERICA, S.L.',  alm:'CT01', muelle:0,  mat:'', mats:['70902150','70904300','70907033'] },
+  { est:'PTE CARGAR',n:21, cli:'PENINSULACO S.L',          alm:'CT01', muelle:0,  mat:'',
+    mats:['70907033','70907035','70903688','70903692','70906417','70905644','70905914'] },  /* coincide con la captura */
+  { est:'PTE CARGAR',n:22, cli:'CAPRABO, S.A',             alm:'CT01', muelle:0,  mat:'', mats:['70903688','70903692'] },
+  { est:'PTE CARGAR',n:23, cli:'PENINSULACO S.L',          alm:'CT01', muelle:0,  mat:'', mats:['70906417','70905644','70905914','70901200'] },
+  { est:'PTE CARGAR',n:24, cli:'CECOSA SUPERMERCADOS',     alm:'CT01', muelle:0,  mat:'', mats:['70902150','70904300'] },
+];
+
+let pedidoSeq = 10065060;   /* el camión 20260623-21 (PENINSULACO) queda con pedido 10065073, como en la captura */
+const CAMIONES = RAW.map(r => {
+  const cargado = EST[r.est].cargado || r.est === 'EN CARGA';
+  const pedidoBase = String(pedidoSeq++);
+  return {
+    estado: r.est,
+    noCamion: '20260623-' + r.n,
+    cliente: r.cli,
+    tipoCamion: r.est === 'ANULADO' ? '' : 'Trailer',
+    coste: 0,
+    almacen: r.alm,
+    horaCarga: cargado ? FECHA_CARGA : FECHA_NULA,
+    fechaDescarga: cargado ? FECHA_CARGA : FECHA_NULA,
+    muelle: r.muelle,
+    matricula: r.mat,
+    traslado: false,
+    pedido: pedidoBase,
+    lineas: genLineas(r.cli, pedidoBase, r.est, r.mats),
+  };
+});
+CAMIONES.forEach((c, i) => c._id = i);
+
+/* ---------- Render del detalle (sub-tabla con columnas ajustadas) ---------- */
+function detalleHTML(c){
+  if (!c.lineas.length){
+    return `<div class="detailwrap">
+      <div class="detailtitle">Detalle del camión <span class="pill">${esc(c.noCamion)}</span></div>
+      <div class="det-empty">Este camión no tiene líneas asociadas.</div>
+    </div>`;
+  }
+  const rows = c.lineas.map(l => `
+    <tr>
+      <td class="d-linea">${l.linea}</td>
+      <td class="d-pedido mono">${esc(l.pedido)}</td>
+      <td class="d-entrega mono">${esc(l.entrega)}</td>
+      <td class="d-codcli mono">${esc(l.codCliente)}</td>
+      <td class="d-nomcli">${esc(l.nomCliente)}</td>
+      <td class="d-material">${esc(l.material)}</td>
+      <td class="d-direccion">${esc(l.direccion)}</td>
+      <td class="d-uds num">${nf(l.udsHechas)} de ${nf(l.udsTotal)}</td>
+      <td class="d-palets num">${l.palHechas} de ${l.palTotal}</td>
+      <td class="d-completar center"><input type="checkbox" ${l.completar ? 'checked' : ''}></td>
+      <td class="d-almdest mono">${esc(l.almDest)}</td>
+      <td class="d-aniodoc mono">${esc(l.anioDoc)}</td>
+      <td class="d-doctras num">${l.docTraslado}</td>
+    </tr>`).join('');
+  return `<div class="detailwrap">
+    <div class="detailtitle">Detalle del camión <span class="pill">${esc(c.noCamion)}</span> · Pedido SAP ${esc(c.pedido)} · ${c.lineas.length} línea(s)</div>
+    <table class="detail">
+      <thead>
+        <tr>
+          <th class="d-linea">Linea</th>
+          <th class="d-pedido">Pedido SAP</th>
+          <th class="d-entrega">Entrega SAP</th>
+          <th class="d-codcli">Codigo Cliente</th>
+          <th class="d-nomcli">Nombre Cliente</th>
+          <th class="d-material">Material</th>
+          <th class="d-direccion">Direccion de Envio</th>
+          <th class="d-uds">Unidades</th>
+          <th class="d-palets">Palets</th>
+          <th class="d-completar">Completar Camion</th>
+          <th class="d-almdest">Alm. Dest. Traslado</th>
+          <th class="d-aniodoc">Año Doc. Traslado</th>
+          <th class="d-doctras">Doc. Traslado SAP</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+/* ---------- Render de la rejilla principal ---------- */
+let selId = null;
+const openSet = new Set();
+
+function filaCamion(c){
+  const e = EST[c.estado];
+  return `
+    <tr class="mainrow ${openSet.has(c._id) ? 'open' : ''} ${selId === c._id ? 'sel' : ''}" data-id="${c._id}">
+      <td class="col-exp"><span class="exp-btn" data-exp="${c._id}">${openSet.has(c._id) ? '&#9660;' : '&#9654;'}</span></td>
+      <td class="estado ${e.cls}">${esc(c.estado)}</td>
+      <td class="mono">${esc(c.noCamion)}</td>
+      <td class="cliente" title="${esc(c.cliente)}">${esc(c.cliente)}</td>
+      <td>${esc(c.tipoCamion)}</td>
+      <td class="num">${c.coste}</td>
+      <td>${esc(c.horaCarga)}</td>
+      <td>${esc(c.fechaDescarga)}</td>
+      <td class="num">${c.muelle}</td>
+      <td class="matricula mono" title="${esc(c.matricula)}">${esc(c.matricula)}</td>
+      <td class="center"><input type="checkbox" data-traslado="${c._id}" ${c.traslado ? 'checked' : ''}></td>
+    </tr>
+    <tr class="detailrow ${openSet.has(c._id) ? 'show' : ''}" data-detail="${c._id}">
+      <td colspan="11">${openSet.has(c._id) ? detalleHTML(c) : ''}</td>
+    </tr>`;
+}
+
+/* ---------- Filtros ---------- */
+function getColFilters(){
+  const f = {};
+  $$('.filterrow input[data-col]').forEach(inp => {
+    const v = inp.value.trim().toLowerCase();
+    if (v) f[inp.dataset.col] = v;
+  });
+  return f;
+}
+
+function visibles(){
+  const q = $('#fSearch').value.trim().toLowerCase();
+  const alm = $('#fAlmacen').value;
+  const todos = $('#fTodos').checked;
+  const cols = getColFilters();
+
+  return CAMIONES.filter(c => {
+    // Almacén
+    if (alm && c.almacen !== alm) return false;
+    // "Todos": si está desmarcado, solo camiones cuya carga es del día seleccionado
+    if (!todos && c.horaCarga === FECHA_NULA) return false;
+    // Filtros por columna
+    if (cols.estado     && !c.estado.toLowerCase().includes(cols.estado)) return false;
+    if (cols.noCamion   && !c.noCamion.toLowerCase().includes(cols.noCamion)) return false;
+    if (cols.cliente    && !c.cliente.toLowerCase().includes(cols.cliente)) return false;
+    if (cols.tipoCamion && !c.tipoCamion.toLowerCase().includes(cols.tipoCamion)) return false;
+    if (cols.coste      && !String(c.coste).includes(cols.coste)) return false;
+    if (cols.muelle     && !String(c.muelle).includes(cols.muelle)) return false;
+    if (cols.matricula  && !c.matricula.toLowerCase().includes(cols.matricula)) return false;
+    // Búsqueda global
+    if (q){
+      const hay = [c.estado, c.noCamion, c.cliente, c.tipoCamion, c.matricula, c.pedido]
+        .join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function render(){
+  const rows = visibles();
+  const tb = $('#tbody');
+  if (!rows.length){
+    tb.innerHTML = `<tr><td class="nores" colspan="11">No hay camiones para los criterios seleccionados.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = rows.map(filaCamion).join('');
+}
+
+/* ---------- Eventos ---------- */
+$('#tbody').addEventListener('click', e => {
+  // toggle de despliegue
+  const exp = e.target.closest('[data-exp]');
+  if (exp){
+    e.stopPropagation();
+    const id = Number(exp.dataset.exp);
+    if (openSet.has(id)) openSet.delete(id); else openSet.add(id);
+    render();
+    return;
+  }
+  // checkbox de "Camión Traslado" (no debe seleccionar la fila)
+  const cb = e.target.closest('input[data-traslado]');
+  if (cb){
+    const id = Number(cb.dataset.traslado);
+    const c = CAMIONES.find(x => x._id === id);
+    if (c) c.traslado = cb.checked;
+    return;
+  }
+  // selección de fila
+  const tr = e.target.closest('tr.mainrow');
+  if (tr){
+    const id = Number(tr.dataset.id);
+    selId = (selId === id) ? null : id;
+    render();
+  }
+});
+
+// checkboxes del detalle ("Completar Camion")
+$('#tbody').addEventListener('change', e => {
+  const cb = e.target.closest('.detail input[type="checkbox"]');
+  if (!cb) return;
+  const tr = cb.closest('tr.detailrow');
+  // (en demo no persistimos el valor por línea; bastaría mapear por índice)
+});
+
+['fSearch'].forEach(id => $('#'+id).addEventListener('input', render));
+['fAlmacen','fTodos','fFecha'].forEach(id => $('#'+id).addEventListener('change', render));
+$$('.filterrow input[data-col]').forEach(inp => inp.addEventListener('input', render));
+$('#btnActualizar').addEventListener('click', render);
+
+$('#btnExpandAll').addEventListener('click', () => {
+  visibles().forEach(c => openSet.add(c._id));
+  render();
+});
+$('#btnCollapseAll').addEventListener('click', () => { openSet.clear(); render(); });
+$('#btnPrint').addEventListener('click', () => window.print());
+
+// que el clic en la fila de filtros no propague a la selección
+$$('.filterrow input').forEach(inp => inp.addEventListener('click', e => e.stopPropagation()));
+
+/* ---------- Inicio ---------- */
+render();
+</script>
+</body>
+</html>

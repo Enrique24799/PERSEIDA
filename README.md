@@ -5,6 +5,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `AJUSTE_PALETS.html` — Transacción de control y ajuste de inventario de palets.
+- `PANTALLA_CAMIONES.html` — Pantalla de camiones (carga/expedición) con detalle desplegable por camión.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -117,3 +118,32 @@ Cada acción queda registrada en el **log de movimientos** (fecha/hora, usuario,
 situación anterior → nueva, unidades, documento y motivo). Incluye **Exportar** a CSV y barra de
 estado tipo SAP. Los datos son de **ejemplo**; para datos reales basta sustituir el array `PALETS`,
 el contador `LIBRES` (por código) y los maestros `MATERIALES` / `PALET_TIPOS` del `<script>`.
+
+## `PANTALLA_CAMIONES.html` — Pantalla de camiones (carga / expedición)
+
+Rejilla de camiones del día con su estado de carga. Cada fila se puede **desplegar** (botón `>`)
+para ver el **detalle de las líneas** (posiciones) del pedido, con las columnas **ajustadas** al
+contenido. Es un visor autocontenido con datos de **ejemplo**.
+
+### Pantalla principal
+
+Una fila por camión con las columnas: **Estado** (celda coloreada según el estado), `No Camion`,
+`Cliente`, `Tipo Camion`, `Coste`, `Hora de Carga Prevista`, `Fecha Descarga Prevista`, `Muelle`,
+`Matricula Remolque` y `Camion Traslado` (check). Los camiones aún no cargados muestran las fechas
+como `01/01/1900` (fecha vacía estilo SAP).
+
+**Estados** (leyenda inferior): `Pte. Cargar`, `En Carga`, `Cargado`, `Albaranado` y `Anulado`.
+
+### Detalle desplegable (líneas del pedido)
+
+Al desplegar un camión se muestra una sub-tabla con columnas ajustadas: `Linea`, `Pedido SAP`,
+`Entrega SAP`, `Codigo Cliente`, `Nombre Cliente`, `Material`, `Direccion de Envio`, `Unidades`
+(*hechas de total*), `Palets` (*hechos de total*), `Completar Camion` (check), `Alm. Dest. Traslado`,
+`Año Doc. Traslado` y `Doc. Traslado SAP`.
+
+### Opciones / filtros
+
+`Fecha`, `Almacén`, casilla **Todos** (al desmarcarla se ocultan los camiones sin fecha de carga),
+botón **Actualizar**, **buscador** global y **filtros por columna**. También hay botones para
+**imprimir**, **desplegar todo** y **plegar todo**. Para datos reales basta sustituir el array
+`CAMIONES` y los maestros `CLIENTES` / `MATERIALES` del `<script>`.
