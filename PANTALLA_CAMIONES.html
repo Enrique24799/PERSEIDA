@@ -452,6 +452,15 @@
   .p-num { width: 90px; } .p-svd { width: 110px; } .p-fab { width: 120px; }
   .p-falta { width: 86px; } .p-compra { width: 96px; }
   .p-uni { width: 64px; } .p-fent { width: 104px; }
+  .p-sem { width: 40px; } .p-fdisp { width: 120px; }
+
+  /* semáforo de disponibilidad */
+  .sem { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,.18); }
+  .sem.verde { background: #27ae60; } .sem.verdeclaro { background: #9fd98a; }
+  .sem.naranja { background: #ef9d10; } .sem.rojo { background: #e0362c; }
+  .sem-legend { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin: 0 0 8px; font-size: 11.5px; color: #51637a; }
+  .sem-legend .it { display: inline-flex; align-items: center; gap: 6px; }
+  .sem-legend .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); }
 
   /* anchos ajustados — Carga */
   .c-ord { width: 56px; } .c-ped { width: 110px; } .c-ent { width: 90px; }
@@ -650,10 +659,17 @@
 
     <!-- Pedidos: resultados de búsqueda -->
     <div class="block-title" style="padding-left:2px">Pedidos:</div>
+    <div class="sem-legend">
+      <span class="it"><span class="dot" style="background:#27ae60"></span> Stock verificado &gt; cantidad pendiente</span>
+      <span class="it"><span class="dot" style="background:#9fd98a"></span> Fecha disponibilidad &le; fecha entrega</span>
+      <span class="it"><span class="dot" style="background:#ef9d10"></span> A tiempo, con faltas de componentes</span>
+      <span class="it"><span class="dot" style="background:#e0362c"></span> Fecha disponibilidad &gt; fecha entrega</span>
+    </div>
     <div class="tablewrap" style="margin-bottom:14px">
       <table>
         <thead>
           <tr>
+            <th class="p-sem" title="Semáforo de disponibilidad"></th>
             <th class="chkcol"><input type="checkbox" id="chkAllPed" title="Marcar todo" /></th>
             <th class="p-ped">Pedido</th>
             <th class="p-cod">Cod. Cliente</th>
@@ -669,12 +685,14 @@
             <th class="p-num">Stock</th>
             <th class="p-svd">Stock Verif. Disp.</th>
             <th class="p-fab">Fabricación Verificada</th>
+            <th class="p-fdisp">Fecha Disponibilidad</th>
             <th class="p-falta">Faltas Comp.</th>
             <th class="p-compra">Ped. Compra</th>
             <th class="p-uni">Unidad</th>
             <th class="p-fent">Fecha Entrega</th>
           </tr>
           <tr class="filterrow">
+            <th class="p-sem"></th>
             <th class="chkcol"></th>
             <th></th><th></th><th></th><th></th><th></th>
             <th><span class="cal">&#128197;</span></th>
@@ -685,6 +703,7 @@
             <th><span class="fic">&#9650;&#9660;</span></th>
             <th><span class="fic">&#9650;&#9660;</span></th>
             <th><span class="fic">&#9650;&#9660;</span></th>
+            <th><span class="cal">&#128197;</span></th>
             <th></th><th></th><th></th>
             <th><span class="cal">&#128197;</span></th>
           </tr>
@@ -782,9 +801,9 @@ const MATS = {
   '70902560': { desc:'NELIA CHAMPU NUTRITIVO 400ML',              udsPalet:540, stock:9180,  fab:21600,  alm:'FAB' },
   '70907033': { desc:'BELLE CR CORP TARRO ALOE VERA 300ML',       udsPalet:960, stock:12480, fab:0,      alm:'CT01' },
   '70903688': { desc:'BELLE CREMA MANOS HIDRAT.100ML',            udsPalet:216, stock:8640,  fab:5400,   alm:'CT01' },
-  '70906417': { desc:'BELLE EDT FRESH VAINILLA 100ML',            udsPalet:468, stock:3744,  fab:9360,   alm:'FAB' },
-  '70905914': { desc:'BELLE MASCARILLA ORO TARRO 300ML',          udsPalet:384, stock:1536,  fab:7680,   alm:'CT01' },
-  '70902150': { desc:'BELLE CHAMPU REPARADOR 400ML',              udsPalet:600, stock:18000, fab:0,      alm:'FAB' },
+  '70906417': { desc:'BELLE EDT FRESH VAINILLA 100ML',            udsPalet:468, stock:250,   fab:9360,   alm:'FAB' },
+  '70905914': { desc:'BELLE MASCARILLA ORO TARRO 300ML',          udsPalet:384, stock:300,   fab:7680,   alm:'CT01' },
+  '70902150': { desc:'BELLE CHAMPU REPARADOR 400ML',              udsPalet:600, stock:900,   fab:0,      alm:'FAB' },
 };
 
 /* ---------- Maestro de clientes (nombre, ciudad de envío y provincia / área de entrega) ---------- */
@@ -823,8 +842,8 @@ const ORDENES = {
   ],
   '70907033': [ { orden:'100460070', qty:3840, fIni:'19/06/2026', fFin:'23/06/2026' } ],
   '70903688': [ { orden:'100460080', qty:1296, fIni:'24/06/2026', fFin:'27/06/2026' } ],
-  '70906417': [ { orden:'100460090', qty:1872, fIni:'23/06/2026', fFin:'26/06/2026' } ],
-  '70905914': [ { orden:'100460100', qty:1152, fIni:'26/06/2026', fFin:'30/06/2026' } ],
+  '70906417': [ { orden:'100460090', qty:1872, fIni:'23/06/2026', fFin:'01/07/2026' } ],
+  '70905914': [ { orden:'100460100', qty:1152, fIni:'24/06/2026', fFin:'27/06/2026' } ],
   '70902150': [ { orden:'100460110', qty:3000, fIni:'20/06/2026', fFin:'24/06/2026' } ],
 };
 
@@ -907,6 +926,34 @@ function tieneFaltas(code){
   return (ORDENES[code] || []).some(o => (FALTAS[o.orden] || []).some(f => f.falta > 0));
 }
 
+// Fecha de referencia "hoy" (fecha de la pantalla / propuesta).
+const HOY = '23/06/2026';
+// Fecha en la que estará disponible al menos el 90% del pendiente del material
+// (stock verificado + fabricación que va finalizando, acumulada por fecha fin).
+function fechaDisponibilidad(r){
+  const target = 0.9 * r.pdte;
+  let acc = stockVerif(r.codMat, r.fent, r.base, r.pos);
+  if (acc >= target) return HOY;                 // ya hay stock para el 90%
+  const ords = (ORDENES[r.codMat] || []).slice().sort((a, b) => parseDmy(a.fFin) - parseDmy(b.fFin));
+  for (const o of ords){ acc += o.qty; if (acc >= target) return o.fFin; }
+  return null;                                    // nunca se alcanza el 90%
+}
+// Semáforo de disponibilidad (se evalúa en este orden de prioridad).
+function semaforo(r){
+  const sv = stockVerif(r.codMat, r.fent, r.base, r.pos);
+  if (sv > r.pdte) return 'verde';                                 // stock verificado > cantidad pendiente
+  const fd = fechaDisponibilidad(r);
+  if (!fd || parseDmy(fd) > parseDmy(r.fent)) return 'rojo';       // no llega a la fecha de entrega
+  if (tieneFaltas(r.codMat)) return 'naranja';                     // a tiempo, pero con faltas de componentes
+  return 'verdeclaro';                                            // a tiempo (stock + fabricación)
+}
+const SEM_TXT = {
+  verde:      'Stock verificado suficiente (> cantidad pendiente)',
+  verdeclaro: 'Disponible (>=90%) antes o en la fecha de entrega',
+  naranja:    'A tiempo, pero con faltas de componentes (riesgo)',
+  rojo:       'No disponible para la fecha de entrega',
+};
+
 /* ---------- Estado de la pestaña ---------- */
 let RESULTS = [];
 let CARGA = [];
@@ -968,7 +1015,7 @@ function doSearchDoc(){
 function renderResults(){
   const tb = $('#tbodyPed');
   if (!RESULTS.length){
-    tb.innerHTML = `<tr><td colspan="19">
+    tb.innerHTML = `<tr><td colspan="21">
       <div class="empty">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
           <circle cx="10.5" cy="10.5" r="6.5"></circle>
@@ -985,6 +1032,8 @@ function renderResults(){
     const sv = stockVerif(r.codMat, r.fent, r.base, r.pos);
     const fv = fabVerificada(r.codMat, r.fent);
     const faltas = tieneFaltas(r.codMat);
+    const sem = semaforo(r);
+    const fdisp = fechaDisponibilidad(r);
     const faltaTd = faltas
       ? `<td class="p-falta center clickable" data-act="falta" data-i="${i}" title="Ver faltas de componentes"><input type="checkbox" checked disabled></td>`
       : `<td class="p-falta center"><input type="checkbox" disabled></td>`;
@@ -993,6 +1042,7 @@ function renderResults(){
       : `<td class="p-compra center">&mdash;</td>`;
     return `
     <tr data-i="${i}">
+      <td class="p-sem center"><span class="sem ${sem}" title="${esc(SEM_TXT[sem])}"></span></td>
       <td class="chkcol"><input type="checkbox" class="ckPed" data-i="${i}"></td>
       <td class="p-ped mono">${esc(r.pedidoLabel)}</td>
       <td class="p-cod mono">${esc(r.codCli)}</td>
@@ -1008,6 +1058,7 @@ function renderResults(){
       <td class="p-num num">${nf(r.stock)}</td>
       <td class="p-svd num ${sv < 0 ? 'neg' : ''}">${nf(sv)}</td>
       <td class="p-fab num"><a class="cell-link" data-act="ord" data-i="${i}" title="Ver órdenes de fabricación">${nf(fv)}</a></td>
+      <td class="p-fdisp ${sem === 'rojo' ? 'neg' : ''}">${fdisp ? esc(fdisp) : '&mdash;'}</td>
       ${faltaTd}
       ${compraTd}
       <td class="p-uni link">${esc(r.unidad)}</td>

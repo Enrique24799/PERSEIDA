@@ -174,12 +174,17 @@ Formulario para **crear un camión** y asignarle sus líneas de carga (datos de 
   `Fecha Entrega`). Al pulsar una fila se rellena **Detalle Material Consultado** (`Stock` /
   `Pdte. Fabricar`).
 - **Verificación de disponibilidad** (columnas nuevas de la tabla Pedidos):
+  - `Semáforo` (1ª columna): estado de disponibilidad del material para el pedido, con prioridad:
+    **verde** = `Stock Verif. > Cant. Pdte`; **verde claro** = `Fecha Disponibilidad ≤ Fecha Entrega`;
+    **naranja** = a tiempo pero con **faltas de componentes**; **rojo** = `Fecha Disponibilidad > Fecha Entrega`.
   - `Area Entrega` = provincia del cliente; `Almacén` = almacén del material.
   - `Stock Verif. Disp.` = stock disponible **a la fecha de entrega** descontando las **reservas de
     material de otros pedidos** con entrega anterior o igual (en rojo si es negativo).
   - `Fabricación Verificada` (sustituye a *Pdte. Fab.*) = suma de las **órdenes planificadas que
     terminan antes/en la fecha de entrega**. Al pulsar abre un **pop-up** con las órdenes (inicio /
     fin / cantidad), resaltando en verde las que se fabrican antes de la entrega.
+  - `Fecha Disponibilidad` = fecha en la que habrá disponible **al menos el 90 %** del pendiente
+    (stock verificado + fabricación que va finalizando, acumulada por fecha fin).
   - `Faltas Comp.` = check de si las órdenes del material tienen **faltas de componentes**; al pulsar,
     **pop-up** con las órdenes y los componentes en falta (necesario / disponible / falta).
   - `Ped. Compra` = al pulsar, **pop-up** con los **pedidos de compra** de esos componentes en falta.
