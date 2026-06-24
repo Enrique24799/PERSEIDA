@@ -4,6 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
+- `FABRICACIONES.html` — Calendario de turnos (M/T/N) por día y reactor, con modificación masiva por sección.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -64,3 +65,39 @@ totales de volumen/peso se muestran una sola vez por camión.
 
 Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
 si procede, `runAlgo()` por la llamada al algoritmo real.
+
+## `FABRICACIONES.html` — Calendario de turnos por reactor
+
+Módulo de **fabricaciones** para programar, por **día** y **puesto de trabajo (reactor)**, los turnos
+de **Mañana (M)**, **Tarde (T)** y **Noche (N)**. Cada reactor se identifica **solo por su nomenclatura**
+(`reNomenclatura`). Estado autocontenido y persistido en `localStorage`.
+
+### Pantallas
+
+- **Calendario.** Rejilla `día × reactor`: una semana en columnas (con navegación Anterior / Hoy /
+  Siguiente) y los reactores en filas, agrupados por sección. En cada celda hay un *check* por turno
+  (M/T/N) que se colorea al marcarse. La última columna resume nº de turnos y horas de cada reactor en
+  la semana.
+- **Configuración de turnos.** Nomenclatura y **duración** de cada turno: se editan las horas de inicio
+  y fin (el turno de noche cruza la medianoche) y la duración se recalcula y alimenta los totales de
+  horas del calendario.
+
+### Modificación masiva (por sección)
+
+- **Panel «Modificación masiva».** Elige los turnos (M/T/N), el ámbito de **días** (todos / laborables
+  L–V / fin de semana / un día concreto) y de **reactores** (todos los de la sección o uno), y la acción
+  **Marcar / Desmarcar** → botón **Aplicar**.
+- **Patrones rápidos:** `L–V · M`, `L–V · M+T`, `L–V · M+T+N`, `7 días · M+T+N`, `Finde · M+T` y
+  **Vaciar sección**.
+- **Por fila / columna:** los botones `▣` (rellenar) y `▢` (vaciar) de cada reactor y de cada día
+  aplican a toda la fila o columna visible.
+
+### Origen de los datos
+
+| Dato | Origen |
+|------|--------|
+| Reactores (sección, nomenclatura, color) | Tabla `dbo.Reactores` (`reUbicacion`, `reNomenclatura`, `reColor`) |
+| Programación de turnos | Se introduce en pantalla; se guarda en `localStorage` (datos de ejemplo) |
+
+Para conectar con datos reales basta sustituir el array `REACTORES` del `<script>` por la consulta
+correspondiente a `dbo.Reactores`.

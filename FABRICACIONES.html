@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fabricaciones · Calendario de turnos por reactor</title>
+<style>
+  :root {
+    --head-bg: #2f5f8f;
+    --border: #d7dee8;
+    --grid: #eef2f7;
+    --ink: #243140;
+    --m: #27ae60;   /* Mañana */
+    --t: #e08a1e;   /* Tarde  */
+    --n: #2f80ed;   /* Noche  */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 14px 16px 28px; }
+
+  /* ---------- Cabecera ---------- */
+  .titlebar {
+    background: linear-gradient(180deg, #37618f, #2f5f8f);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .titlebar .v { font-size: 12px; opacity: .8; font-weight: 400; }
+
+  /* ---------- Pestañas ---------- */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 8px 10px 0;
+  }
+  .tab {
+    border: 1px solid var(--border);
+    border-bottom: none;
+    background: #f4f7fb;
+    color: #51637a;
+    padding: 7px 14px;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .tab:hover { background: #e7eef7; }
+  .tab.active { background: #fff; color: var(--ink); box-shadow: 0 -2px 0 var(--n) inset; }
+
+  /* ---------- Panel de filtros ---------- */
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 12px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+  fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px 10px; margin: 0; }
+  legend { font-size: 11px; color: #5b6b7d; padding: 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .controls { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 11px; color: #5b6b7d; }
+  select, input[type="date"], input[type="time"], button {
+    font-size: 13px; padding: 6px 9px;
+    border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
+  }
+  select { min-width: 150px; }
+  button { cursor: pointer; background: #f4f7fb; display: inline-flex; align-items: center; gap: 5px; }
+  button:hover { background: #e7eef7; }
+  button.primary { background: #2f80ed; color: #fff; border-color: #2f80ed; font-weight: 600; }
+  button.primary:hover { background: #2b73d4; }
+  button.ghost { background: #fff; }
+  button.danger { background: #fff; color: #b0413e; border-color: #e3b6b4; }
+  button.danger:hover { background: #fbeceb; }
+
+  .turnos-pick { display: flex; gap: 6px; }
+  .turnos-pick label {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid #b9c6d6; border-radius: 5px; padding: 5px 9px; cursor: pointer; background: #fff;
+  }
+  .turnos-pick label.m.on { border-color: var(--m); background: #e9f7ef; }
+  .turnos-pick label.t.on { border-color: var(--t); background: #fbf1e1; }
+  .turnos-pick label.n.on { border-color: var(--n); background: #e7f0fd; }
+  .turnos-pick input { accent-color: var(--head-bg); }
+  .radio-row { display: flex; gap: 6px; }
+  .radio-row label {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid #b9c6d6; border-radius: 5px; padding: 6px 11px; cursor: pointer; background: #fff;
+  }
+  .radio-row label.sel { border-color: var(--head-bg); background: #eaf2fd; font-weight: 600; }
+  .patrones { display: flex; gap: 6px; flex-wrap: wrap; }
+  .patrones button { font-size: 12px; padding: 5px 9px; }
+
+  .legend-box { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+  .legend-item i { color: #5b6b7d; font-style: normal; }
+
+  .summary {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    padding: 8px 14px; font-size: 12px; color: #51637a;
+  }
+  .summary b { color: var(--ink); }
+
+  /* ---------- Rejilla del calendario ---------- */
+  .calwrap {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px; overflow: auto; max-height: 74vh;
+  }
+  table.cal { border-collapse: separate; border-spacing: 0; width: 100%; }
+  table.cal th, table.cal td { border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); }
+
+  table.cal thead th {
+    position: sticky; top: 0; z-index: 20;
+    background: #eef3f9; color: #41546a; padding: 5px 6px; text-align: center; vertical-align: top;
+    border-bottom: 2px solid #c4d0de;
+  }
+  table.cal thead th.corner { left: 0; z-index: 40; text-align: left; min-width: 150px; }
+  table.cal thead th.tot   { background: #eef3f9; min-width: 96px; }
+  table.cal th.day { min-width: 132px; }
+  table.cal th.day.we  { background: #e8edf3; }
+  table.cal th.day.hoy { box-shadow: 0 -3px 0 var(--n) inset; }
+  .dh { font-size: 12px; }
+  .dh .wd { font-weight: 700; color: #34495e; text-transform: capitalize; }
+  .dh .dt { color: #6b7a8c; }
+  .dact { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+
+  th.rname, td.tot { position: sticky; left: 0; z-index: 10; background: #fff; }
+  td.tot { left: auto; right: 0; }
+  th.rname {
+    text-align: left; padding: 5px 8px; min-width: 150px;
+    border-left: 4px solid var(--rc, #c4d0de);
+    border-right: 2px solid #c4d0de;
+  }
+  th.rname .nm { font-weight: 700; color: #1f2d3d; }
+  th.rname .ract { display: inline-flex; gap: 3px; margin-left: 6px; }
+  tr.reactor:hover th.rname { background: #eaf2fd; }
+
+  tr.secrow td {
+    position: sticky; left: 0;
+    background: #f6f3e7; color: #6b5d2a; font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .5px;
+    padding: 5px 10px; border-top: 2px solid #d7c98f; border-bottom: 1px solid #d7c98f;
+  }
+
+  td.cell { padding: 4px; text-align: center; }
+  td.cell.we { background: #fafbfc; }
+  td.tot {
+    text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; color: #34495e;
+    border-left: 2px solid #c4d0de;
+  }
+  td.tot small { color: #8494a6; font-weight: 400; }
+
+  .chips { display: flex; gap: 3px; justify-content: center; }
+  .chip { position: relative; cursor: pointer; user-select: none; line-height: 0; }
+  .chip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .chip span {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 23px; height: 23px; border-radius: 5px;
+    border: 1px solid #c4d0de; background: #fff; color: #97a4b3;
+    font-size: 11px; font-weight: 700; line-height: 1; transition: background .08s, color .08s;
+  }
+  .chip:hover span { outline: 2px solid rgba(47,128,237,.25); }
+  .chip.m input:checked + span { background: var(--m); border-color: var(--m); color: #fff; }
+  .chip.t input:checked + span { background: var(--t); border-color: var(--t); color: #fff; }
+  .chip.n input:checked + span { background: var(--n); border-color: var(--n); color: #fff; }
+
+  .mini {
+    min-width: 0; padding: 1px 5px; font-size: 11px; line-height: 1.3;
+    border-radius: 4px; background: #fff; border: 1px solid #c4d0de; color: #51637a;
+  }
+  .mini:hover { background: #eaf2fd; }
+
+  .note {
+    background: #fff8e6; border: 1px solid #f0dca0; border-radius: 6px;
+    padding: 7px 11px; font-size: 12px; color: #7a6314; margin: 0; flex: 1 1 260px;
+  }
+
+  /* ---------- Tab configuración ---------- */
+  .cfgwrap {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px; padding: 16px;
+  }
+  table.cfg { border-collapse: collapse; }
+  table.cfg th, table.cfg td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  table.cfg thead th { background: #eef3f9; color: #41546a; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; }
+  table.cfg .nomtag { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; color: #fff; font-weight: 700; }
+  table.cfg .nomtag.m { background: var(--m); }
+  table.cfg .nomtag.t { background: var(--t); }
+  table.cfg .nomtag.n { background: var(--n); }
+  table.cfg td.dur { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="titlebar">
+    <span>Fabricaciones · Calendario de turnos por reactor</span>
+    <span class="v">v1.0</span>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="tabs">
+    <button class="tab active" data-tab="cal">📅 Calendario</button>
+    <button class="tab" data-tab="cfg">⏱ Configuración de turnos</button>
+  </div>
+
+  <!-- ============================ PANTALLA: CALENDARIO ============================ -->
+  <section id="tab-cal">
+
+    <!-- Filtros + navegación -->
+    <div class="panel">
+      <fieldset>
+        <legend>Vista</legend>
+        <div class="controls">
+          <div class="field">
+            <label for="fSeccion">Sección</label>
+            <select id="fSeccion">
+              <option value="">Todas las secciones</option>
+              <option value="COSMETICA">Cosmética</option>
+              <option value="HIGIENE">Higiene</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fSemana">Semana del</label>
+            <input type="date" id="fSemana" />
+          </div>
+          <button id="btnPrev" class="ghost" title="Semana anterior">◀ Anterior</button>
+          <button id="btnHoy" class="ghost" title="Semana actual">Hoy</button>
+          <button id="btnNext" class="ghost" title="Semana siguiente">Siguiente ▶</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Leyenda de turnos</legend>
+        <div class="legend-box" id="legenda"></div>
+      </fieldset>
+
+      <p class="note">ℹ️ Cada celda es <b>día × reactor</b>. Marca los turnos <b>M</b>/<b>T</b>/<b>N</b>.
+        Solo se muestra la <b>nomenclatura</b> del reactor. Usa <b>Modificación masiva</b> para programar
+        toda una sección de una vez, o los botones <b>▣ / ▢</b> de cada fila/columna.</p>
+    </div>
+
+    <!-- Modificación masiva -->
+    <div class="panel">
+      <fieldset style="flex:1 1 100%;">
+        <legend>Modificación masiva (sección actual)</legend>
+        <div class="controls">
+          <div class="field">
+            <label>Turnos a aplicar</label>
+            <div class="turnos-pick" id="mTurnos">
+              <label class="m on"><input type="checkbox" value="M" checked> M</label>
+              <label class="t on"><input type="checkbox" value="T" checked> T</label>
+              <label class="n on"><input type="checkbox" value="N" checked> N</label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="mDias">Días</label>
+            <select id="mDias"></select>
+          </div>
+          <div class="field">
+            <label for="mReact">Reactores</label>
+            <select id="mReact"></select>
+          </div>
+          <div class="field">
+            <label>Acción</label>
+            <div class="radio-row" id="mAccion">
+              <label class="sel"><input type="radio" name="macc" value="marcar" checked> Marcar</label>
+              <label><input type="radio" name="macc" value="desmarcar"> Desmarcar</label>
+            </div>
+          </div>
+          <button id="mAplicar" class="primary">✔ Aplicar</button>
+        </div>
+
+        <div class="controls" style="margin-top:10px;">
+          <div class="field">
+            <label>Patrones rápidos (marcan sobre la sección actual)</label>
+            <div class="patrones">
+              <button data-dias="lab"   data-turnos="M">L–V · M</button>
+              <button data-dias="lab"   data-turnos="M,T">L–V · M+T</button>
+              <button data-dias="lab"   data-turnos="M,T,N">L–V · M+T+N</button>
+              <button data-dias="todos" data-turnos="M,T,N">7 días · M+T+N</button>
+              <button data-dias="finde" data-turnos="M,T">Finde · M+T</button>
+              <button id="btnVaciarSec" class="danger">🧹 Vaciar sección (semana)</button>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="calwrap">
+      <table class="cal">
+        <thead id="calHead"></thead>
+        <tbody id="calBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================ PANTALLA: CONFIGURACIÓN ============================ -->
+  <section id="tab-cfg" class="hidden">
+    <div class="cfgwrap">
+      <p style="margin:0 0 12px; color:#51637a;">
+        Define la <b>nomenclatura</b> y la <b>duración</b> de cada turno. La duración se calcula a partir de la
+        hora de inicio y fin (el turno de noche cruza la medianoche). Estos valores alimentan los totales de
+        horas del calendario.
+      </p>
+      <table class="cfg">
+        <thead>
+          <tr><th>Nomenclatura</th><th>Turno</th><th>Inicio</th><th>Fin</th><th>Duración</th></tr>
+        </thead>
+        <tbody id="cfgBody"></tbody>
+      </table>
+      <p class="note" style="margin-top:14px; max-width:760px;">
+        ℹ️ Datos de <b>ejemplo</b> tomados de la tabla <code>dbo.Reactores</code>
+        (<code>reUbicacion</code> → sección, <code>reNomenclatura</code>, <code>reColor</code>).
+        Para conectar con datos reales basta sustituir el array <code>REACTORES</code> del
+        <code>&lt;script&gt;</code> por la consulta correspondiente. La programación se guarda en el
+        navegador (<code>localStorage</code>); usa «Vaciar sección» o recarga para revisarla.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =====================================================================
+   FABRICACIONES — Calendario de turnos por reactor (puesto de trabajo).
+   - Reactores tomados de dbo.Reactores (reUbicacion / reNomenclatura / reColor).
+   - Por cada día y reactor se pueden marcar los turnos M (Mañana),
+     T (Tarde) y N (Noche), con duración configurable.
+   - Modificación masiva por sección + acciones por fila / columna.
+   - Estado persistido en localStorage (datos de ejemplo / demo).
+   ===================================================================== */
+
+/* ---------- Maestro de reactores (dbo.Reactores) ---------- */
+const REACTORES = [
+  // --- COSMÉTICA ---
+  { nom:'RC11-200',  sec:'COSMETICA', cap:200,   capMin:80,   color:'#a6a6a6' },
+  { nom:'RC12-500',  sec:'COSMETICA', cap:500,   capMin:200,  color:'#fbe2d5' },
+  { nom:'RC16-3000', sec:'COSMETICA', cap:3000,  capMin:1200, color:'#daf2d0' },
+  { nom:'RC17-6000', sec:'COSMETICA', cap:6000,  capMin:2400, color:'#c0e6f5' },
+  { nom:'RC18-6100', sec:'COSMETICA', cap:6100,  capMin:2440, color:'#ffccff' },
+  { nom:'RC19-9000', sec:'COSMETICA', cap:9000,  capMin:3600, color:'#f1a983' },
+  { nom:'RC20-50',   sec:'COSMETICA', cap:50,    capMin:20,   color:'#e6e6e6' },
+  // --- HIGIENE ---
+  { nom:'RH1-3500',   sec:'HIGIENE', cap:3500,  capMin:1400, color:'#d9d2e9' },
+  { nom:'RH2-3500',   sec:'HIGIENE', cap:3500,  capMin:1400, color:'#cfe2f3' },
+  { nom:'RH3-3000',   sec:'HIGIENE', cap:3000,  capMin:1200, color:'#d0e0e3' },
+  { nom:'RH4-3000',   sec:'HIGIENE', cap:3000,  capMin:1200, color:'#e2efda' },
+  { nom:'RH6-9000',   sec:'HIGIENE', cap:9500,  capMin:3600, color:'#ffe599' },
+  { nom:'RH7-9000',   sec:'HIGIENE', cap:9500,  capMin:3600, color:'#f9cb9c' },
+  { nom:'RH8-9000',   sec:'HIGIENE', cap:9500,  capMin:3600, color:'#f4cccc' },
+  { nom:'RH19-19000', sec:'HIGIENE', cap:19000, capMin:7600, color:'#ead1dc' },
+  { nom:'RH20-19000', sec:'HIGIENE', cap:19000, capMin:7600, color:'#d5a6bd' },
+  { nom:'RH21-19000', sec:'HIGIENE', cap:19000, capMin:7600, color:'#c9daf8' },
+  { nom:'RH22-19000', sec:'HIGIENE', cap:19000, capMin:7600, color:'#b6d7a8' },
+  { nom:'RH23-17000', sec:'HIGIENE', cap:17000, capMin:4000, color:'#ffd966' },
+  { nom:'RH24-17000', sec:'HIGIENE', cap:17000, capMin:4000, color:'#f6b26b' },
+];
+const SECCIONES = ['COSMETICA', 'HIGIENE'];
+const SEC_LABEL = { COSMETICA:'Cosmética', HIGIENE:'Higiene' };
+
+/* ---------- Turnos (nomenclatura + duración configurable) ---------- */
+let TURNOS = [
+  { id:'M', nom:'M', label:'Mañana', ini:'06:00', fin:'14:00' },
+  { id:'T', nom:'T', label:'Tarde',  ini:'14:00', fin:'22:00' },
+  { id:'N', nom:'N', label:'Noche',  ini:'22:00', fin:'06:00' },
+];
+
+/* ---------- Estado de la programación ----------
+   estado["<nom>__<ISO>__<turnoId>"] = true                                   */
+let estado = {};
+
+const NDAYS = 7;
+const LS_KEY = 'perseida_fabricaciones_v1';
+const WDS = ['lun','mar','mié','jue','vie','sáb','dom'];
+
+/* ---------- Utilidades ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+function pad(n){ return String(n).padStart(2,'0'); }
+function isoOf(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+function parseISO(v){ const [y,m,d] = v.split('-').map(Number); return new Date(y, m-1, d); }
+function mondayOf(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; }
+function key(nom, iso, t){ return `${nom}__${iso}__${t}`; }
+function durMin(t){
+  const [h1,m1] = t.ini.split(':').map(Number);
+  const [h2,m2] = t.fin.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if (mins <= 0) mins += 24*60;   // cruza medianoche (noche)
+  return mins;
+}
+function durH(t){ return durMin(t)/60; }
+function fmtH(h){ return `${(+h.toFixed(2)).toLocaleString('es-ES')} h`; }
+const turnoById = id => TURNOS.find(t => t.id === id);
+
+const today = new Date();
+let weekStart = mondayOf(today);
+
+function weekDays(){
+  const a = [];
+  for (let i = 0; i < NDAYS; i++) a.push(addDays(weekStart, i));
+  return a;
+}
+function secFilter(){ return $('#fSeccion').value; }
+function reactoresVisibles(){
+  const sec = secFilter();
+  return REACTORES.filter(r => !sec || r.sec === sec);
+}
+
+/* ---------- Persistencia ---------- */
+function save(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ estado, turnos: TURNOS })); } catch(e){}
+}
+function load(){
+  try {
+    const o = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (o){
+      if (o.estado) estado = o.estado;
+      if (Array.isArray(o.turnos)) o.turnos.forEach((t,i) => { if (TURNOS[i]){ TURNOS[i].ini = t.ini; TURNOS[i].fin = t.fin; } });
+    }
+  } catch(e){}
+}
+
+/* ====================================================================
+   RENDER · Leyenda
+   ==================================================================== */
+function renderLeyenda(){
+  $('#legenda').innerHTML = TURNOS.map(t =>
+    `<span class="legend-item"><span class="swatch" style="background:var(--${t.id.toLowerCase()})"></span>
+      <b>${t.nom}</b> · ${t.label} <i>${t.ini}–${t.fin} (${fmtH(durH(t))})</i></span>`
+  ).join('');
+}
+
+/* ====================================================================
+   RENDER · Calendario
+   ==================================================================== */
+function cellHTML(nom, iso, we){
+  const chips = TURNOS.map(t => {
+    const on = !!estado[key(nom, iso, t.id)];
+    return `<label class="chip ${t.id.toLowerCase()}" title="${t.label} ${t.ini}–${t.fin}">
+        <input type="checkbox" data-nom="${nom}" data-day="${iso}" data-turno="${t.id}"${on?' checked':''}>
+        <span>${t.nom}</span></label>`;
+  }).join('');
+  return `<td class="cell${we?' we':''}"><div class="chips">${chips}</div></td>`;
+}
+
+function rowStats(nom, days){
+  let n = 0, h = 0;
+  days.forEach(d => {
+    const iso = isoOf(d);
+    TURNOS.forEach(t => { if (estado[key(nom, iso, t.id)]){ n++; h += durH(t); } });
+  });
+  return { n, h };
+}
+
+function render(){
+  const days = weekDays();
+  const sec = secFilter();
+  $('#fSemana').value = isoOf(weekStart);
+
+  /* --- Cabecera --- */
+  const todayISO = isoOf(today);
+  const thDays = days.map(d => {
+    const iso = isoOf(d), widx = (d.getDay()+6)%7, we = widx >= 5, hoy = iso === todayISO;
+    return `<th class="day${we?' we':''}${hoy?' hoy':''}">
+        <div class="dh"><span class="wd">${WDS[widx]}</span> <span class="dt">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
+        <div class="dact">
+          <button class="mini" data-act="colfill" data-day="${iso}" title="Rellenar columna con los turnos seleccionados">▣</button>
+          <button class="mini" data-act="colclear" data-day="${iso}" title="Vaciar columna">▢</button>
+        </div></th>`;
+  }).join('');
+  $('#calHead').innerHTML = `<tr>
+      <th class="corner">Reactor</th>${thDays}<th class="tot">Semana</th>
+    </tr>`;
+
+  /* --- Cuerpo --- */
+  const secs = sec ? [sec] : SECCIONES;
+  const showSecHead = !sec;
+  let rows = '';
+  secs.forEach(s => {
+    if (showSecHead) rows += `<tr class="secrow"><td colspan="${NDAYS+2}">${SEC_LABEL[s]}</td></tr>`;
+    REACTORES.filter(r => r.sec === s).forEach(r => {
+      const cells = days.map(d => cellHTML(r.nom, isoOf(d), (d.getDay()+6)%7 >= 5)).join('');
+      const st = rowStats(r.nom, days);
+      rows += `<tr class="reactor">
+          <th class="rname" style="--rc:${r.color}">
+            <span class="nm" title="Cap. ${r.cap.toLocaleString('es-ES')} / mín ${r.capMin.toLocaleString('es-ES')} — ${SEC_LABEL[r.sec]}">${r.nom}</span>
+            <span class="ract">
+              <button class="mini" data-act="rowfill" data-nom="${r.nom}" title="Rellenar fila con los turnos seleccionados">▣</button>
+              <button class="mini" data-act="rowclear" data-nom="${r.nom}" title="Vaciar fila">▢</button>
+            </span>
+          </th>
+          ${cells}
+          <td class="tot" data-nom="${r.nom}">${st.n} <small>· ${fmtH(st.h)}</small></td>
+        </tr>`;
+    });
+  });
+  $('#calBody').innerHTML = rows;
+
+  updateSummary();
+}
+
+function updateRowTotal(nom){
+  const cell = $(`td.tot[data-nom="${nom}"]`);
+  if (!cell) return;
+  const st = rowStats(nom, weekDays());
+  cell.innerHTML = `${st.n} <small>· ${fmtH(st.h)}</small>`;
+}
+
+function updateSummary(){
+  const days = weekDays();
+  const vis = reactoresVisibles();
+  const cnt = { M:0, T:0, N:0 };
+  let horas = 0;
+  vis.forEach(r => days.forEach(d => {
+    const iso = isoOf(d);
+    TURNOS.forEach(t => { if (estado[key(r.nom, iso, t.id)]){ cnt[t.id]++; horas += durH(t); } });
+  }));
+  const total = cnt.M + cnt.T + cnt.N;
+  const secTxt = secFilter() ? `Sección <b>${SEC_LABEL[secFilter()]}</b>` : '<b>Todas las secciones</b>';
+  const fin = addDays(weekStart, 6);
+  $('#summary').innerHTML =
+    `${secTxt} · semana del <b>${pad(weekStart.getDate())}/${pad(weekStart.getMonth()+1)}</b> ` +
+    `al <b>${pad(fin.getDate())}/${pad(fin.getMonth()+1)}/${fin.getFullYear()}</b> &nbsp;—&nbsp; ` +
+    `<b>${total}</b> turnos programados · <b>${fmtH(horas)}</b> totales ` +
+    `&nbsp;(<b>${cnt.M}</b> M · <b>${cnt.T}</b> T · <b>${cnt.N}</b> N) · <b>${vis.length}</b> reactores`;
+}
+
+/* ====================================================================
+   RENDER · Configuración de turnos
+   ==================================================================== */
+function renderCfg(){
+  $('#cfgBody').innerHTML = TURNOS.map((t,i) => `
+    <tr>
+      <td><span class="nomtag ${t.id.toLowerCase()}">${t.nom}</span></td>
+      <td>${t.label}</td>
+      <td><input type="time" data-cfg="ini" data-i="${i}" value="${t.ini}"></td>
+      <td><input type="time" data-cfg="fin" data-i="${i}" value="${t.fin}"></td>
+      <td class="dur" data-dur="${i}">${fmtH(durH(t))}</td>
+    </tr>`).join('');
+}
+
+/* ====================================================================
+   MODIFICACIÓN MASIVA
+   ==================================================================== */
+function massTurnos(){
+  const ids = $$('#mTurnos input:checked').map(c => c.value);
+  return ids.length ? ids : TURNOS.map(t => t.id);   // si no hay ninguno -> todos
+}
+function buildMDias(){
+  const sel = $('#mDias');
+  const prev = sel.value;
+  const days = weekDays();
+  let html = `<option value="todos">Todos los días</option>
+              <option value="lab">Solo laborables (L–V)</option>
+              <option value="finde">Fin de semana (S–D)</option>
+              <option disabled>──────────</option>`;
+  days.forEach(d => {
+    const iso = isoOf(d), widx = (d.getDay()+6)%7;
+    html += `<option value="${iso}">${WDS[widx]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = ['todos','lab','finde'].includes(prev) ? prev : 'todos';
+}
+function buildMReact(){
+  const sel = $('#mReact');
+  const prev = sel.value;
+  const vis = reactoresVisibles();
+  sel.innerHTML = `<option value="">Todos los de la sección (${vis.length})</option>` +
+    vis.map(r => `<option value="${r.nom}">${r.nom}</option>`).join('');
+  sel.value = [...sel.options].some(o => o.value === prev) ? prev : '';
+}
+function resolveDias(kind){
+  const days = weekDays();
+  if (kind === 'todos') return days.map(isoOf);
+  if (kind === 'lab')   return days.filter(d => (d.getDay()+6)%7 < 5).map(isoOf);
+  if (kind === 'finde') return days.filter(d => (d.getDay()+6)%7 >= 5).map(isoOf);
+  return [kind];   // ISO concreto
+}
+function applyMass(noms, isos, turnos, marcar){
+  noms.forEach(nom => isos.forEach(iso => turnos.forEach(tid => {
+    const k = key(nom, iso, tid);
+    if (marcar) estado[k] = true; else delete estado[k];
+  })));
+  save(); render();
+}
+function aplicarMasivo(){
+  const noms = $('#mReact').value ? [$('#mReact').value] : reactoresVisibles().map(r => r.nom);
+  const isos = resolveDias($('#mDias').value);
+  const marcar = $('#mAccion input:checked').value === 'marcar';
+  applyMass(noms, isos, massTurnos(), marcar);
+}
+function aplicarPatron(kind, turnos){
+  applyMass(reactoresVisibles().map(r => r.nom), resolveDias(kind), turnos, true);
+}
+function vaciarSeccion(){
+  const isos = resolveDias('todos');
+  applyMass(reactoresVisibles().map(r => r.nom), isos, TURNOS.map(t => t.id), false);
+}
+
+/* ====================================================================
+   EVENTOS DE UI
+   ==================================================================== */
+/* Pestañas */
+$$('.tab').forEach(b => b.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  const t = b.dataset.tab;
+  $('#tab-cal').classList.toggle('hidden', t !== 'cal');
+  $('#tab-cfg').classList.toggle('hidden', t !== 'cfg');
+  if (t === 'cfg') renderCfg();
+}));
+
+/* Filtros / navegación */
+$('#fSeccion').addEventListener('change', () => { buildMReact(); render(); });
+$('#fSemana').addEventListener('change', e => { weekStart = mondayOf(parseISO(e.target.value)); buildMDias(); render(); });
+$('#btnPrev').addEventListener('click', () => { weekStart = addDays(weekStart, -7); buildMDias(); render(); });
+$('#btnNext').addEventListener('click', () => { weekStart = addDays(weekStart, 7); buildMDias(); render(); });
+$('#btnHoy').addEventListener('click',  () => { weekStart = mondayOf(new Date()); buildMDias(); render(); });
+
+/* Toggle individual de un turno (un check) */
+$('#calBody').addEventListener('change', e => {
+  const cb = e.target.closest('input[type="checkbox"]');
+  if (!cb) return;
+  const k = key(cb.dataset.nom, cb.dataset.day, cb.dataset.turno);
+  if (cb.checked) estado[k] = true; else delete estado[k];
+  save(); updateRowTotal(cb.dataset.nom); updateSummary();
+});
+
+/* Botones ▣ / ▢ por fila y por columna */
+function onMiniClick(e){
+  const b = e.target.closest('button.mini');
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'rowfill')  applyMass([b.dataset.nom], weekDays().map(isoOf), massTurnos(), true);
+  if (act === 'rowclear') applyMass([b.dataset.nom], weekDays().map(isoOf), TURNOS.map(t=>t.id), false);
+  if (act === 'colfill')  applyMass(reactoresVisibles().map(r=>r.nom), [b.dataset.day], massTurnos(), true);
+  if (act === 'colclear') applyMass(reactoresVisibles().map(r=>r.nom), [b.dataset.day], TURNOS.map(t=>t.id), false);
+}
+$('#calBody').addEventListener('click', onMiniClick);
+$('#calHead').addEventListener('click', onMiniClick);
+
+/* Modificación masiva: resaltar chips de turno */
+$('#mTurnos').addEventListener('change', e => {
+  const lbl = e.target.closest('label');
+  if (lbl) lbl.classList.toggle('on', e.target.checked);
+});
+/* Acción marcar / desmarcar */
+$('#mAccion').addEventListener('change', () => {
+  $$('#mAccion label').forEach(l => l.classList.toggle('sel', l.querySelector('input').checked));
+});
+$('#mAplicar').addEventListener('click', aplicarMasivo);
+$('#btnVaciarSec').addEventListener('click', () => {
+  if (confirm('¿Vaciar todos los turnos de la sección y semana visibles?')) vaciarSeccion();
+});
+$$('.patrones button[data-dias]').forEach(b =>
+  b.addEventListener('click', () => aplicarPatron(b.dataset.dias, b.dataset.turnos.split(',')))
+);
+
+/* Configuración de turnos (duraciones) */
+$('#cfgBody').addEventListener('input', e => {
+  const inp = e.target.closest('input[data-cfg]');
+  if (!inp) return;
+  const i = +inp.dataset.i;
+  TURNOS[i][inp.dataset.cfg] = inp.value;
+  $(`[data-dur="${i}"]`).textContent = fmtH(durH(TURNOS[i]));
+  save(); renderLeyenda();
+});
+
+/* ====================================================================
+   INICIO
+   ==================================================================== */
+load();
+$('#fSemana').value = isoOf(weekStart);
+buildMDias();
+buildMReact();
+renderLeyenda();
+render();
+</script>
+</body>
+</html>
