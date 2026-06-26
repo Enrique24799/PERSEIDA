@@ -544,9 +544,9 @@
         <div class="ops-tablewrap">
           <table class="ops">
             <thead><tr>
-              <th class="num">Sem.</th><th>Est.</th><th class="num">Cap. mín.</th><th class="num">Cap. máx.</th>
+              <th class="num">Sem.</th><th>Est.</th><th>Reactor</th><th class="num">Cap. mín.</th><th class="num">Cap. máx.</th>
               <th>Ord. fab.</th><th>Material</th><th class="num">Cant. a fab.</th><th class="num">Cant. fabricada</th>
-              <th>Lote</th><th>F. necesidad</th><th>Cuándo hacemos</th><th>L. envasado</th><th>Comentarios</th>
+              <th>Lote</th><th>F. inicio</th><th>F. fin</th><th>F. necesidad</th><th>Cuándo hacemos</th><th>L. envasado</th><th>Comentarios</th>
             </tr></thead>
             <tbody id="opsCursoBody"></tbody>
           </table>
@@ -1038,6 +1038,9 @@ const PLAN = FORMULAS.map((f, idx) => {
     const enReactor = estado !== 'pendiente';
     const cant = Math.round((0.5 + rnd()*0.5) * maxB / 10) * 10;
     const fEnv = addDays(PLAN_BASE, 2 + Math.floor(rnd()*26));
+    // fechas de inicio/fin sólo si está lanzada a un reactor (en curso / finalizada)
+    const fInicio = enReactor ? addDays(fEnv, -(2 + Math.floor(rnd()*4))) : null;
+    const fFin = enReactor ? addDays(fInicio, rnd() < 0.5 ? 0 : 1) : null;
     OPS.push({
       ordFab: '10' + pad6(_seqFab++),
       formCod: f.cod, formDen: f.den, grupo: f.grupo, sec: f.sec,
@@ -1047,6 +1050,7 @@ const PLAN = FORMULAS.map((f, idx) => {
       reactor: enReactor ? reactor.nom : null,
       capMin: enReactor ? reactor.capMin : null,
       capMax: enReactor ? reactor.cap : null,
+      fInicio, fFin,
       lote: String(_seqLote++),
       fNec: addDays(fEnv, -2), fEnv,
       cuando: rnd() < 0.75 ? 'No definido'
@@ -1066,6 +1070,7 @@ let _planVisible = [];
 
 const fmtN = n => Math.round(n).toLocaleString('es-ES');
 const fmtFecha = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+const fechaOpt = d => d ? fmtFecha(d) : '—';   // vacío (—) si no hay fecha (orden sin lanzar)
 
 function calcRotura(stock, envsIn, fabs){
   // proyección temporal del stock: rotura = primer día en que el saldo se vuelve negativo
@@ -1113,8 +1118,9 @@ function detailPlanHTML(p, c){
       <td class="num">${fmtN(e.cant)}</td><td>${fmtFecha(e.fNec)}</td><td>${fmtFecha(e.fEnv)}</td><td>${e.linea}</td>
     </tr>`).join('');
   const fabRows = c.fabs.map((o,i) => `<tr>
-      <td>${i+1}</td><td>${o.ordFab}</td><td class="num">${fmtN(o.cant)}</td>
-      <td><span class="estado ${o.estado === 'curso' ? 'curso' : 'pend'}">${ESTADO_LBL[o.estado]}</span></td><td>${fmtFecha(o.fNec)}</td>
+      <td>${i+1}</td><td>${o.ordFab}</td><td>${o.reactor || '—'}</td><td class="num">${fmtN(o.cant)}</td>
+      <td><span class="estado ${o.estado === 'curso' ? 'curso' : 'pend'}">${ESTADO_LBL[o.estado]}</span></td>
+      <td>${fechaOpt(o.fInicio)}</td><td>${fechaOpt(o.fFin)}</td><td>${fmtFecha(o.fNec)}</td>
     </tr>`).join('');
   return `<tr class="detrow"><td colspan="12">
     <div class="detwrap">
@@ -1129,9 +1135,9 @@ function detailPlanHTML(p, c){
       <div class="detblock">
         <div class="dettitle">▸ Órdenes de fabricación lanzadas — planificado (${c.fabs.length})</div>
         ${c.fabs.length ? `<table class="subt">
-          <thead><tr><th>#</th><th>Ord. fabricación</th><th class="num">Cant. a fab.</th><th>Estado</th><th>F. necesidad</th></tr></thead>
+          <thead><tr><th>#</th><th>Ord. fabricación</th><th>Reactor</th><th class="num">Cant. a fab.</th><th>Estado</th><th>F. inicio</th><th>F. fin</th><th>F. necesidad</th></tr></thead>
           <tbody>${fabRows}</tbody>
-          <tfoot><tr><td colspan="2">Total planificado</td><td class="num">${fmtN(c.planificado)}</td><td colspan="2"></td></tr></tfoot>
+          <tfoot><tr><td colspan="3">Total planificado</td><td class="num">${fmtN(c.planificado)}</td><td colspan="4"></td></tr></tfoot>
         </table>` : `<div class="sinfab">Sin órdenes de fabricación lanzadas.</div>`}
         <div class="propbox">
           Stock: <b>${fmtN(p.stock)}</b> &nbsp;·&nbsp;
@@ -1223,13 +1229,16 @@ function opsCursoRow(o){
   return `<tr class="opsrow${sel}" data-of="${o.ordFab}">
       <td class="num">${o.sem}</td>
       <td class="est ${sem}" title="${ESTADO_LBL[o.estado]}">${ESTADO_ICON[o.estado]}</td>
-      <td class="num">${fmtN(o.capMin)}</td>
-      <td class="num">${fmtN(o.capMax)}</td>
+      <td class="mono">${o.reactor || '—'}</td>
+      <td class="num">${o.capMin != null ? fmtN(o.capMin) : '—'}</td>
+      <td class="num">${o.capMax != null ? fmtN(o.capMax) : '—'}</td>
       <td class="mono">${o.ordFab}</td>
       <td class="mat"><span class="gdot" style="background:${G.color}" title="${G.cod?G.cod+' · ':''}${G.label}"></span>${o.formCod} - ${o.formDen}</td>
       <td class="num">${fmtN(o.cant)}</td>
       <td class="num">${fmtN(o.cantFab)}</td>
       <td class="mono">${o.lote}</td>
+      <td>${fechaOpt(o.fInicio)}</td>
+      <td>${fechaOpt(o.fFin)}</td>
       <td>${fmtFecha(o.fNec)}</td>
       <td class="${o.cuando === 'No definido' ? 'nodef' : ''}">${o.cuando}</td>
       <td class="mono">${o.lineaEnv}</td>
@@ -1256,10 +1265,10 @@ function renderOps(){
   curso.forEach(o => (byR[o.reactor] = byR[o.reactor] || []).push(o));
   let lc = '';
   Object.keys(byR).sort().forEach(rn => {
-    lc += `<tr class="secrow"><td colspan="13">Reactor: ${rn}</td></tr>`;
+    lc += `<tr class="secrow"><td colspan="16">Reactor: ${rn}</td></tr>`;
     byR[rn].forEach(o => { lc += opsCursoRow(o); });
   });
-  $('#opsCursoBody').innerHTML = lc || `<tr><td colspan="13" class="empty">Sin fabricaciones en curso.</td></tr>`;
+  $('#opsCursoBody').innerHTML = lc || `<tr><td colspan="16" class="empty">Sin fabricaciones en curso.</td></tr>`;
 
   const pend = OPS.filter(o => opsFiltra(o) && o.estado === 'pendiente').sort((a,b) => a.fNec - b.fNec);
   $('#opsPendBody').innerHTML = pend.map(opsPendRow).join('') ||
@@ -1273,6 +1282,10 @@ function opsAsignaReactor(o){
   const list = REACT_BY_SEC[o.sec];
   const r = list[(idx < 0 ? 0 : idx) % list.length];
   o.reactor = r.nom; o.capMin = r.capMin; o.capMax = r.cap;
+  // al lanzarla a un reactor, se fijan las fechas de inicio/fin
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  o.fInicio = hoy;
+  o.fFin = addDays(hoy, 1);
 }
 function opsReorderUp(o){
   const i = OPS.indexOf(o);
@@ -1286,10 +1299,15 @@ function opsAction(op){
   const o = OPS.find(x => x.ordFab === opsSel);
   if (!o){ $('#opsCount').textContent = '— Selecciona una orden para aplicar la acción'; return; }
   switch (op){
-    case 'finalizar': o.estado = 'finalizada'; o.cantFab = o.cant; break;
+    case 'finalizar': {
+      if (!o.reactor) opsAsignaReactor(o);
+      o.estado = 'finalizada'; o.cantFab = o.cant;
+      const h = new Date(); h.setHours(0,0,0,0); o.fFin = h;
+      break;
+    }
     case 'marcha':    o.estado = 'curso'; opsAsignaReactor(o); break;
     case 'pausa':     if (o.estado === 'curso') o.estado = 'pausa'; break;
-    case 'toPend':    o.estado = 'pendiente'; o.reactor = null; o.capMin = null; o.capMax = null; break;
+    case 'toPend':    o.estado = 'pendiente'; o.reactor = null; o.capMin = null; o.capMax = null; o.fInicio = null; o.fFin = null; break;
     case 'toCurso':   o.estado = 'curso'; opsAsignaReactor(o); break;
     case 'reorder':   opsReorderUp(o); break;
     case 'editar': {

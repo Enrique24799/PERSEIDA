@@ -88,10 +88,11 @@ de **Mañana (M)**, **Tarde (T)** y **Noche (N)**. Cada reactor se identifica **
   **nº de órdenes de envasado**, **T. Necesidad**, **T. Planificado** (órdenes de fabricación ya
   lanzadas), **Stock**, **Stock libre** (`stock + planificado − necesidad`), **propuesta de
   fabricación** (`max(0, necesidad − stock − planificado)`) y **fecha de rotura** (proyección temporal
-  del stock: primer día en que el saldo se vuelve negativo). No se muestra reactor (no se conoce hasta
-  lanzar la orden). Al desplegar una fila se ve el **desglose** de las órdenes de envasado que generan
-  la necesidad y de las órdenes de fabricación lanzadas. Filtros por fecha, sección, grupo y «solo con
-  propuesta».
+  del stock: primer día en que el saldo se vuelve negativo). No se muestra reactor en la cabecera (no se
+  conoce hasta lanzar la orden). Al desplegar una fila se ve el **desglose** de las órdenes de envasado
+  que generan la necesidad y de las órdenes de fabricación lanzadas (con **reactor**, **fecha de inicio**
+  y **fecha de fin**, que aparecen **vacíos** mientras la orden no se haya lanzado a un reactor). Filtros
+  por fecha, sección, grupo y «solo con propuesta».
 - **Órdenes de fabricación** (operativo). Réplica de la pantalla de gestión: **Fabricaciones en curso**
   (agrupadas por reactor, con estado, capacidades, lote, cantidad fabricada, cuándo se hace, línea de
   envasado y comentarios) y **Fabricaciones pendientes** (las lanzadas, todavía **sin reactor**). Barra
