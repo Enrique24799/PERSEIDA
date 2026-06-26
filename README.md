@@ -4,7 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
-- `FABRICACIONES.html` — Calendario de turnos (M/T/N) por día y reactor, con modificación masiva por sección.
+- `FABRICACIONES.html` — Calendario de turnos (M/T/N) por día y reactor, con modificación masiva por sección, y planificación de necesidades por material/fabricación.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -81,6 +81,15 @@ de **Mañana (M)**, **Tarde (T)** y **Noche (N)**. Cada reactor se identifica **
 - **Configuración de turnos.** Nomenclatura y **duración** de cada turno: se editan las horas de inicio
   y fin (el turno de noche cruza la medianoche) y la duración se recalcula y alimenta los totales de
   horas del calendario.
+- **Planificación.** Vista maestro-detalle de **necesidades por material/fabricación** (semielaborado).
+  Las órdenes de envasado lanzadas generan la **necesidad** del semielaborado (`F. Necesidad =
+  F. Envasado − 2 días`). Cada fila agrupa: **grupo de material** (301 Higiene, 302 Hidroalcohólicos,
+  303 Emulsiones, 309 Higiene bucodental, 311 Solares, 313 Soluciones, 314 Pasta dental, Perfumes),
+  **nº de órdenes de envasado**, **T. Necesidad**, **T. Planificado** (órdenes de fabricación ya
+  lanzadas), **Stock**, **Stock libre** (`stock + planificado − necesidad`) y una **propuesta de
+  fabricación** (`max(0, necesidad − stock − planificado)`, por lotes del reactor). Al desplegar una
+  fila se ve el **desglose** de las órdenes de envasado que generan la necesidad y de las órdenes de
+  fabricación lanzadas. Filtros por fecha, sección, grupo y «solo con propuesta».
 
 ### Modificación masiva (por sección)
 

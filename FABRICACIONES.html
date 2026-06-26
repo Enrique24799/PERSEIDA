@@ -207,6 +207,64 @@
   table.cfg .nomtag.t { background: var(--t); }
   table.cfg .nomtag.n { background: var(--n); }
   table.cfg td.dur { font-weight: 700; font-variant-numeric: tabular-nums; }
+  /* ---------- Tab planificación (necesidades de fabricación) ---------- */
+  .checkbox-inline { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #51637a; padding-bottom: 6px; }
+  .checkbox-inline input { accent-color: var(--head-bg); }
+  .tablewrap {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px; overflow: auto; max-height: 72vh;
+  }
+  table.plan { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
+  table.plan thead th {
+    position: sticky; top: 0; z-index: 10; background: #eef3f9; color: #41546a;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .3px;
+    padding: 7px 9px; text-align: left; white-space: nowrap;
+    border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+  }
+  table.plan thead th.num { text-align: right; }
+  table.plan td {
+    padding: 5px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid); white-space: nowrap;
+  }
+  table.plan td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.plan td.mono { font-variant-numeric: tabular-nums; }
+  table.plan td.den { white-space: normal; min-width: 240px; }
+  table.plan td.small { font-size: 11px; color: #5b6b7d; }
+  tr.masterrow { cursor: pointer; }
+  tr.masterrow:hover td { background: #f4f9ff; }
+  tr.masterrow.open td { background: #eef5fd; }
+  td.caret { width: 22px; text-align: center; color: #5b6b7d; font-weight: 700; }
+  td.boxcell { text-align: center; }
+  .ofbox {
+    display: inline-block; min-width: 26px; padding: 1px 7px; border: 1px solid #b9c6d6;
+    border-radius: 4px; background: #fff; font-weight: 700; color: #1f2d3d; text-align: center;
+  }
+  .grp {
+    display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 11px; font-weight: 700;
+    color: #243140; border: 1px solid rgba(0,0,0,.14); white-space: nowrap;
+  }
+  table.plan td.num.neg, b.neg { color: #c0392b; }
+  table.plan td.num.pos, b.pos { color: #1c8a52; }
+  table.plan td.prop { font-weight: 700; color: #aab4c0; }
+  table.plan td.prop.has { color: #1b63c4; background: #eaf2fd; }
+
+  /* fila de detalle */
+  tr.detrow > td { background: #f7fafd; padding: 10px 14px 12px 40px; border-bottom: 2px solid #c4d0de; }
+  .detwrap { display: flex; flex-wrap: wrap; gap: 18px; }
+  .detblock { flex: 1 1 420px; min-width: 320px; }
+  .dettitle { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #41546a; margin-bottom: 5px; }
+  table.subt { border-collapse: collapse; width: 100%; font-size: 11px; background: #fff; }
+  table.subt th, table.subt td { border: 1px solid var(--border); padding: 4px 7px; text-align: left; white-space: nowrap; }
+  table.subt thead th { background: #eef3f9; color: #41546a; font-weight: 600; }
+  table.subt th.num, table.subt td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.subt tfoot td { background: #f4f7fb; font-weight: 700; }
+  .estado { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .estado.curso { background: #e4f4ec; color: #1c8a52; }
+  .estado.pend  { background: #fdeede; color: #b56a07; }
+  .sinfab { font-size: 11px; color: #8494a6; padding: 6px 0; }
+  .propbox { margin-top: 8px; font-size: 12px; color: #51637a; padding: 7px 10px; background: #fff; border: 1px dashed #c4d0de; border-radius: 6px; }
+  .propbox .proplabel b { color: #1b63c4; }
+  table.plan td.empty, .empty { padding: 24px; text-align: center; color: #8494a6; }
+
   .hidden { display: none !important; }
 </style>
 </head>
@@ -221,6 +279,7 @@
   <!-- Pestañas -->
   <div class="tabs">
     <button class="tab active" data-tab="cal">📅 Calendario</button>
+    <button class="tab" data-tab="plan">🏭 Planificación</button>
     <button class="tab" data-tab="cfg">⏱ Configuración de turnos</button>
   </div>
 
@@ -338,6 +397,71 @@
         <code>&lt;script&gt;</code> por la consulta correspondiente. La programación se guarda en el
         navegador (<code>localStorage</code>); usa «Vaciar sección» o recarga para revisarla.
       </p>
+    </div>
+  </section>
+
+  <!-- ============================ PANTALLA: PLANIFICACIÓN ============================ -->
+  <section id="tab-plan" class="hidden">
+
+    <div class="panel">
+      <fieldset>
+        <legend>Opciones de consulta</legend>
+        <div class="controls">
+          <div class="field"><label for="pIni">Fecha inicio</label><input type="date" id="pIni" /></div>
+          <div class="field"><label for="pFin">Fecha fin</label><input type="date" id="pFin" /></div>
+          <div class="field">
+            <label for="pSeccion">Sección</label>
+            <select id="pSeccion">
+              <option value="">Todas</option>
+              <option value="COSMETICA">Cosmética</option>
+              <option value="HIGIENE">Higiene</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pGrupo">Grupo de material</label>
+            <select id="pGrupo"></select>
+          </div>
+          <label class="checkbox-inline"><input type="checkbox" id="pSoloProp" /> Solo con propuesta</label>
+          <button id="pActualizar" class="primary">🔄 Actualizar</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Operaciones</legend>
+        <div class="controls">
+          <button id="pExpand" class="ghost">⊞ Expandir todo</button>
+          <button id="pCollapse" class="ghost">⊟ Contraer todo</button>
+        </div>
+      </fieldset>
+
+      <p class="note">ℹ️ Planificación <b>por material y fabricación</b>. Cada fila agrupa la
+        <b>necesidad</b> (órdenes de envasado, con F. Necesidad = F. Envasado − 2 días), lo
+        <b>planificado</b> (órdenes de fabricación ya lanzadas), el <b>stock</b> y una
+        <b>propuesta de fabricación</b>. Pulsa una fila para ver el <b>desglose</b>.</p>
+    </div>
+
+    <div class="summary" id="planSummary"></div>
+
+    <div class="tablewrap">
+      <table class="plan">
+        <thead>
+          <tr>
+            <th></th>
+            <th title="Nº de órdenes de envasado">Nº Env.</th>
+            <th>Grupo material</th>
+            <th>Sección</th>
+            <th>Material</th>
+            <th>Denominación</th>
+            <th class="num">T. Necesidad</th>
+            <th class="num">T. Planificado</th>
+            <th class="num">Stock</th>
+            <th class="num">Stock libre</th>
+            <th class="num">Prop. fabricar</th>
+            <th>Reactor</th>
+          </tr>
+        </thead>
+        <tbody id="planBody"></tbody>
+      </table>
     </div>
   </section>
 
@@ -631,7 +755,9 @@ $$('.tab').forEach(b => b.addEventListener('click', () => {
   const t = b.dataset.tab;
   $('#tab-cal').classList.toggle('hidden', t !== 'cal');
   $('#tab-cfg').classList.toggle('hidden', t !== 'cfg');
-  if (t === 'cfg') renderCfg();
+  $('#tab-plan').classList.toggle('hidden', t !== 'plan');
+  if (t === 'cfg')  renderCfg();
+  if (t === 'plan') renderPlan();
 }));
 
 /* Filtros / navegación */
@@ -691,12 +817,255 @@ $('#cfgBody').addEventListener('input', e => {
 });
 
 /* ====================================================================
+   PLANIFICACIÓN DE FABRICACIONES — necesidades por material
+   --------------------------------------------------------------------
+   Las órdenes de envasado lanzadas generan la NECESIDAD del semielaborado
+   (fórmula). Para cada material/fabricación se agrega: necesidad (Σ env.),
+   planificado (Σ órdenes de fabricación lanzadas), stock y una propuesta
+   de fabricación = max(0, necesidad − stock − planificado), por lotes de
+   reactor. Datos de EJEMPLO generados de forma reproducible.
+   ==================================================================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------- Grupos de material (leyenda — imagen) ---------- */
+const GRUPOS = {
+  '301': { cod:'301', label:'Higiene',                         color:'#cdeec0' },
+  '302': { cod:'302', label:'Hidroalcohólicos / Higienizante', color:'#7ce886' },
+  '303': { cod:'303', label:'Emulsiones',                      color:'#fff275' },
+  '309': { cod:'309', label:'Higiene Bucodental',              color:'#f1a6e6' },
+  '311': { cod:'311', label:'Solares',                         color:'#d9ead3' },
+  '313': { cod:'313', label:'Soluciones',                      color:'#dcdcdc' },
+  '314': { cod:'314', label:'Pasta Dental',                    color:'#f3a55a' },
+  'PER': { cod:'',    label:'Perfumes',                        color:'#cfcfcf' },
+};
+
+/* ---------- Maestro de fórmulas (semielaborado a fabricar) ---------- */
+const FORMULAS = [
+  // --- COSMÉTICA ---
+  { cod:'29322423', den:'FOR.GG PARIS CREMA DE MANOS INDIA ROSE',      grupo:'303', sec:'COSMETICA' },
+  { cod:'29322376', den:'FORM.CREMA DE MANOS CONCENTRADA BELLE',       grupo:'303', sec:'COSMETICA' },
+  { cod:'29322319', den:'FORM. LOCION CORPORAL UREA LIDL',             grupo:'303', sec:'COSMETICA' },
+  { cod:'29322970', den:'FORM.MANTECA CORPORAL SAKURA PINGO DOCE',     grupo:'303', sec:'COSMETICA' },
+  { cod:'29322830', den:'FORM.MASCARILLA REPARA-PROTEGE SONAE',        grupo:'303', sec:'COSMETICA' },
+  { cod:'29323337', den:'FORM MASCARILLA FAMILY CAB.SECO DOBER',       grupo:'303', sec:'COSMETICA' },
+  { cod:'29323338', den:'FORM MASCARILLA FAMILY CAB.TEÑIDO DOBER',     grupo:'303', sec:'COSMETICA' },
+  { cod:'29323339', den:'FORM MASCARILLA FAMILY MULTIVITAMINAS DOBER', grupo:'303', sec:'COSMETICA' },
+  { cod:'29323864', den:'FOR.LECHE SOLAR SPF-50+ CLAREL 2024',         grupo:'311', sec:'COSMETICA' },
+  { cod:'29323866', den:'FO.LECHE SOLAR INFANTIL SPF-50+ CLAREL 24',   grupo:'311', sec:'COSMETICA' },
+  { cod:'29324381', den:'FORM.FLUIDO FACIAL SPF50+ GLOW SONAE 26',     grupo:'311', sec:'COSMETICA' },
+  { cod:'29323271', den:'FOR. SPRAY SOLAR SPF50+ CLAREL',              grupo:'311', sec:'COSMETICA' },
+  { cod:'29323843', den:'FOR.CREMA FACIAL SPF50+ DOBER',               grupo:'311', sec:'COSMETICA' },
+  { cod:'29323844', den:'FOR. BB CREAM SPF50+ LIGHT DOBER',            grupo:'311', sec:'COSMETICA' },
+  { cod:'29323845', den:'FOR. BB CREAM SPF50+ MEDIUM DOBER',           grupo:'311', sec:'COSMETICA' },
+  { cod:'29323368', den:'FORM.DESMAQUILLANTE BIF.WATERPROOF CLAREL',   grupo:'313', sec:'COSMETICA' },
+  { cod:'29323960', den:'FORM. WS BMIST PRECIOUS ELIXIR TAILOR PARIS', grupo:'PER', sec:'COSMETICA' },
+  { cod:'29323959', den:'FORM. WS BMIST SO CAPTIVATING TAILOR PARIS',  grupo:'PER', sec:'COSMETICA' },
+  // --- HIGIENE ---
+  { cod:'29324011', den:'FORM. CHAMPU DETOX CAB.GRASO LIDL 2024',      grupo:'301', sec:'HIGIENE' },
+  { cod:'29323776', den:'FORM. CHAMPU MICELAR 0% LIDL',                grupo:'301', sec:'HIGIENE' },
+  { cod:'29322274', den:'FORM CHAMPU GRASO COVIRAN 2016',              grupo:'301', sec:'HIGIENE' },
+  { cod:'29323709', den:'FORM.CHAMPU SUAVE INFANTIL BELLE 2023',       grupo:'301', sec:'HIGIENE' },
+  { cod:'29324177', den:'FORM.GEL DUCHA FEMENINO 2en1 DIA',            grupo:'301', sec:'HIGIENE' },
+  { cod:'29323577', den:'FOR. GEL HIGIENE INTIMA SENSITIVE CLUNY',     grupo:'301', sec:'HIGIENE' },
+  { cod:'29323576', den:'FOR. GEL HIGIENE INTIMA HYDRACARE CLUNY',     grupo:'301', sec:'HIGIENE' },
+  { cod:'29323575', den:'FOR. GEL HIGIENE INTIMA CALENDULA CLUNY',     grupo:'301', sec:'HIGIENE' },
+  { cod:'29323978', den:'FORM. JABON MANOS KARITE BELLE 2024',         grupo:'301', sec:'HIGIENE' },
+  { cod:'29325101', den:'FORM. GEL HIDROALCOHOLICO HIGIENIZANTE 70%',  grupo:'302', sec:'HIGIENE' },
+  { cod:'29325102', den:'FORM. PASTA DENTAL BLANQUEADORA MENTA',       grupo:'314', sec:'HIGIENE' },
+  { cod:'29325103', den:'FORM. ENJUAGUE BUCAL FRESH MINT 0%',          grupo:'309', sec:'HIGIENE' },
+];
+
+const LINEAS_ENV = ['ENVTUBO1','ENVTUBO2','ENVTARR1','MONTMANU','L18','L19','ENV13','ENVSACH'];
+const FORMATOS = ['250 ml','400 ml','500 ml','750 ml','TUBO 75 ml','TARRO 200 ml','BIDÓN 5 L','DOY-PACK 300 ml'];
+const REACT_BY_SEC = {
+  COSMETICA: REACTORES.filter(r => r.sec === 'COSMETICA'),
+  HIGIENE:   REACTORES.filter(r => r.sec === 'HIGIENE'),
+};
+const PLAN_BASE = new Date(2026, 5, 22);   // lunes 22/06/2026
+
+function ptNombre(den, rnd){
+  const base = den.replace(/^(FORM\.|FORM |FOR\.|FOR |FO\.)\s*/i, '').trim();
+  return `${base} ${FORMATOS[Math.floor(rnd()*FORMATOS.length)]}`;
+}
+
+/* ---------- Generación reproducible de demanda / suministro / stock ---------- */
+let _ofEnv = 10150500, _ofFab = 10146500;
+const PLAN = FORMULAS.map((f, idx) => {
+  const rnd = mulberry32(((parseInt(f.cod.slice(-7), 10) || (idx+1)*7919) >>> 0));
+  const list = REACT_BY_SEC[f.sec];
+  const reactor = list[idx % list.length];
+  const maxB = reactor.cap;
+  const minB = Math.max(reactor.capMin, Math.round(reactor.cap * 0.3));
+
+  // demanda: 1..6 órdenes de envasado
+  const envs = [];
+  const nEnv = 1 + Math.floor(rnd()*6);
+  for (let k = 0; k < nEnv; k++){
+    const fEnv = addDays(PLAN_BASE, Math.floor(rnd()*28));
+    envs.push({
+      of: String(_ofEnv++),
+      ptCod: 'PT' + (100000 + Math.floor(rnd()*899999)),
+      ptDen: ptNombre(f.den, rnd),
+      cant: Math.max(10, Math.round((0.15 + rnd()*0.5) * maxB / 10) * 10),
+      fEnv, fNec: addDays(fEnv, -2),
+      linea: LINEAS_ENV[Math.floor(rnd()*LINEAS_ENV.length)],
+    });
+  }
+  // suministro lanzado: 0..2 órdenes de fabricación
+  const fabs = [];
+  const nFab = Math.floor(rnd()*3);
+  for (let k = 0; k < nFab; k++){
+    fabs.push({
+      of: String(_ofFab++),
+      reactor: reactor.nom,
+      cant: Math.round((0.5 + rnd()*0.5) * maxB / 10) * 10,
+      estado: rnd() < 0.6 ? 'En curso' : 'Pendiente',
+      fecha: addDays(PLAN_BASE, Math.floor(rnd()*20)),
+    });
+  }
+  const stock = Math.round((rnd() < 0.35 ? 0 : rnd()*0.7) * maxB / 10) * 10;
+  return { ...f, reactor, minB, maxB, envs, fabs, stock };
+});
+
+const expandedPlan = new Set();
+let _planVisible = [];
+
+const fmtN = n => Math.round(n).toLocaleString('es-ES');
+const fmtFecha = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+
+function proponer(falta, minB, maxB){
+  const n = Math.max(1, Math.ceil(falta / maxB));
+  let q = falta;
+  if (n === 1) q = Math.max(falta, minB);   // un solo lote respeta el mínimo del reactor
+  return { q: Math.round(q), n };
+}
+function calcPlan(p, ini, fin){
+  const envsIn = p.envs.filter(e => e.fNec >= ini && e.fNec <= fin).sort((a,b) => a.fNec - b.fNec);
+  const necesidad = envsIn.reduce((s,e) => s + e.cant, 0);
+  const planificado = p.fabs.reduce((s,o) => s + o.cant, 0);
+  const stockLibre = p.stock + planificado - necesidad;
+  const falta = necesidad - p.stock - planificado;
+  const prop = falta > 0 ? proponer(falta, p.minB, p.maxB) : null;
+  const urg = envsIn.length ? envsIn[0].fNec.getTime() : Infinity;
+  return { envsIn, necesidad, planificado, stockLibre, prop, urg };
+}
+
+function masterPlanHTML(p, c){
+  const G = GRUPOS[p.grupo], open = expandedPlan.has(p.cod);
+  return `<tr class="masterrow${open?' open':''}" data-cod="${p.cod}">
+      <td class="caret">${open?'▾':'▸'}</td>
+      <td class="boxcell"><span class="ofbox" title="Nº de órdenes de envasado">${c.envsIn.length}</span></td>
+      <td><span class="grp" style="background:${G.color}">${G.cod ? G.cod+' · ' : ''}${G.label}</span></td>
+      <td>${SEC_LABEL[p.sec]}</td>
+      <td class="mono">${p.cod}</td>
+      <td class="den">${p.den}</td>
+      <td class="num">${fmtN(c.necesidad)}</td>
+      <td class="num">${fmtN(c.planificado)}</td>
+      <td class="num">${fmtN(p.stock)}</td>
+      <td class="num ${c.stockLibre < 0 ? 'neg' : 'pos'}">${fmtN(c.stockLibre)}</td>
+      <td class="num prop ${c.prop ? 'has' : ''}">${c.prop ? fmtN(c.prop.q) : '—'}</td>
+      <td class="mono small">${p.reactor.nom}</td>
+    </tr>`;
+}
+
+function detailPlanHTML(p, c){
+  const envRows = c.envsIn.map((e,i) => `<tr>
+      <td>${i+1}</td><td>${e.of}</td><td>${e.ptCod}</td><td>${e.ptDen}</td>
+      <td class="num">${fmtN(e.cant)}</td><td>${fmtFecha(e.fNec)}</td><td>${fmtFecha(e.fEnv)}</td><td>${e.linea}</td>
+    </tr>`).join('');
+  const fabRows = p.fabs.map((o,i) => `<tr>
+      <td>${i+1}</td><td>${o.of}</td><td>${o.reactor}</td><td class="num">${fmtN(o.cant)}</td>
+      <td><span class="estado ${o.estado === 'En curso' ? 'curso' : 'pend'}">${o.estado}</span></td><td>${fmtFecha(o.fecha)}</td>
+    </tr>`).join('');
+  return `<tr class="detrow"><td colspan="12">
+    <div class="detwrap">
+      <div class="detblock">
+        <div class="dettitle">▸ Órdenes de envasado que generan la necesidad (${c.envsIn.length})</div>
+        <table class="subt">
+          <thead><tr><th>#</th><th>Ord. envasado</th><th>Material (PT)</th><th>Denominación</th><th class="num">Cant.</th><th>F. necesidad</th><th>F. envasado</th><th>L. envasado</th></tr></thead>
+          <tbody>${envRows}</tbody>
+          <tfoot><tr><td colspan="4">Total necesidad</td><td class="num">${fmtN(c.necesidad)}</td><td colspan="3"></td></tr></tfoot>
+        </table>
+      </div>
+      <div class="detblock">
+        <div class="dettitle">▸ Órdenes de fabricación lanzadas — planificado (${p.fabs.length})</div>
+        ${p.fabs.length ? `<table class="subt">
+          <thead><tr><th>#</th><th>Ord. fabricación</th><th>Reactor</th><th class="num">Cant. a fab.</th><th>Estado</th><th>Fecha</th></tr></thead>
+          <tbody>${fabRows}</tbody>
+          <tfoot><tr><td colspan="3">Total planificado</td><td class="num">${fmtN(c.planificado)}</td><td colspan="2"></td></tr></tfoot>
+        </table>` : `<div class="sinfab">Sin órdenes de fabricación lanzadas.</div>`}
+        <div class="propbox">
+          Stock: <b>${fmtN(p.stock)}</b> &nbsp;·&nbsp;
+          Stock libre (stock + planificado − necesidad): <b class="${c.stockLibre < 0 ? 'neg' : 'pos'}">${fmtN(c.stockLibre)}</b> &nbsp;·&nbsp;
+          <span class="proplabel">Propuesta de fabricación: <b>${c.prop ? fmtN(c.prop.q) : '—'}</b>${c.prop ? ` <small>(${c.prop.n} lote/s en ${p.reactor.nom}, cap. ${fmtN(p.minB)}–${fmtN(p.maxB)})</small>` : ''}</span>
+        </div>
+      </div>
+    </div>
+  </td></tr>`;
+}
+
+function renderPlan(){
+  const ini = parseISO($('#pIni').value), fin = parseISO($('#pFin').value);
+  const sec = $('#pSeccion').value, grp = $('#pGrupo').value, soloProp = $('#pSoloProp').checked;
+
+  const items = [];
+  PLAN.forEach(p => {
+    if (sec && p.sec !== sec) return;
+    if (grp && p.grupo !== grp) return;
+    const c = calcPlan(p, ini, fin);
+    if (c.envsIn.length === 0) return;          // sin necesidad en la ventana
+    if (soloProp && !c.prop) return;
+    items.push({ p, c });
+  });
+  items.sort((a,b) => a.c.urg - b.c.urg);        // más urgente (F. necesidad) primero
+  _planVisible = items.map(it => it.p.cod);
+
+  const rows = [];
+  items.forEach(({ p, c }) => {
+    rows.push(masterPlanHTML(p, c));
+    if (expandedPlan.has(p.cod)) rows.push(detailPlanHTML(p, c));
+  });
+  $('#planBody').innerHTML = rows.join('') ||
+    `<tr><td colspan="12" class="empty">Sin necesidades para los filtros seleccionados.</td></tr>`;
+
+  const tNec  = items.reduce((s,i) => s + i.c.necesidad, 0);
+  const tPlan = items.reduce((s,i) => s + i.c.planificado, 0);
+  const tProp = items.reduce((s,i) => s + (i.c.prop ? i.c.prop.q : 0), 0);
+  const nProp = items.filter(i => i.c.prop).length;
+  $('#planSummary').innerHTML =
+    `<b>${items.length}</b> materiales con necesidad · Necesidad total <b>${fmtN(tNec)}</b> · ` +
+    `Planificado <b>${fmtN(tPlan)}</b> · <b>${nProp}</b> con propuesta · ` +
+    `Propuesta total a fabricar <b>${fmtN(tProp)}</b>`;
+}
+
+function buildPlanFilters(){
+  $('#pIni').value = isoOf(addDays(PLAN_BASE, -3));
+  $('#pFin').value = isoOf(addDays(PLAN_BASE, 28));
+  $('#pGrupo').innerHTML = '<option value="">Todos los grupos</option>' +
+    Object.entries(GRUPOS).map(([k,g]) => `<option value="${k}">${g.cod ? g.cod+' · ' : ''}${g.label}</option>`).join('');
+}
+
+/* ---------- Eventos de la pantalla de planificación ---------- */
+$('#pActualizar').addEventListener('click', renderPlan);
+['#pIni','#pFin','#pSeccion','#pGrupo','#pSoloProp'].forEach(s => $(s).addEventListener('change', renderPlan));
+$('#pExpand').addEventListener('click', () => { _planVisible.forEach(c => expandedPlan.add(c)); renderPlan(); });
+$('#pCollapse').addEventListener('click', () => { expandedPlan.clear(); renderPlan(); });
+$('#planBody').addEventListener('click', e => {
+  const tr = e.target.closest('tr.masterrow');
+  if (!tr) return;
+  const cod = tr.dataset.cod;
+  if (expandedPlan.has(cod)) expandedPlan.delete(cod); else expandedPlan.add(cod);
+  renderPlan();
+});
+
+/* ====================================================================
    INICIO
    ==================================================================== */
 load();
 $('#fSemana').value = isoOf(weekStart);
 buildMDias();
 buildMReact();
+buildPlanFilters();
 renderLeyenda();
 render();
 </script>
