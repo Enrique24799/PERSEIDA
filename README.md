@@ -93,6 +93,15 @@ de **Mañana (M)**, **Tarde (T)** y **Noche (N)**. Cada reactor se identifica **
   que generan la necesidad y de las órdenes de fabricación lanzadas (con **reactor**, **fecha de inicio**
   y **fecha de fin**, que aparecen **vacíos** mientras la orden no se haya lanzado a un reactor). Filtros
   por fecha, sección, grupo y «solo con propuesta».
+  - **Trazabilidad envasado ↔ fabricación.** Cada orden de envasado muestra su **orden de fabricación
+    asociada** (o **0** si todavía no se ha lanzado). Al **seleccionar** órdenes de envasado se **resalta**
+    su orden de fabricación en la tabla contigua (una orden de fabricación puede dar servicio a varias de
+    envasado).
+  - **Lanzar orden.** Se seleccionan una o varias órdenes de envasado, se elige **sección**
+    (Cosmética/Higiene) y, en el desplegable, el **reactor**; al pulsar «Lanzar orden» se crea una orden
+    de fabricación contra las seleccionadas (cantidad = suma de las necesidades), que queda **mapeada** en
+    la pantalla (aparece en planificado, actualiza stock libre / rotura / propuesta y también en la
+    pestaña de órdenes).
 - **Órdenes de fabricación** (operativo). Réplica de la pantalla de gestión: **Fabricaciones en curso**
   (agrupadas por reactor, con estado, capacidades, lote, cantidad fabricada, cuándo se hace, línea de
   envasado y comentarios) y **Fabricaciones pendientes** (las lanzadas, todavía **sin reactor**). Barra

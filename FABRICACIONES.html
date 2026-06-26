@@ -261,6 +261,21 @@
   .estado.curso { background: #e4f4ec; color: #1c8a52; }
   .estado.pend  { background: #fdeede; color: #b56a07; }
   .sinfab { font-size: 11px; color: #8494a6; padding: 6px 0; }
+  /* trazabilidad / selección de órdenes de envasado */
+  table.subt th.chk, table.subt td.chk { width: 24px; text-align: center; padding: 4px 4px; }
+  table.subt td.chk input { cursor: pointer; accent-color: var(--head-bg); }
+  table.subt tbody tr[data-env] { cursor: pointer; }
+  table.subt tbody tr.envsel td { background: #e7f0fd; }
+  table.subt td.asoc { font-weight: 700; color: #1b63c4; text-align: right; }
+  table.subt td.asoc.sinfab0 { color: #b56a07; }
+  table.subt tbody tr.fabhl td { background: #fff3cd; box-shadow: inset 0 1px 0 #f0c040, inset 0 -1px 0 #f0c040; }
+  table.subt tbody tr.fabhl td:first-child { box-shadow: inset 3px 0 0 #e0a800, inset 0 1px 0 #f0c040, inset 0 -1px 0 #f0c040; }
+  .launchbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; padding: 8px 10px; background: #fff; border: 1px dashed #c4d0de; border-radius: 6px; }
+  .launchbar .lbl { font-size: 12px; color: #51637a; }
+  .launchbar label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #51637a; }
+  .launchbar select { font-size: 12px; padding: 4px 7px; min-width: auto; }
+  .launchbar button { font-size: 12px; padding: 5px 11px; }
+  .launchbar button:disabled { opacity: .5; cursor: not-allowed; }
   .propbox { margin-top: 8px; font-size: 12px; color: #51637a; padding: 7px 10px; background: #fff; border: 1px dashed #c4d0de; border-radius: 6px; }
   .propbox .proplabel b { color: #1b63c4; }
   table.plan td.empty, .empty { padding: 24px; text-align: center; color: #8494a6; }
@@ -1032,6 +1047,7 @@ const PLAN = FORMULAS.map((f, idx) => {
   }
   // suministro lanzado: 0..2 órdenes de fabricación (curso / pendiente / finalizada)
   const nFab = Math.floor(rnd()*3);
+  const fabsLocal = [];
   for (let k = 0; k < nFab; k++){
     const r = rnd();
     const estado = r < 0.5 ? 'curso' : (r < 0.85 ? 'pendiente' : 'finalizada');
@@ -1041,7 +1057,7 @@ const PLAN = FORMULAS.map((f, idx) => {
     // fechas de inicio/fin sólo si está lanzada a un reactor (en curso / finalizada)
     const fInicio = enReactor ? addDays(fEnv, -(2 + Math.floor(rnd()*4))) : null;
     const fFin = enReactor ? addDays(fInicio, rnd() < 0.5 ? 0 : 1) : null;
-    OPS.push({
+    const ord = {
       ordFab: '10' + pad6(_seqFab++),
       formCod: f.cod, formDen: f.den, grupo: f.grupo, sec: f.sec,
       cant,
@@ -1058,14 +1074,24 @@ const PLAN = FORMULAS.map((f, idx) => {
       lineaEnv: LINEAS_ENV[Math.floor(rnd()*LINEAS_ENV.length)],
       comentario: '',
       sem: semanaISO(fEnv),
-    });
+    };
+    OPS.push(ord);
+    fabsLocal.push(ord);
   }
+  // trazabilidad: asociar cada orden de envasado a una de fabricación lanzada (o 0 si aún no lanzada)
+  const candidatos = fabsLocal.filter(o => o.estado !== 'finalizada');
+  envs.forEach(e => {
+    e.ordFab = (candidatos.length && rnd() < 0.55)
+      ? candidatos[Math.floor(rnd()*candidatos.length)].ordFab
+      : '0';
+  });
   const stock = Math.round((rnd() < 0.35 ? 0 : rnd()*0.7) * maxB / 10) * 10;
   return { ...f, stock, envs };
 });
 const fabsDe = cod => OPS.filter(o => o.formCod === cod && o.estado !== 'finalizada');
 
 const expandedPlan = new Set();
+const envSel = new Set();      // órdenes de envasado seleccionadas (resaltar asociada / lanzar)
 let _planVisible = [];
 
 const fmtN = n => Math.round(n).toLocaleString('es-ES');
@@ -1113,24 +1139,37 @@ function masterPlanHTML(p, c){
 }
 
 function detailPlanHTML(p, c){
-  const envRows = c.envsIn.map((e,i) => `<tr>
+  const envRows = c.envsIn.map((e,i) => `<tr data-env="${e.of}" data-fab="${e.ordFab}" class="envline${envSel.has(e.of)?' envsel':''}">
+      <td class="chk"><input type="checkbox" class="envchk" data-env="${e.of}" data-fab="${e.ordFab}" data-cod="${p.cod}"${envSel.has(e.of)?' checked':''}></td>
       <td>${i+1}</td><td>${e.of}</td><td>${e.ptCod}</td><td>${e.ptDen}</td>
       <td class="num">${fmtN(e.cant)}</td><td>${fmtFecha(e.fNec)}</td><td>${fmtFecha(e.fEnv)}</td><td>${e.linea}</td>
+      <td class="mono asoc ${e.ordFab === '0' ? 'sinfab0' : ''}">${e.ordFab}</td>
     </tr>`).join('');
-  const fabRows = c.fabs.map((o,i) => `<tr>
+  const fabRows = c.fabs.map((o,i) => `<tr data-fab="${o.ordFab}">
       <td>${i+1}</td><td>${o.ordFab}</td><td>${o.reactor || '—'}</td><td class="num">${fmtN(o.cant)}</td>
       <td><span class="estado ${o.estado === 'curso' ? 'curso' : 'pend'}">${ESTADO_LBL[o.estado]}</span></td>
       <td>${fechaOpt(o.fInicio)}</td><td>${fechaOpt(o.fFin)}</td><td>${fmtFecha(o.fNec)}</td>
     </tr>`).join('');
-  return `<tr class="detrow"><td colspan="12">
+  return `<tr class="detrow" data-cod="${p.cod}"><td colspan="12">
     <div class="detwrap">
       <div class="detblock">
         <div class="dettitle">▸ Órdenes de envasado que generan la necesidad (${c.envsIn.length})</div>
         <table class="subt">
-          <thead><tr><th>#</th><th>Ord. envasado</th><th>Material env. (PT)</th><th>Denominación</th><th class="num">Cant.</th><th>F. necesidad</th><th>F. envasado</th><th>L. envasado</th></tr></thead>
+          <thead><tr><th class="chk"></th><th>#</th><th>Ord. envasado</th><th>Material env. (PT)</th><th>Denominación</th><th class="num">Cant.</th><th>F. necesidad</th><th>F. envasado</th><th>L. envasado</th><th>Ord. fab. asociada</th></tr></thead>
           <tbody>${envRows}</tbody>
-          <tfoot><tr><td colspan="4">Total necesidad</td><td class="num">${fmtN(c.necesidad)}</td><td colspan="3"></td></tr></tfoot>
+          <tfoot><tr><td class="chk"></td><td colspan="4">Total necesidad</td><td class="num">${fmtN(c.necesidad)}</td><td colspan="4"></td></tr></tfoot>
         </table>
+        <div class="launchbar" data-cod="${p.cod}">
+          <span class="lbl">Lanzar orden de fabricación para las seleccionadas:</span>
+          <label>Sección
+            <select class="launchSec" data-cod="${p.cod}">
+              <option value="COSMETICA"${p.sec === 'COSMETICA' ? ' selected' : ''}>Cosmética</option>
+              <option value="HIGIENE"${p.sec === 'HIGIENE' ? ' selected' : ''}>Higiene</option>
+            </select>
+          </label>
+          <label>Reactor <select class="launchReact" data-cod="${p.cod}">${reactorOptions(p.sec)}</select></label>
+          <button class="primary launchBtn" data-cod="${p.cod}" disabled>⚙ Lanzar orden (<span class="lcount">0</span>)</button>
+        </div>
       </div>
       <div class="detblock">
         <div class="dettitle">▸ Órdenes de fabricación lanzadas — planificado (${c.fabs.length})</div>
@@ -1138,7 +1177,7 @@ function detailPlanHTML(p, c){
           <thead><tr><th>#</th><th>Ord. fabricación</th><th>Reactor</th><th class="num">Cant. a fab.</th><th>Estado</th><th>F. inicio</th><th>F. fin</th><th>F. necesidad</th></tr></thead>
           <tbody>${fabRows}</tbody>
           <tfoot><tr><td colspan="3">Total planificado</td><td class="num">${fmtN(c.planificado)}</td><td colspan="4"></td></tr></tfoot>
-        </table>` : `<div class="sinfab">Sin órdenes de fabricación lanzadas.</div>`}
+        </table>` : `<div class="sinfab">Sin órdenes de fabricación lanzadas. Selecciona órdenes de envasado y pulsa «Lanzar orden».</div>`}
         <div class="propbox">
           Stock: <b>${fmtN(p.stock)}</b> &nbsp;·&nbsp;
           Stock libre (stock + planificado − necesidad): <b class="${c.stockLibre < 0 ? 'neg' : 'pos'}">${fmtN(c.stockLibre)}</b> &nbsp;·&nbsp;
@@ -1183,6 +1222,64 @@ function renderPlan(){
     `<b>${items.length}</b> materiales con necesidad · Necesidad total <b>${fmtN(tNec)}</b> · ` +
     `Planificado <b>${fmtN(tPlan)}</b> · <b>${nProp}</b> con propuesta (total <b>${fmtN(tProp)}</b>) · ` +
     `<b class="${nRot ? 'neg' : 'pos'}">${nRot}</b> con rotura`;
+
+  expandedPlan.forEach(cod => refreshBlockSelection(cod));   // re-aplica resaltado / contador tras re-render
+}
+
+/* ---------- Trazabilidad envasado ↔ fabricación + lanzar orden ---------- */
+function reactorOptions(sec){
+  return REACT_BY_SEC[sec].map(r => `<option value="${r.nom}">${r.nom} (cap. ${fmtN(r.capMin)}–${fmtN(r.cap)})</option>`).join('');
+}
+function planDetEl(cod){ return $(`tr.detrow[data-cod="${cod}"]`); }
+function refreshBlockSelection(cod){
+  const blk = planDetEl(cod);
+  if (!blk) return;
+  const selFabs = new Set();
+  let n = 0;
+  blk.querySelectorAll('input.envchk').forEach(c => {
+    const row = c.closest('tr');
+    if (c.checked){ n++; row.classList.add('envsel'); if (c.dataset.fab && c.dataset.fab !== '0') selFabs.add(c.dataset.fab); }
+    else row.classList.remove('envsel');
+  });
+  // resalta en la tabla de al lado las órdenes de fabricación asociadas a lo seleccionado
+  blk.querySelectorAll('tr[data-fab]:not([data-env])').forEach(r => r.classList.toggle('fabhl', selFabs.has(r.dataset.fab)));
+  const btn = blk.querySelector('button.launchBtn');
+  if (btn){ btn.disabled = n === 0; const lc = btn.querySelector('.lcount'); if (lc) lc.textContent = n; }
+}
+function onEnvChk(chk){
+  if (chk.checked) envSel.add(chk.dataset.env); else envSel.delete(chk.dataset.env);
+  refreshBlockSelection(chk.dataset.cod);
+}
+function onLaunchSec(sec){
+  sec.closest('.launchbar').querySelector('select.launchReact').innerHTML = reactorOptions(sec.value);
+}
+function onLaunch(cod){
+  const blk = planDetEl(cod);
+  if (!blk) return;
+  const ofs = [...blk.querySelectorAll('input.envchk:checked')].map(c => c.dataset.env);
+  if (!ofs.length) return;
+  const reactor = REACTORES.find(r => r.nom === blk.querySelector('select.launchReact').value);
+  if (!reactor) return;
+  const secSel = blk.querySelector('select.launchSec').value;
+  const form = PLAN.find(p => p.cod === cod);
+  const envsSel = form.envs.filter(e => ofs.includes(e.of));
+  const cant = envsSel.reduce((s,e) => s + e.cant, 0);
+  const fNec = new Date(Math.min(...envsSel.map(e => e.fNec.getTime())));
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const nueva = {
+    ordFab: '10' + pad6(_seqFab++),
+    formCod: cod, formDen: form.den, grupo: form.grupo, sec: secSel,
+    cant, cantFab: 0, estado: 'curso',
+    reactor: reactor.nom, capMin: reactor.capMin, capMax: reactor.cap,
+    fInicio: hoy, fFin: addDays(hoy, 1),
+    lote: String(_seqLote++),
+    fNec, fEnv: addDays(fNec, 2),
+    cuando: 'No definido', lineaEnv: envsSel[0].linea, comentario: '', sem: semanaISO(fNec),
+  };
+  OPS.push(nueva);
+  // mapea las órdenes de envasado seleccionadas contra la nueva orden de fabricación
+  envsSel.forEach(e => { e.ordFab = nueva.ordFab; envSel.delete(e.of); });
+  renderPlan();
 }
 
 function buildPlanFilters(){
@@ -1198,11 +1295,26 @@ $('#pActualizar').addEventListener('click', renderPlan);
 $('#pExpand').addEventListener('click', () => { _planVisible.forEach(c => expandedPlan.add(c)); renderPlan(); });
 $('#pCollapse').addEventListener('click', () => { expandedPlan.clear(); renderPlan(); });
 $('#planBody').addEventListener('click', e => {
+  const btn = e.target.closest('button.launchBtn');
+  if (btn){ onLaunch(btn.dataset.cod); return; }
+  if (e.target.closest('.launchbar')) return;                  // interacción con la barra: no colapsar
+  const envrow = e.target.closest('tr[data-env]');
+  if (envrow && !e.target.closest('input')){                   // clic en fila de envasado: alterna su check
+    const cb = envrow.querySelector('input.envchk');
+    cb.checked = !cb.checked; onEnvChk(cb); return;
+  }
+  if (e.target.closest('tr.detrow')) return;                   // otros clics dentro del detalle: ignorar
   const tr = e.target.closest('tr.masterrow');
   if (!tr) return;
   const cod = tr.dataset.cod;
   if (expandedPlan.has(cod)) expandedPlan.delete(cod); else expandedPlan.add(cod);
   renderPlan();
+});
+$('#planBody').addEventListener('change', e => {
+  const chk = e.target.closest('input.envchk');
+  if (chk){ onEnvChk(chk); return; }
+  const sec = e.target.closest('select.launchSec');
+  if (sec){ onLaunchSec(sec); return; }
 });
 
 /* ====================================================================
