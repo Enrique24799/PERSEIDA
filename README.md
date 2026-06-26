@@ -4,7 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
-- `FABRICACIONES.html` — Calendario de turnos (M/T/N) por día y reactor, con modificación masiva por sección, y planificación de necesidades por material/fabricación.
+- `FABRICACIONES.html` — Calendario de turnos (M/T/N) por día y reactor (modificación masiva por sección), planificación de necesidades por material/fabricación, y órdenes de fabricación (en curso / pendientes).
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -86,10 +86,27 @@ de **Mañana (M)**, **Tarde (T)** y **Noche (N)**. Cada reactor se identifica **
   F. Envasado − 2 días`). Cada fila agrupa: **grupo de material** (301 Higiene, 302 Hidroalcohólicos,
   303 Emulsiones, 309 Higiene bucodental, 311 Solares, 313 Soluciones, 314 Pasta dental, Perfumes),
   **nº de órdenes de envasado**, **T. Necesidad**, **T. Planificado** (órdenes de fabricación ya
-  lanzadas), **Stock**, **Stock libre** (`stock + planificado − necesidad`) y una **propuesta de
-  fabricación** (`max(0, necesidad − stock − planificado)`, por lotes del reactor). Al desplegar una
-  fila se ve el **desglose** de las órdenes de envasado que generan la necesidad y de las órdenes de
-  fabricación lanzadas. Filtros por fecha, sección, grupo y «solo con propuesta».
+  lanzadas), **Stock**, **Stock libre** (`stock + planificado − necesidad`), **propuesta de
+  fabricación** (`max(0, necesidad − stock − planificado)`) y **fecha de rotura** (proyección temporal
+  del stock: primer día en que el saldo se vuelve negativo). No se muestra reactor (no se conoce hasta
+  lanzar la orden). Al desplegar una fila se ve el **desglose** de las órdenes de envasado que generan
+  la necesidad y de las órdenes de fabricación lanzadas. Filtros por fecha, sección, grupo y «solo con
+  propuesta».
+- **Órdenes de fabricación** (operativo). Réplica de la pantalla de gestión: **Fabricaciones en curso**
+  (agrupadas por reactor, con estado, capacidades, lote, cantidad fabricada, cuándo se hace, línea de
+  envasado y comentarios) y **Fabricaciones pendientes** (las lanzadas, todavía **sin reactor**). Barra
+  de gestión: finalizar, en marcha, en pausa, cambiar orden, editar comentario, mover entre paneles,
+  ver faltantes y **semáforo** de urgencia por fecha de necesidad. Filtro por sección y «Todos» (incluye
+  finalizadas).
+
+### Codificación (datos de ejemplo)
+
+| Concepto | Código |
+|----------|--------|
+| Orden de envasado | `2008XXXX` (8 dígitos) |
+| Material de envasado (producto terminado) | `7090XXXX` (8 dígitos) |
+| Orden de fabricación | `10XXXXXX` (8 dígitos) |
+| Material de fabricación (fórmula / semielaborado) | `2932XXXX` (8 dígitos) |
 
 ### Modificación masiva (por sección)
 

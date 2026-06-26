@@ -264,6 +264,39 @@
   .propbox { margin-top: 8px; font-size: 12px; color: #51637a; padding: 7px 10px; background: #fff; border: 1px dashed #c4d0de; border-radius: 6px; }
   .propbox .proplabel b { color: #1b63c4; }
   table.plan td.empty, .empty { padding: 24px; text-align: center; color: #8494a6; }
+  table.plan td.rotura { color: #c0392b; font-weight: 600; }
+
+  /* ---------- Tab órdenes (operativo: en curso / pendientes) ---------- */
+  .ribbon-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ribbon-actions button { font-size: 12px; padding: 6px 9px; }
+  .ribbon-actions button.active { background: #2f80ed; color: #fff; border-color: #2f80ed; }
+  .ops-split { display: flex; gap: 10px; align-items: flex-start; }
+  .ops-panel { flex: 1 1 0; min-width: 0; background: #fff; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; }
+  .ops-title { background: linear-gradient(180deg,#37618f,#2f5f8f); color: #fff; font-weight: 600; font-size: 13px; padding: 7px 12px; }
+  .ops-tablewrap { overflow: auto; max-height: 66vh; }
+  table.ops { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; white-space: nowrap; }
+  table.ops thead th {
+    position: sticky; top: 0; z-index: 5; background: #eef3f9; color: #41546a;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .2px; padding: 6px 8px; text-align: left;
+    border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+  }
+  table.ops thead th.num { text-align: right; }
+  table.ops td { padding: 4px 8px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid); }
+  table.ops td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.ops td.mono { font-variant-numeric: tabular-nums; }
+  table.ops td.mat { white-space: normal; min-width: 200px; }
+  table.ops td.est { text-align: center; font-size: 14px; }
+  table.ops td.nodef { color: #aab4c0; }
+  table.ops td.coment { color: #5b6b7d; white-space: normal; min-width: 120px; }
+  tr.opsrow { cursor: pointer; }
+  tr.opsrow:hover td { background: #f4f9ff; }
+  tr.opsrow.sel td { background: #dcebfb; }
+  tr.opsrow.sel td:first-child { box-shadow: inset 3px 0 0 #2f80ed; }
+  .gdot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; border: 1px solid rgba(0,0,0,.15); }
+  td.sem-r { box-shadow: inset 4px 0 0 #d9534f; }
+  td.sem-a { box-shadow: inset 4px 0 0 #e0a800; }
+  td.sem-g { box-shadow: inset 4px 0 0 #27ae60; }
+  @media (max-width: 1100px){ .ops-split { flex-direction: column; } }
 
   .hidden { display: none !important; }
 </style>
@@ -280,6 +313,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="cal">📅 Calendario</button>
     <button class="tab" data-tab="plan">🏭 Planificación</button>
+    <button class="tab" data-tab="ops">📋 Órdenes de fabricación</button>
     <button class="tab" data-tab="cfg">⏱ Configuración de turnos</button>
   </div>
 
@@ -457,11 +491,78 @@
             <th class="num">Stock</th>
             <th class="num">Stock libre</th>
             <th class="num">Prop. fabricar</th>
-            <th>Reactor</th>
+            <th>F. rotura</th>
           </tr>
         </thead>
         <tbody id="planBody"></tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- ============================ PANTALLA: ÓRDENES (OPERATIVO) ============================ -->
+  <section id="tab-ops" class="hidden">
+
+    <div class="panel">
+      <fieldset>
+        <legend>Opciones de búsqueda</legend>
+        <div class="controls">
+          <div class="field">
+            <label for="opsSec">Filtrar por fabricación</label>
+            <select id="opsSec">
+              <option value="">Todas</option>
+              <option value="COSMETICA">Cosmética</option>
+              <option value="HIGIENE">Higiene</option>
+            </select>
+          </div>
+          <label class="checkbox-inline"><input type="checkbox" id="opsTodos" /> Todos (incluye finalizadas)</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Gestión de órdenes</legend>
+        <div class="ribbon-actions">
+          <button data-op="finalizar">✅ Finalizada</button>
+          <button data-op="marcha">▶ En marcha</button>
+          <button data-op="pausa">⏸ En pausa</button>
+          <button data-op="reorder">↕ Cambiar orden</button>
+          <button data-op="editar">✎ Editar</button>
+          <button data-op="toPend">⏏ Mover a pendiente</button>
+          <button data-op="toCurso">⮌ Mover a en curso</button>
+          <button data-op="faltantes">⚠ Ver faltantes</button>
+          <button data-op="semaforo">🚦 Semáforo</button>
+        </div>
+      </fieldset>
+
+      <p class="note">ℹ️ Las órdenes <b>lanzadas</b> pasan a <b>Fabricaciones pendientes</b> (el reactor no se
+        conoce hasta lanzarlas). Selecciona una orden y usa la barra para cambiar su estado o moverla entre
+        paneles. <span id="opsCount"></span></p>
+    </div>
+
+    <div class="ops-split">
+      <div class="ops-panel">
+        <div class="ops-title">Fabricaciones en curso</div>
+        <div class="ops-tablewrap">
+          <table class="ops">
+            <thead><tr>
+              <th class="num">Sem.</th><th>Est.</th><th class="num">Cap. mín.</th><th class="num">Cap. máx.</th>
+              <th>Ord. fab.</th><th>Material</th><th class="num">Cant. a fab.</th><th class="num">Cant. fabricada</th>
+              <th>Lote</th><th>F. necesidad</th><th>Cuándo hacemos</th><th>L. envasado</th><th>Comentarios</th>
+            </tr></thead>
+            <tbody id="opsCursoBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ops-panel">
+        <div class="ops-title">Fabricaciones pendientes</div>
+        <div class="ops-tablewrap">
+          <table class="ops">
+            <thead><tr>
+              <th>F. necesidad</th><th>Sección</th><th>Ord. fab.</th><th>Material</th><th class="num">Cant. a fab.</th><th>F. envasado</th>
+            </tr></thead>
+            <tbody id="opsPendBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -756,8 +857,10 @@ $$('.tab').forEach(b => b.addEventListener('click', () => {
   $('#tab-cal').classList.toggle('hidden', t !== 'cal');
   $('#tab-cfg').classList.toggle('hidden', t !== 'cfg');
   $('#tab-plan').classList.toggle('hidden', t !== 'plan');
+  $('#tab-ops').classList.toggle('hidden', t !== 'ops');
   if (t === 'cfg')  renderCfg();
   if (t === 'plan') renderPlan();
+  if (t === 'ops')  renderOps();
 }));
 
 /* Filtros / navegación */
@@ -821,9 +924,10 @@ $('#cfgBody').addEventListener('input', e => {
    --------------------------------------------------------------------
    Las órdenes de envasado lanzadas generan la NECESIDAD del semielaborado
    (fórmula). Para cada material/fabricación se agrega: necesidad (Σ env.),
-   planificado (Σ órdenes de fabricación lanzadas), stock y una propuesta
-   de fabricación = max(0, necesidad − stock − planificado), por lotes de
-   reactor. Datos de EJEMPLO generados de forma reproducible.
+   planificado (Σ órdenes de fabricación lanzadas), stock, fecha de rotura
+   y una propuesta de fabricación = max(0, necesidad − stock − planificado).
+   El reactor NO se muestra (no se conoce hasta lanzar la orden).
+   Datos de EJEMPLO generados de forma reproducible.
    ==================================================================== */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
@@ -888,14 +992,29 @@ function ptNombre(den, rnd){
   return `${base} ${FORMATOS[Math.floor(rnd()*FORMATOS.length)]}`;
 }
 
-/* ---------- Generación reproducible de demanda / suministro / stock ---------- */
-let _ofEnv = 10150500, _ofFab = 10146500;
+/* ---------- Helpers del operativo ---------- */
+const pad4 = n => String(n).padStart(4, '0');
+const pad6 = n => String(n).padStart(6, '0');
+const DIAS_LARGOS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+const ESTADO_LBL  = { curso:'En curso', pausa:'En pausa', pendiente:'Pendiente', finalizada:'Finalizada' };
+const ESTADO_ICON = { curso:'⚙️', pausa:'⏸️', pendiente:'⏳', finalizada:'✅' };
+function semanaISO(d){
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7) + 3);
+  const first = new Date(Date.UTC(x.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((x - first) / 86400000 - 3 + ((first.getUTCDay() + 6) % 7)) / 7);
+}
+
+/* ---------- Generación reproducible: demanda (envasado), suministro (fabricación), stock ----------
+   · Órdenes de envasado:    2008XXXX (8 díg.)  · Material de envasado (PT): 7090XXXX (8 díg.)
+   · Órdenes de fabricación: 10XXXXXX (8 díg.)  · Material de fabricación = fórmula 2932XXXX        */
+const OPS = [];                              // órdenes de fabricación (operativo, mutable)
+let _seqEnv = 1, _seqFab = 146500, _seqLote = 26175000;
 const PLAN = FORMULAS.map((f, idx) => {
   const rnd = mulberry32(((parseInt(f.cod.slice(-7), 10) || (idx+1)*7919) >>> 0));
   const list = REACT_BY_SEC[f.sec];
-  const reactor = list[idx % list.length];
+  const reactor = list[idx % list.length];   // reactor "natural" (NO se muestra: no se sabe hasta lanzar)
   const maxB = reactor.cap;
-  const minB = Math.max(reactor.capMin, Math.round(reactor.cap * 0.3));
 
   // demanda: 1..6 órdenes de envasado
   const envs = [];
@@ -903,29 +1022,44 @@ const PLAN = FORMULAS.map((f, idx) => {
   for (let k = 0; k < nEnv; k++){
     const fEnv = addDays(PLAN_BASE, Math.floor(rnd()*28));
     envs.push({
-      of: String(_ofEnv++),
-      ptCod: 'PT' + (100000 + Math.floor(rnd()*899999)),
+      of: '2008' + pad4(_seqEnv++),
+      ptCod: '7090' + pad4(Math.floor(rnd()*10000)),
       ptDen: ptNombre(f.den, rnd),
       cant: Math.max(10, Math.round((0.15 + rnd()*0.5) * maxB / 10) * 10),
       fEnv, fNec: addDays(fEnv, -2),
       linea: LINEAS_ENV[Math.floor(rnd()*LINEAS_ENV.length)],
     });
   }
-  // suministro lanzado: 0..2 órdenes de fabricación
-  const fabs = [];
+  // suministro lanzado: 0..2 órdenes de fabricación (curso / pendiente / finalizada)
   const nFab = Math.floor(rnd()*3);
   for (let k = 0; k < nFab; k++){
-    fabs.push({
-      of: String(_ofFab++),
-      reactor: reactor.nom,
-      cant: Math.round((0.5 + rnd()*0.5) * maxB / 10) * 10,
-      estado: rnd() < 0.6 ? 'En curso' : 'Pendiente',
-      fecha: addDays(PLAN_BASE, Math.floor(rnd()*20)),
+    const r = rnd();
+    const estado = r < 0.5 ? 'curso' : (r < 0.85 ? 'pendiente' : 'finalizada');
+    const enReactor = estado !== 'pendiente';
+    const cant = Math.round((0.5 + rnd()*0.5) * maxB / 10) * 10;
+    const fEnv = addDays(PLAN_BASE, 2 + Math.floor(rnd()*26));
+    OPS.push({
+      ordFab: '10' + pad6(_seqFab++),
+      formCod: f.cod, formDen: f.den, grupo: f.grupo, sec: f.sec,
+      cant,
+      cantFab: estado === 'finalizada' ? cant : (estado === 'curso' ? Math.round(cant * rnd() / 10) * 10 : 0),
+      estado,
+      reactor: enReactor ? reactor.nom : null,
+      capMin: enReactor ? reactor.capMin : null,
+      capMax: enReactor ? reactor.cap : null,
+      lote: String(_seqLote++),
+      fNec: addDays(fEnv, -2), fEnv,
+      cuando: rnd() < 0.75 ? 'No definido'
+        : `${DIAS_LARGOS[(fEnv.getDay()+6)%7]} ${pad(fEnv.getDate())}/${pad(fEnv.getMonth()+1)} ${['Mañana','Tarde','Noche'][Math.floor(rnd()*3)]}`,
+      lineaEnv: LINEAS_ENV[Math.floor(rnd()*LINEAS_ENV.length)],
+      comentario: '',
+      sem: semanaISO(fEnv),
     });
   }
   const stock = Math.round((rnd() < 0.35 ? 0 : rnd()*0.7) * maxB / 10) * 10;
-  return { ...f, reactor, minB, maxB, envs, fabs, stock };
+  return { ...f, stock, envs };
 });
+const fabsDe = cod => OPS.filter(o => o.formCod === cod && o.estado !== 'finalizada');
 
 const expandedPlan = new Set();
 let _planVisible = [];
@@ -933,21 +1067,26 @@ let _planVisible = [];
 const fmtN = n => Math.round(n).toLocaleString('es-ES');
 const fmtFecha = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
 
-function proponer(falta, minB, maxB){
-  const n = Math.max(1, Math.ceil(falta / maxB));
-  let q = falta;
-  if (n === 1) q = Math.max(falta, minB);   // un solo lote respeta el mínimo del reactor
-  return { q: Math.round(q), n };
+function calcRotura(stock, envsIn, fabs){
+  // proyección temporal del stock: rotura = primer día en que el saldo se vuelve negativo
+  const ev = [];
+  envsIn.forEach(e => ev.push({ d: e.fNec, q: -e.cant }));
+  fabs.forEach(o => ev.push({ d: o.fNec, q: +o.cant }));
+  ev.sort((a,b) => (a.d - b.d) || (a.q - b.q));    // mismo día: consumo antes que suministro (peor caso)
+  let bal = stock;
+  for (const x of ev){ bal += x.q; if (bal < 0) return x.d; }
+  return null;                                      // sin rotura proyectada
 }
 function calcPlan(p, ini, fin){
   const envsIn = p.envs.filter(e => e.fNec >= ini && e.fNec <= fin).sort((a,b) => a.fNec - b.fNec);
   const necesidad = envsIn.reduce((s,e) => s + e.cant, 0);
-  const planificado = p.fabs.reduce((s,o) => s + o.cant, 0);
+  const fabs = fabsDe(p.cod);
+  const planificado = fabs.reduce((s,o) => s + o.cant, 0);
   const stockLibre = p.stock + planificado - necesidad;
-  const falta = necesidad - p.stock - planificado;
-  const prop = falta > 0 ? proponer(falta, p.minB, p.maxB) : null;
-  const urg = envsIn.length ? envsIn[0].fNec.getTime() : Infinity;
-  return { envsIn, necesidad, planificado, stockLibre, prop, urg };
+  const prop = Math.max(0, necesidad - p.stock - planificado);   // sin reactor (no se conoce hasta lanzar)
+  const rotura = calcRotura(p.stock, envsIn, fabs);
+  const urg = rotura ? rotura.getTime() : (envsIn.length ? envsIn[0].fNec.getTime() : Infinity);
+  return { envsIn, fabs, necesidad, planificado, stockLibre, prop, rotura, urg };
 }
 
 function masterPlanHTML(p, c){
@@ -963,8 +1102,8 @@ function masterPlanHTML(p, c){
       <td class="num">${fmtN(c.planificado)}</td>
       <td class="num">${fmtN(p.stock)}</td>
       <td class="num ${c.stockLibre < 0 ? 'neg' : 'pos'}">${fmtN(c.stockLibre)}</td>
-      <td class="num prop ${c.prop ? 'has' : ''}">${c.prop ? fmtN(c.prop.q) : '—'}</td>
-      <td class="mono small">${p.reactor.nom}</td>
+      <td class="num prop ${c.prop ? 'has' : ''}">${c.prop ? fmtN(c.prop) : '—'}</td>
+      <td class="${c.rotura ? 'rotura' : 'pos'}">${c.rotura ? fmtFecha(c.rotura) : 'Sin rotura'}</td>
     </tr>`;
 }
 
@@ -973,31 +1112,32 @@ function detailPlanHTML(p, c){
       <td>${i+1}</td><td>${e.of}</td><td>${e.ptCod}</td><td>${e.ptDen}</td>
       <td class="num">${fmtN(e.cant)}</td><td>${fmtFecha(e.fNec)}</td><td>${fmtFecha(e.fEnv)}</td><td>${e.linea}</td>
     </tr>`).join('');
-  const fabRows = p.fabs.map((o,i) => `<tr>
-      <td>${i+1}</td><td>${o.of}</td><td>${o.reactor}</td><td class="num">${fmtN(o.cant)}</td>
-      <td><span class="estado ${o.estado === 'En curso' ? 'curso' : 'pend'}">${o.estado}</span></td><td>${fmtFecha(o.fecha)}</td>
+  const fabRows = c.fabs.map((o,i) => `<tr>
+      <td>${i+1}</td><td>${o.ordFab}</td><td class="num">${fmtN(o.cant)}</td>
+      <td><span class="estado ${o.estado === 'curso' ? 'curso' : 'pend'}">${ESTADO_LBL[o.estado]}</span></td><td>${fmtFecha(o.fNec)}</td>
     </tr>`).join('');
   return `<tr class="detrow"><td colspan="12">
     <div class="detwrap">
       <div class="detblock">
         <div class="dettitle">▸ Órdenes de envasado que generan la necesidad (${c.envsIn.length})</div>
         <table class="subt">
-          <thead><tr><th>#</th><th>Ord. envasado</th><th>Material (PT)</th><th>Denominación</th><th class="num">Cant.</th><th>F. necesidad</th><th>F. envasado</th><th>L. envasado</th></tr></thead>
+          <thead><tr><th>#</th><th>Ord. envasado</th><th>Material env. (PT)</th><th>Denominación</th><th class="num">Cant.</th><th>F. necesidad</th><th>F. envasado</th><th>L. envasado</th></tr></thead>
           <tbody>${envRows}</tbody>
           <tfoot><tr><td colspan="4">Total necesidad</td><td class="num">${fmtN(c.necesidad)}</td><td colspan="3"></td></tr></tfoot>
         </table>
       </div>
       <div class="detblock">
-        <div class="dettitle">▸ Órdenes de fabricación lanzadas — planificado (${p.fabs.length})</div>
-        ${p.fabs.length ? `<table class="subt">
-          <thead><tr><th>#</th><th>Ord. fabricación</th><th>Reactor</th><th class="num">Cant. a fab.</th><th>Estado</th><th>Fecha</th></tr></thead>
+        <div class="dettitle">▸ Órdenes de fabricación lanzadas — planificado (${c.fabs.length})</div>
+        ${c.fabs.length ? `<table class="subt">
+          <thead><tr><th>#</th><th>Ord. fabricación</th><th class="num">Cant. a fab.</th><th>Estado</th><th>F. necesidad</th></tr></thead>
           <tbody>${fabRows}</tbody>
-          <tfoot><tr><td colspan="3">Total planificado</td><td class="num">${fmtN(c.planificado)}</td><td colspan="2"></td></tr></tfoot>
+          <tfoot><tr><td colspan="2">Total planificado</td><td class="num">${fmtN(c.planificado)}</td><td colspan="2"></td></tr></tfoot>
         </table>` : `<div class="sinfab">Sin órdenes de fabricación lanzadas.</div>`}
         <div class="propbox">
           Stock: <b>${fmtN(p.stock)}</b> &nbsp;·&nbsp;
           Stock libre (stock + planificado − necesidad): <b class="${c.stockLibre < 0 ? 'neg' : 'pos'}">${fmtN(c.stockLibre)}</b> &nbsp;·&nbsp;
-          <span class="proplabel">Propuesta de fabricación: <b>${c.prop ? fmtN(c.prop.q) : '—'}</b>${c.prop ? ` <small>(${c.prop.n} lote/s en ${p.reactor.nom}, cap. ${fmtN(p.minB)}–${fmtN(p.maxB)})</small>` : ''}</span>
+          Fecha de rotura: <b class="${c.rotura ? 'neg' : 'pos'}">${c.rotura ? fmtFecha(c.rotura) : 'Sin rotura'}</b> &nbsp;·&nbsp;
+          <span class="proplabel">Propuesta de fabricación: <b>${c.prop ? fmtN(c.prop) : '—'}</b></span>
         </div>
       </div>
     </div>
@@ -1030,12 +1170,13 @@ function renderPlan(){
 
   const tNec  = items.reduce((s,i) => s + i.c.necesidad, 0);
   const tPlan = items.reduce((s,i) => s + i.c.planificado, 0);
-  const tProp = items.reduce((s,i) => s + (i.c.prop ? i.c.prop.q : 0), 0);
-  const nProp = items.filter(i => i.c.prop).length;
+  const tProp = items.reduce((s,i) => s + i.c.prop, 0);
+  const nProp = items.filter(i => i.c.prop > 0).length;
+  const nRot  = items.filter(i => i.c.rotura).length;
   $('#planSummary').innerHTML =
     `<b>${items.length}</b> materiales con necesidad · Necesidad total <b>${fmtN(tNec)}</b> · ` +
-    `Planificado <b>${fmtN(tPlan)}</b> · <b>${nProp}</b> con propuesta · ` +
-    `Propuesta total a fabricar <b>${fmtN(tProp)}</b>`;
+    `Planificado <b>${fmtN(tPlan)}</b> · <b>${nProp}</b> con propuesta (total <b>${fmtN(tProp)}</b>) · ` +
+    `<b class="${nRot ? 'neg' : 'pos'}">${nRot}</b> con rotura`;
 }
 
 function buildPlanFilters(){
@@ -1057,6 +1198,119 @@ $('#planBody').addEventListener('click', e => {
   if (expandedPlan.has(cod)) expandedPlan.delete(cod); else expandedPlan.add(cod);
   renderPlan();
 });
+
+/* ====================================================================
+   ÓRDENES DE FABRICACIÓN — pantalla operativa (en curso / pendientes)
+   --------------------------------------------------------------------
+   Las órdenes lanzadas pasan a "pendientes" (sin reactor). Al ponerlas
+   "en marcha" se les asigna reactor y pasan a "en curso", agrupadas por
+   reactor. Estado, mover entre paneles, semáforo de urgencia, faltantes.
+   ==================================================================== */
+let opsSel = null, opsSemaforo = false, opsFaltantes = false;
+
+function semCls(d){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const diff = (d - hoy) / 86400000;
+  return diff < 0 ? 'sem-r' : (diff < 3 ? 'sem-a' : 'sem-g');   // rojo / ámbar / verde
+}
+function opsFiltra(o){
+  const sec = $('#opsSec').value;
+  return (!sec || o.sec === sec) && (!opsFaltantes || o.cantFab < o.cant);
+}
+function opsCursoRow(o){
+  const G = GRUPOS[o.grupo], sel = o.ordFab === opsSel ? ' sel' : '';
+  const sem = opsSemaforo ? semCls(o.fNec) : '';
+  return `<tr class="opsrow${sel}" data-of="${o.ordFab}">
+      <td class="num">${o.sem}</td>
+      <td class="est ${sem}" title="${ESTADO_LBL[o.estado]}">${ESTADO_ICON[o.estado]}</td>
+      <td class="num">${fmtN(o.capMin)}</td>
+      <td class="num">${fmtN(o.capMax)}</td>
+      <td class="mono">${o.ordFab}</td>
+      <td class="mat"><span class="gdot" style="background:${G.color}" title="${G.cod?G.cod+' · ':''}${G.label}"></span>${o.formCod} - ${o.formDen}</td>
+      <td class="num">${fmtN(o.cant)}</td>
+      <td class="num">${fmtN(o.cantFab)}</td>
+      <td class="mono">${o.lote}</td>
+      <td>${fmtFecha(o.fNec)}</td>
+      <td class="${o.cuando === 'No definido' ? 'nodef' : ''}">${o.cuando}</td>
+      <td class="mono">${o.lineaEnv}</td>
+      <td class="coment">${o.comentario || ''}</td>
+    </tr>`;
+}
+function opsPendRow(o){
+  const G = GRUPOS[o.grupo], sel = o.ordFab === opsSel ? ' sel' : '';
+  const sem = opsSemaforo ? semCls(o.fNec) : '';
+  return `<tr class="opsrow${sel}" data-of="${o.ordFab}">
+      <td class="${sem}">${fmtFecha(o.fNec)}</td>
+      <td>${SEC_LABEL[o.sec]}</td>
+      <td class="mono">${o.ordFab}</td>
+      <td class="mat"><span class="gdot" style="background:${G.color}" title="${G.cod?G.cod+' · ':''}${G.label}"></span>${o.formCod} - ${o.formDen}</td>
+      <td class="num">${fmtN(o.cant)}</td>
+      <td>${fmtFecha(o.fEnv)}</td>
+    </tr>`;
+}
+function renderOps(){
+  const todos = $('#opsTodos').checked;
+  const curso = OPS.filter(o => opsFiltra(o) && o.reactor &&
+    (o.estado === 'curso' || o.estado === 'pausa' || (todos && o.estado === 'finalizada')));
+  const byR = {};
+  curso.forEach(o => (byR[o.reactor] = byR[o.reactor] || []).push(o));
+  let lc = '';
+  Object.keys(byR).sort().forEach(rn => {
+    lc += `<tr class="secrow"><td colspan="13">Reactor: ${rn}</td></tr>`;
+    byR[rn].forEach(o => { lc += opsCursoRow(o); });
+  });
+  $('#opsCursoBody').innerHTML = lc || `<tr><td colspan="13" class="empty">Sin fabricaciones en curso.</td></tr>`;
+
+  const pend = OPS.filter(o => opsFiltra(o) && o.estado === 'pendiente').sort((a,b) => a.fNec - b.fNec);
+  $('#opsPendBody').innerHTML = pend.map(opsPendRow).join('') ||
+    `<tr><td colspan="6" class="empty">Sin fabricaciones pendientes.</td></tr>`;
+
+  $('#opsCount').textContent = `— ${curso.length} en curso · ${pend.length} pendientes`;
+}
+function opsAsignaReactor(o){
+  if (o.reactor) return;
+  const idx = FORMULAS.findIndex(x => x.cod === o.formCod);
+  const list = REACT_BY_SEC[o.sec];
+  const r = list[(idx < 0 ? 0 : idx) % list.length];
+  o.reactor = r.nom; o.capMin = r.capMin; o.capMax = r.cap;
+}
+function opsReorderUp(o){
+  const i = OPS.indexOf(o);
+  for (let j = i - 1; j >= 0; j--){
+    if (OPS[j].reactor === o.reactor && OPS[j].estado === o.estado){ OPS.splice(i, 1); OPS.splice(j, 0, o); return; }
+  }
+}
+function opsAction(op){
+  if (op === 'faltantes'){ opsFaltantes = !opsFaltantes; $('[data-op="faltantes"]').classList.toggle('active', opsFaltantes); renderOps(); return; }
+  if (op === 'semaforo'){  opsSemaforo = !opsSemaforo;  $('[data-op="semaforo"]').classList.toggle('active', opsSemaforo);  renderOps(); return; }
+  const o = OPS.find(x => x.ordFab === opsSel);
+  if (!o){ $('#opsCount').textContent = '— Selecciona una orden para aplicar la acción'; return; }
+  switch (op){
+    case 'finalizar': o.estado = 'finalizada'; o.cantFab = o.cant; break;
+    case 'marcha':    o.estado = 'curso'; opsAsignaReactor(o); break;
+    case 'pausa':     if (o.estado === 'curso') o.estado = 'pausa'; break;
+    case 'toPend':    o.estado = 'pendiente'; o.reactor = null; o.capMin = null; o.capMax = null; break;
+    case 'toCurso':   o.estado = 'curso'; opsAsignaReactor(o); break;
+    case 'reorder':   opsReorderUp(o); break;
+    case 'editar': {
+      const c = prompt('Comentario para la orden ' + o.ordFab + ':', o.comentario || '');
+      if (c !== null) o.comentario = c;
+      break;
+    }
+  }
+  renderOps();
+}
+function opsRowClick(e){
+  const tr = e.target.closest('tr.opsrow');
+  if (!tr) return;
+  opsSel = (opsSel === tr.dataset.of) ? null : tr.dataset.of;
+  renderOps();
+}
+$('#opsCursoBody').addEventListener('click', opsRowClick);
+$('#opsPendBody').addEventListener('click', opsRowClick);
+$('#opsSec').addEventListener('change', renderOps);
+$('#opsTodos').addEventListener('change', renderOps);
+$$('.ribbon-actions button[data-op]').forEach(b => b.addEventListener('click', () => opsAction(b.dataset.op)));
 
 /* ====================================================================
    INICIO
