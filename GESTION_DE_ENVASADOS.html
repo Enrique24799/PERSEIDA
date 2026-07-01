@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gestión de Envasados — Control de Producción</title>
+<style>
+  :root {
+    --border: #c9d3df;
+    --grid: #e9edf3;
+    --ink: #223040;
+    --ribbon-bg: #f3f6fb;
+    --ribbon-grad-1: #fbfdff;
+    --ribbon-grad-2: #e7eef7;
+    --head-bg: #f0f3f7;
+    --ok: #27ae60;
+    --warn: #e0a800;
+    --bad: #d9534f;
+    --run: #2f80ed;
+    --plan-cell: #bfe3f2;
+    --plan-head: #7fc4e0;
+    --fab-cell: #2f6fb8;
+    --sel: #cfe3fb;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #dfe6ee;
+    font-size: 12px;
+  }
+
+  /* ===================== Ventana / pestaña ===================== */
+  .win {
+    display: flex; flex-direction: column;
+    height: 100vh;
+    background: #e8edf3;
+  }
+  .doctab {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(180deg, #4a4f57, #3a3e45);
+    color: #eef1f4; padding: 5px 12px; font-size: 12px; font-weight: 600;
+  }
+  .doctab .tab {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: linear-gradient(180deg, #565b63, #43474e);
+    border: 1px solid #2c2f34; border-radius: 4px 4px 0 0;
+    padding: 4px 12px;
+  }
+  .doctab .tab .close { opacity: .7; font-weight: 400; }
+  .doctab .dot { color: #6fb1ff; }
+
+  /* ===================== Cinta (ribbon) ===================== */
+  .ribbon-tabrow {
+    background: #eef2f7; border-bottom: 1px solid var(--border);
+    padding: 3px 8px 0;
+  }
+  .ribbon-tabrow .rtab {
+    display: inline-block; padding: 4px 16px; font-size: 12px; font-weight: 600;
+    color: #33475e; background: #fff;
+    border: 1px solid var(--border); border-bottom: none;
+    border-radius: 5px 5px 0 0;
+  }
+  .ribbon {
+    display: flex; align-items: stretch; gap: 0;
+    background: linear-gradient(180deg, var(--ribbon-grad-1), var(--ribbon-grad-2));
+    border-bottom: 1px solid var(--border);
+    padding: 6px 4px 2px;
+    overflow-x: auto;
+  }
+  .rgroup {
+    display: flex; flex-direction: column;
+    padding: 0 8px 2px;
+    border-right: 1px solid #d6deea;
+  }
+  .rgroup > .rbody {
+    display: flex; align-items: flex-start; gap: 2px; flex: 1;
+    padding: 4px 0 2px;
+  }
+  .rgroup > .rtitle {
+    text-align: center; font-size: 11px; color: #5f7086; padding-top: 3px;
+  }
+
+  /* opciones de búsqueda (columna izquierda con selector + toggles) */
+  .searchopts { display: flex; align-items: center; gap: 12px; }
+  .lineSel { display: flex; flex-direction: column; gap: 3px; }
+  .lineSel select {
+    font-size: 13px; padding: 5px 8px; width: 150px;
+    border: 1px solid #a9b8cb; border-radius: 3px; background: #fff;
+  }
+  .refresh-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #a9b8cb; background: radial-gradient(circle at 40% 35%, #fff, #dce7f3);
+    cursor: pointer; font-size: 17px; color: #3a6ea5; line-height: 1;
+  }
+  .refresh-btn:hover { background: radial-gradient(circle at 40% 35%, #fff, #cfe0f2); }
+  .toggles { display: flex; flex-direction: column; gap: 8px; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+  .switch {
+    position: relative; width: 34px; height: 16px; border-radius: 9px;
+    background: #c3ccd7; transition: background .15s; flex: none;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .15s;
+  }
+  .toggle input { display: none; }
+  .toggle input:checked + .switch { background: #4a90d9; }
+  .toggle input:checked + .switch::after { left: 20px; }
+
+  /* botones grandes de cinta */
+  .rbtn {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
+    width: 62px; min-height: 62px; padding: 5px 3px;
+    border: 1px solid transparent; border-radius: 4px; background: transparent;
+    cursor: pointer; text-align: center; color: #2c3a4b;
+  }
+  .rbtn:hover { background: #dce9f8; border-color: #a9c6ea; }
+  .rbtn:active { background: #c9ddf3; }
+  .rbtn .ic {
+    font-size: 22px; line-height: 1; height: 26px; display: flex; align-items: center;
+  }
+  .rbtn .lb { font-size: 10.5px; line-height: 1.05; }
+  .rbtn.sm { width: 58px; }
+
+  /* ===================== Barra de acciones (bajo cinta) ===================== */
+  .subbar {
+    display: flex; align-items: center; gap: 14px;
+    background: #4b5058; color: #e7ebef;
+    padding: 5px 12px; font-size: 12px;
+  }
+  .subbar .item { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .subbar .item:hover { color: #fff; }
+  .subbar .warn-ic { color: #ffcf4d; }
+  .subbar .edit-ic { color: #cfe0f2; }
+  .subbar .spacer { flex: 1; }
+  .subbar .sep { width: 1px; height: 16px; background: #6a7078; }
+
+  /* ===================== Buscador ===================== */
+  .searchrow {
+    background: #f4f7fb; border-bottom: 1px solid var(--border);
+    padding: 6px 10px;
+  }
+  .searchrow input {
+    width: 320px; max-width: 60vw; font-size: 12px; padding: 6px 10px;
+    border: 1px solid #b9c6d6; border-radius: 4px; background: #fff;
+  }
+
+  /* ===================== Rejilla (grid) ===================== */
+  .gridwrap { flex: 1; overflow: auto; background: #fff; }
+  table.grid { border-collapse: collapse; width: 100%; font-size: 12px; white-space: nowrap; }
+  table.grid thead th {
+    position: sticky; top: 0; z-index: 6;
+    background: linear-gradient(180deg, #fbfcfe, var(--head-bg));
+    color: #35495f; font-weight: 600;
+    padding: 6px 8px; text-align: left;
+    border-right: 1px solid var(--border); border-bottom: 1px solid #b9c4d2;
+  }
+  table.grid thead th.plan {
+    background: linear-gradient(180deg, #a7d6ec, var(--plan-head)); color: #123;
+  }
+  table.grid thead th .sortglyph { color: #9aa8b8; font-size: 10px; margin-left: 4px; }
+  /* fila de filtros */
+  table.grid thead tr.filterrow th {
+    position: sticky; top: 27px; z-index: 5;
+    background: #eef2f7; padding: 3px 5px; border-bottom: 1px solid var(--border);
+  }
+  table.grid thead tr.filterrow input {
+    width: 100%; font-size: 11px; padding: 3px 5px;
+    border: 1px solid #cdd7e3; border-radius: 3px; background: #fff;
+  }
+  table.grid tbody td {
+    padding: 4px 8px; border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid);
+  }
+  table.grid tbody tr:nth-child(even) td { background: #f7f9fc; }
+  table.grid tbody tr:hover td { background: #eef5ff; }
+  table.grid tbody tr.rsel td { background: var(--sel) !important; }
+  td.mono { font-family: "Consolas", monospace; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.center { text-align: center; }
+  td.nom { white-space: normal; min-width: 200px; }
+
+  /* estatus icons */
+  .st { font-size: 15px; line-height: 1; }
+  .st.ok   { color: var(--ok); }
+  .st.run  { color: #556; }
+  .st.wait { color: var(--warn); }
+
+  /* celdas especiales */
+  td.rotura.brk { background: var(--bad) !important; color: #fff; font-weight: 600; text-align: center; }
+  td.planilla { background: var(--plan-cell); text-align: right; font-weight: 600; color: #0d3a4f; }
+  td.fabricada { background: var(--fab-cell); color: #fff; text-align: right; font-weight: 600; }
+  tbody tr:hover td.planilla { background: #b0dcee; }
+  tbody tr:hover td.fabricada { background: #356fb0; }
+  td.ordfab { background: #fbe9d0; }
+  td.ordenv { background: #fdf3d6; }
+  tbody tr:nth-child(even) td.ordfab { background: #f7e2c4; }
+  tbody tr:nth-child(even) td.ordenv { background: #f9edc9; }
+
+  .chk { text-align: center; }
+  .chk input { transform: scale(1.05); }
+
+  /* ===================== Barra de estado ===================== */
+  .statusbar {
+    display: flex; align-items: center; gap: 10px;
+    background: #e6ebf1; border-top: 1px solid var(--border);
+    padding: 5px 12px; font-size: 11.5px; color: #45566a;
+  }
+  .statusbar .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+  .statusbar .right { margin-left: auto; opacity: .8; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 42px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #2c3a4b; color: #fff; padding: 9px 16px; border-radius: 6px; font-size: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.28); opacity: 0; pointer-events: none;
+    transition: opacity .18s, transform .18s; z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="win">
+
+  <!-- ===================== Pestaña de documento ===================== -->
+  <div class="doctab">
+    <span class="tab"><span class="dot">◉</span> Control de Producción <span class="close">✕</span></span>
+  </div>
+
+  <!-- ===================== Cinta ===================== -->
+  <div class="ribbon-tabrow"><span class="rtab">Menú</span></div>
+
+  <div class="ribbon">
+    <!-- Opciones de búsqueda -->
+    <div class="rgroup">
+      <div class="rbody">
+        <div class="searchopts">
+          <div class="lineSel">
+            <select id="lineSel" title="Línea / puesto de trabajo">
+              <option>L1</option><option>L2</option><option>L3</option>
+              <option>L4</option><option>L5</option><option>Todas</option>
+            </select>
+          </div>
+          <button class="refresh-btn" data-act="Refrescar" title="Refrescar">⟳</button>
+          <div class="toggles">
+            <label class="toggle"><input type="checkbox" id="tgExt"><span class="switch"></span> Mostrar Centros Externos</label>
+            <label class="toggle"><input type="checkbox" id="tgFut"><span class="switch"></span> Mostrar Planificación Futura</label>
+          </div>
+        </div>
+      </div>
+      <div class="rtitle">Opciones de Búsqueda</div>
+    </div>
+
+    <!-- Gestión Órdenes Operativas -->
+    <div class="rgroup">
+      <div class="rbody">
+        <button class="rbtn" data-act="Crear Orden de Fabricación"><span class="ic">📝</span><span class="lb">Crear Orden de Fabricación</span></button>
+        <button class="rbtn" data-act="Liberar Orden de Fabricación"><span class="ic">📂</span><span class="lb">Liberar Orden de Fabricación</span></button>
+        <button class="rbtn" data-act="Crear Orden de Envasado"><span class="ic">📋</span><span class="lb">Crear Orden de Envasado</span></button>
+        <button class="rbtn" data-act="Liberar Orden de Envasado"><span class="ic">📤</span><span class="lb">Liberar Orden de Envasado</span></button>
+        <button class="rbtn sm" data-act="Anular"><span class="ic" style="color:#d9534f">⊘</span><span class="lb">Anular</span></button>
+        <button class="rbtn sm" data-act="Baja"><span class="ic" style="color:#d9534f">🗑</span><span class="lb">Baja</span></button>
+        <button class="rbtn sm" data-act="Pausa"><span class="ic" style="color:#5a86c4">⏸</span><span class="lb">Pausa</span></button>
+        <button class="rbtn sm" data-act="Finalizar"><span class="ic" style="color:#5a86c4">⏹</span><span class="lb">Finalizar</span></button>
+        <button class="rbtn sm" data-act="Alta"><span class="ic" style="color:#e0a800">✎</span><span class="lb">Alta</span></button>
+      </div>
+      <div class="rtitle">Gestión Órdenes Operativas</div>
+    </div>
+
+    <!-- Ajuste de Órdenes -->
+    <div class="rgroup">
+      <div class="rbody">
+        <button class="rbtn" data-act="Cambiar Orden"><span class="ic">🔀</span><span class="lb">Cambiar Orden</span></button>
+        <button class="rbtn" data-act="Modificar PT"><span class="ic">🗂</span><span class="lb">Modificar PT</span></button>
+        <button class="rbtn" data-act="Cambiar Fecha"><span class="ic">📅</span><span class="lb">Cambiar Fecha</span></button>
+        <button class="rbtn" data-act="Dividir Fab."><span class="ic">🔃</span><span class="lb">Dividir Fab.</span></button>
+      </div>
+      <div class="rtitle">Ajuste de Órdenes</div>
+    </div>
+
+    <!-- Control de Órdenes -->
+    <div class="rgroup" style="border-right:none">
+      <div class="rbody">
+        <button class="rbtn" data-act="En Marcha"><span class="ic" style="color:#27ae60">▶</span><span class="lb">En Marcha</span></button>
+        <button class="rbtn" data-act="Notificar SAP"><span class="ic">🗒</span><span class="lb">Notificar SAP</span></button>
+        <button class="rbtn" data-act="Activar Finalizado"><span class="ic">⏮</span><span class="lb">Activar Finalizado</span></button>
+        <button class="rbtn" data-act="Consultar Fab."><span class="ic">🔍</span><span class="lb">Consultar Fab.</span></button>
+      </div>
+      <div class="rtitle">Control de Órdenes</div>
+    </div>
+  </div>
+
+  <!-- ===================== Barra de acciones ===================== -->
+  <div class="subbar">
+    <span class="item"><span class="edit-ic">✎</span> Edit</span>
+    <span class="sep"></span>
+    <span class="item"><span class="warn-ic">⚠</span> Faltantes Fabricación</span>
+    <span class="item"><span class="warn-ic">⚠</span> Faltantes Envasado</span>
+    <span class="spacer"></span>
+    <span class="item" data-act="Column Chooser">▦ Column Chooser</span>
+    <span class="item" data-act="Export to">⤓ Export to</span>
+  </div>
+
+  <!-- ===================== Buscador ===================== -->
+  <div class="searchrow">
+    <input type="text" id="search" placeholder="Enter text to search..." />
+  </div>
+
+  <!-- ===================== Rejilla ===================== -->
+  <div class="gridwrap">
+    <table class="grid">
+      <thead>
+        <tr id="headrow">
+          <th class="chk"><input type="checkbox" id="chkAll" title="Seleccionar todo" /></th>
+          <th>Estatus <span class="sortglyph">▾</span></th>
+          <th>Tiene Semi</th>
+          <th>Ord.Fab.Sap</th>
+          <th>Cant.Fab.SAP</th>
+          <th>Ord.Env.SAP</th>
+          <th>Inicio Previsto</th>
+          <th>Fin Previsto</th>
+          <th>Num.Lote.SAP</th>
+          <th>Material</th>
+          <th>Fecha Rotura</th>
+          <th>Nombre</th>
+          <th>Formato</th>
+          <th>Stock Granel</th>
+          <th>Mat.Fabricacion</th>
+          <th>Pedido SAP</th>
+          <th>Procedencia</th>
+          <th class="plan">Cant.Planificada</th>
+          <th class="plan">Cant.Fabricada</th>
+        </tr>
+        <tr class="filterrow" id="filterRow"></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- ===================== Barra de estado ===================== -->
+  <div class="statusbar">
+    <span class="dot" id="stDot"></span>
+    <span id="stMsg">Listo</span>
+    <span class="right" id="stCount"></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const nf = n => n.toLocaleString('es-ES', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const nf0 = n => n.toLocaleString('es-ES');
+
+/* ---------- Estatus ---------- */
+const ESTATUS = {
+  ok:   { cls: 'ok',   glyph: '✔', txt: 'Finalizada' },
+  run:  { cls: 'run',  glyph: '⚙', txt: 'En marcha' },
+  wait: { cls: 'wait', glyph: '⏱', txt: 'Pendiente' },
+};
+
+/* ---------- Datos de ejemplo (columnas de la pantalla) ----------
+   Para conectar con datos reales basta sustituir el array ROWS por la
+   consulta correspondiente (mismos nombres de campo). */
+const ROWS = [
+  { est:'ok',   semi:true,  ofab:'10151249', cfab:4700, oenv:'20084377', ini:'30/06/2026 19:31:40', fin:'01/07/2026 5:13:02',  lote:'26181004', mat:'70908885', rot:'27/07/2026', brk:false, nom:'CROWE QUITAESMALTE ACETONA PURA 200ML', fmt:'160', granel:2782, matfab:'29323458', pedido:'',            proc:'',                    plan:9000,  fab:8514 },
+  { est:'run',  semi:true,  ofab:'10151249', cfab:4700, oenv:'20083035', ini:'01/07/2026 5:13:02',  fin:'01/07/2026 22:58:00', lote:'26181005', mat:'70908885', rot:'27/07/2026', brk:false, nom:'CROWE QUITAESMALTE ACETONA PURA 200ML', fmt:'160', granel:2782, matfab:'29323458', pedido:'',            proc:'En Marcha Desde MES',  plan:19000, fab:2838 },
+  { est:'wait', semi:false, ofab:'10151250', cfab:0,    oenv:'20083036', ini:'01/07/2026 23:38:00', fin:'06/07/2026 6:26:00',  lote:'26181008', mat:'70908886', rot:'06/07/2026', brk:false, nom:'CROWE QUITAESMALTE ACETONA 200ML',      fmt:'160', granel:0,    matfab:'29323460', pedido:'',            proc:'',                    plan:56230, fab:0 },
+  { est:'wait', semi:false, ofab:'10151250', cfab:0,    oenv:'20083930', ini:'06/07/2026 7:06:00',  fin:'06/07/2026 12:28:00', lote:'26181008', mat:'70908887', rot:'01/07/2026', brk:true,  nom:'MICADERM QUITAESMALTES ACETONA 200ML', fmt:'160', granel:0,    matfab:'29323460', pedido:'',            proc:'',                    plan:5500,  fab:0 },
+  { est:'wait', semi:false, ofab:'10151250', cfab:0,    oenv:'20083037', ini:'06/07/2026 13:08:00', fin:'06/07/2026 16:10:00', lote:'26181008', mat:'70907881', rot:'21/07/2026', brk:false, nom:'BRAVO QUITAESMALTE CON ACETONA 200ML',  fmt:'160', granel:0,    matfab:'29323460', pedido:'10063707-180', proc:'',                   plan:3120,  fab:0 },
+  { est:'wait', semi:false, ofab:'10151250', cfab:0,    oenv:'20083037', ini:'06/07/2026 16:10:00', fin:'06/07/2026 19:12:00', lote:'26181008', mat:'70907881', rot:'21/07/2026', brk:false, nom:'BRAVO QUITAESMALTE CON ACETONA 200ML',  fmt:'160', granel:0,    matfab:'29323460', pedido:'10064746-160', proc:'',                   plan:3120,  fab:0 },
+  { est:'wait', semi:false, ofab:'10151250', cfab:0,    oenv:'20083038', ini:'06/07/2026 21:13:00', fin:'07/07/2026 20:24:00', lote:'26181008', mat:'70908526', rot:'01/07/2026', brk:true,  nom:'BELLE QUITAESMALTES C/ACETONA 200ML 25', fmt:'152', granel:0,   matfab:'29323460', pedido:'',            proc:'',                    plan:23780, fab:0 },
+  { est:'wait', semi:false, ofab:'10153824', cfab:0,    oenv:'20083933', ini:'07/07/2026 22:25:00', fin:'08/07/2026 13:48:00', lote:'26181008', mat:'70904638', rot:'02/08/2026', brk:false, nom:'BYPHASSE QUITAESMALTE EXPRESS 250ML',   fmt:'027', granel:0,    matfab:'29322650', pedido:'10064839-10',  proc:'',                   plan:18420, fab:0 },
+  { est:'wait', semi:false, ofab:'10151253', cfab:0,    oenv:'20083039', ini:'08/07/2026 15:49:00', fin:'09/07/2026 8:30:00',  lote:'26181008', mat:'70907967', rot:'19/07/2026', brk:false, nom:'POUCE QUITAESMALTE ACETONA 250ML 310513', fmt:'042', granel:0,   matfab:'29324033', pedido:'',            proc:'',                    plan:19960, fab:0 },
+  { est:'wait', semi:false, ofab:'10151764', cfab:0,    oenv:'20083206', ini:'09/07/2026 9:10:00',  fin:'10/07/2026 4:08:00',  lote:'26181008', mat:'70909534', rot:'01/07/2026', brk:true,  nom:'CROWE GEL LIMPIADOR 250ML FACIAL 26',   fmt:'042', granel:0,    matfab:'29324480', pedido:'',            proc:'',                    plan:22708, fab:0 },
+  { est:'wait', semi:false, ofab:'10151254', cfab:0,    oenv:'20083040', ini:'10/07/2026 4:48:00',  fin:'13/07/2026 19:37:00', lote:'26181008', mat:'70908107', rot:'26/07/2026', brk:false, nom:'COSMIA QUITAESMALTE SIN ACETONA 200ML',  fmt:'042', granel:920,  matfab:'29324023', pedido:'',            proc:'',                    plan:39820, fab:0 },
+  { est:'wait', semi:false, ofab:'10151256', cfab:0,    oenv:'20083042', ini:'13/07/2026 21:38:00', fin:'14/07/2026 5:52:00',  lote:'26181008', mat:'70908884', rot:'06/09/2026', brk:false, nom:'CROWE QUITAESMALTE SIN ACETONA 200ML',   fmt:'160', granel:0,    matfab:'29323459', pedido:'',            proc:'',                    plan:8439,  fab:0 },
+  { est:'wait', semi:false, ofab:'10151256', cfab:0,    oenv:'20083043', ini:'14/07/2026 6:32:00',  fin:'14/07/2026 19:34:00', lote:'26181008', mat:'70909389', rot:'12/07/2026', brk:false, nom:'BELLE QUITAESMALTE SIN ACETONA 200ML 26', fmt:'160', granel:0,   matfab:'29323459', pedido:'',            proc:'',                    plan:13377, fab:0 },
+  { est:'wait', semi:false, ofab:'10151259', cfab:0,    oenv:'20083047', ini:'14/07/2026 21:35:00', fin:'15/07/2026 16:26:00', lote:'26181008', mat:'70908108', rot:'27/07/2026', brk:false, nom:'COSMIA DESMAQUILLA OJOS WATERPROOF 150ML', fmt:'037', granel:948, matfab:'29324032', pedido:'',            proc:'',                    plan:20631, fab:0 },
+  { est:'wait', semi:false, ofab:'10154524', cfab:0,    oenv:'20084218', ini:'15/07/2026 18:27:00', fin:'16/07/2026 17:08:00', lote:'26181008', mat:'70909221', rot:'19/07/2026', brk:false, nom:'MYLABEL AGUA BIFASICA SPF50+ 200ML',    fmt:'047', granel:0,    matfab:'29324383', pedido:'',            proc:'',                    plan:20164, fab:0 },
+  { est:'wait', semi:false, ofab:'10151975', cfab:0,    oenv:'20083290', ini:'16/07/2026 19:09:00', fin:'17/07/2026 8:36:00',  lote:'26181008', mat:'70908701', rot:'06/07/2026', brk:true,  nom:'IMAQE GEL Y CHAMPU BALANCE 300ML',      fmt:'182', granel:0,    matfab:'29324177', pedido:'',            proc:'',                    plan:15649, fab:0 },
+  { est:'wait', semi:false, ofab:'10151493', cfab:0,    oenv:'20083125', ini:'17/07/2026 10:37:00', fin:'17/07/2026 16:58:00', lote:'26181008', mat:'70907026', rot:'01/07/2026', brk:true,  nom:'BELLE LOC CORP PSENSIB ATOPICA 400ML',  fmt:'111', granel:0,    matfab:'29323557', pedido:'',            proc:'',                    plan:6073,  fab:0 },
+  { est:'wait', semi:false, ofab:'10151492', cfab:0,    oenv:'20083124', ini:'17/07/2026 17:38:00', fin:'19/07/2026 23:59:00', lote:'26181008', mat:'70905824', rot:'01/07/2026', brk:true,  nom:'BELLE LOCION CORPOR REPARAD UREA 400ML', fmt:'111', granel:39,  matfab:'29323644', pedido:'',            proc:'',                    plan:6073,  fab:0 },
+  { est:'wait', semi:false, ofab:'10151495', cfab:0,    oenv:'20083127', ini:'20/07/2026 0:39:00',  fin:'20/07/2026 13:20:00', lote:'26181008', mat:'70907028', rot:'01/07/2026', brk:true,  nom:'BELLE LOCION CORP NUTRITI PSECA 400ML', fmt:'111', granel:0,    matfab:'29323566', pedido:'',            proc:'',                    plan:12147, fab:0 },
+];
+
+let seleccion = new Set();
+let filtros = {};          // por columna
+let textoBusqueda = '';
+
+/* columnas para la fila de filtros (índice → key) */
+const FILTER_COLS = [
+  {key:'est'}, {key:'semi'}, {key:'ofab'}, {key:'cfab'}, {key:'oenv'}, {key:'ini'}, {key:'fin'},
+  {key:'lote'}, {key:'mat'}, {key:'rot'}, {key:'nom'}, {key:'fmt'}, {key:'granel'},
+  {key:'matfab'}, {key:'pedido'}, {key:'proc'}, {key:'plan'}, {key:'fab'}
+];
+
+function buildFilterRow(){
+  const fr = $('#filterRow');
+  let html = '<th></th>'; // hueco del checkbox
+  FILTER_COLS.forEach(c => {
+    html += `<th><input type="text" data-key="${c.key}" placeholder="" /></th>`;
+  });
+  fr.innerHTML = html;
+  fr.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const k = e.target.dataset.key;
+      const v = e.target.value.trim().toLowerCase();
+      if (v) filtros[k] = v; else delete filtros[k];
+      render();
+    });
+  });
+}
+
+function coincide(r){
+  // filtros por columna
+  for (const k in filtros){
+    const val = String(r[k] ?? '').toLowerCase();
+    if (!val.includes(filtros[k])) return false;
+  }
+  // búsqueda global
+  if (textoBusqueda){
+    const blob = Object.values(r).join(' ').toLowerCase();
+    if (!blob.includes(textoBusqueda)) return false;
+  }
+  return true;
+}
+
+function fila(r, i){
+  const st = ESTATUS[r.est];
+  const sel = seleccion.has(i);
+  const rotCls = r.brk ? 'rotura brk' : '';
+  return `<tr class="${sel ? 'rsel' : ''}" data-i="${i}">
+    <td class="chk"><input type="checkbox" data-sel="${i}" ${sel ? 'checked' : ''}></td>
+    <td class="center" title="${st.txt}"><span class="st ${st.cls}">${st.glyph}</span></td>
+    <td class="chk"><input type="checkbox" ${r.semi ? 'checked' : ''} disabled></td>
+    <td class="mono ordfab">${r.ofab}</td>
+    <td class="num ordfab">${nf(r.cfab)}</td>
+    <td class="mono ordenv">${r.oenv}</td>
+    <td class="mono">${r.ini}</td>
+    <td class="mono">${r.fin}</td>
+    <td class="mono">${r.lote}</td>
+    <td class="mono">${r.mat}</td>
+    <td class="${rotCls}">${r.rot}</td>
+    <td class="nom">${r.nom}</td>
+    <td class="center">${r.fmt}</td>
+    <td class="num">${nf(r.granel)}</td>
+    <td class="mono">${r.matfab}</td>
+    <td class="mono">${r.pedido}</td>
+    <td>${r.proc}</td>
+    <td class="planilla">${nf0(r.plan)}</td>
+    <td class="fabricada">${nf0(r.fab)}</td>
+  </tr>`;
+}
+
+function render(){
+  const tb = $('#tbody');
+  const rows = ROWS.map((r, i) => ({ r, i })).filter(o => coincide(o.r));
+  if (!rows.length){
+    tb.innerHTML = `<tr><td colspan="19" style="padding:26px;text-align:center;color:#8494a6">Sin registros para los criterios actuales.</td></tr>`;
+  } else {
+    tb.innerHTML = rows.map(o => fila(o.r, o.i)).join('');
+  }
+  // enlazar checkboxes
+  tb.querySelectorAll('input[data-sel]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      const idx = +e.target.dataset.sel;
+      if (e.target.checked) seleccion.add(idx); else seleccion.delete(idx);
+      render();
+    });
+  });
+  const total = ROWS.length, vis = rows.length;
+  $('#stCount').textContent = `Órdenes: ${vis} de ${total}  ·  Seleccionadas: ${seleccion.size}`;
+  const all = rows.length && rows.every(o => seleccion.has(o.i));
+  $('#chkAll').checked = !!all;
+}
+
+/* ---------- Interacción ---------- */
+function toast(msg, tipo){
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1900);
+  const dot = $('#stDot');
+  dot.style.background = tipo === 'warn' ? '#e0a800' : (tipo === 'bad' ? '#d9534f' : '#27ae60');
+  $('#stMsg').textContent = msg;
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  const n = seleccion.size;
+  if (act === 'Refrescar'){ seleccion.clear(); render(); toast('Datos refrescados'); return; }
+  if (['Column Chooser','Export to'].includes(act)){ toast(act + ' (demo)'); return; }
+  if (n === 0 && !['Crear Orden de Fabricación','Crear Orden de Envasado','Alta'].includes(act)){
+    toast('Seleccione al menos una orden para «' + act + '»', 'warn'); return;
+  }
+  toast(act + (n ? `  ·  ${n} orden(es)` : '') + ' (demo)');
+});
+
+$('#search').addEventListener('input', e => { textoBusqueda = e.target.value.trim().toLowerCase(); render(); });
+
+$('#chkAll').addEventListener('change', e => {
+  const rows = ROWS.map((r,i)=>({r,i})).filter(o => coincide(o.r));
+  if (e.target.checked) rows.forEach(o => seleccion.add(o.i));
+  else rows.forEach(o => seleccion.delete(o.i));
+  render();
+});
+
+$('#lineSel').addEventListener('change', e => toast('Línea: ' + e.target.value));
+
+/* ---------- Init ---------- */
+buildFilterRow();
+render();
+toast('Control de Producción cargado');
+</script>
+</body>
+</html>

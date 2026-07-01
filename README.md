@@ -5,6 +5,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `AJUSTE_PALETS.html` — Transacción de control y ajuste de inventario de palets.
+- `GESTION_DE_ENVASADOS.html` — Gestión de envasados: pantalla de **Control de Producción**.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -117,3 +118,33 @@ Cada acción queda registrada en el **log de movimientos** (fecha/hora, usuario,
 situación anterior → nueva, unidades, documento y motivo). Incluye **Exportar** a CSV y barra de
 estado tipo SAP. Los datos son de **ejemplo**; para datos reales basta sustituir el array `PALETS`,
 el contador `LIBRES` (por código) y los maestros `MATERIALES` / `PALET_TIPOS` del `<script>`.
+
+## `GESTION_DE_ENVASADOS.html` — Gestión de envasados (Control de Producción)
+
+Nuevo visor del *main* de Perseida. Primera pantalla: **Control de Producción** (se añadirán más).
+Reproduce la rejilla de control de producción con su cinta (ribbon) de acciones al estilo de la
+herramienta de escritorio.
+
+### Cinta (ribbon) — pestaña *Menú*
+
+- **Opciones de Búsqueda:** selector de **línea** (L1…L5 / Todas), botón **Refrescar** y los
+  interruptores **Mostrar Centros Externos** y **Mostrar Planificación Futura**.
+- **Gestión Órdenes Operativas:** Crear/Liberar Orden de Fabricación, Crear/Liberar Orden de
+  Envasado, Anular, Baja, Pausa, Finalizar y Alta.
+- **Ajuste de Órdenes:** Cambiar Orden, Modificar PT, Cambiar Fecha y Dividir Fab.
+- **Control de Órdenes:** En Marcha, Notificar SAP, Activar Finalizado y Consultar Fab.
+
+Bajo la cinta hay una barra con **Edit**, **Faltantes Fabricación**, **Faltantes Envasado** y, a la
+derecha, **Column Chooser** y **Export to**; y un **buscador** global (*Enter text to search…*).
+
+### Rejilla
+
+Columnas: **Estatus** (finalizada / en marcha / pendiente), **Tiene Semi**, `Ord.Fab.Sap`,
+`Cant.Fab.SAP`, `Ord.Env.SAP`, `Inicio Previsto`, `Fin Previsto`, `Num.Lote.SAP`, `Material`,
+**Fecha Rotura** (en rojo si está vencida), `Nombre`, `Formato`, `Stock Granel`, `Mat.Fabricacion`,
+`Pedido SAP`, `Procedencia`, **Cant.Planificada** y **Cant.Fabricada**.
+
+Incluye fila de **filtros por columna**, **búsqueda** global, **selección múltiple** (las acciones de
+la cinta operan sobre las filas seleccionadas) y barra de estado con el recuento de órdenes. Los datos
+son de **ejemplo**; para datos reales basta sustituir el array `ROWS` del `<script>` (mismos nombres
+de campo).
