@@ -334,6 +334,18 @@
   }
   .repbadge.creada { background: #e7f0fd; color: #1f5fc0; }
   .repbadge.liberada { background: #e3f5ea; color: #1e7a44; }
+
+  /* ===================== Columna Planificado + modal órdenes ===================== */
+  table.nec-grid thead th.plan2 { background: linear-gradient(180deg, #d9ead8, #bcdcb9); color: #17431a; }
+  td.plan2 { text-align: right; }
+  td.plan2 .lnk2 {
+    color: #1e7a44; font-weight: 700; cursor: pointer;
+    border-bottom: 1px dotted #1e7a44; font-variant-numeric: tabular-nums;
+  }
+  td.plan2 .lnk2:hover { color: #15582f; background: #e3f5ea; }
+  .modal.wide { width: 620px; }
+  .modal .mhead.blue { background: linear-gradient(180deg, #2f80ed, #2266c9); }
+  table.dsg td.linea { font-weight: 600; color: #2c3a4b; }
 </style>
 </head>
 <body>
@@ -506,6 +518,8 @@
             <th>Opciones Puestos</th>
             <th>Estrategia</th>
             <th>Grupo Planif.</th>
+            <th>Fecha Rotura</th>
+            <th class="plan2">Planificado</th>
             <th class="bloq">Stock Bloqueado</th>
             <th class="plan">Cant. a Reprocesar</th>
           </tr>
@@ -540,6 +554,28 @@
     </div>
     <div class="mfoot">
       <button id="bloqOk">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Modal: órdenes lanzadas del material ===================== -->
+<div class="overlay" id="ordOverlay">
+  <div class="modal wide">
+    <div class="mhead blue">
+      <span>📋</span>
+      <span>Órdenes lanzadas del material — planificación</span>
+      <span class="x" id="ordClose">✕</span>
+    </div>
+    <div class="msub" id="ordSub"></div>
+    <div class="mbody">
+      <table class="dsg">
+        <thead><tr><th>Orden</th><th>Línea / Puesto</th><th>Inicio</th><th>Fin</th><th class="n">Cantidad</th></tr></thead>
+        <tbody id="ordBody"></tbody>
+        <tfoot><tr><td colspan="4">TOTAL PLANIFICADO</td><td class="n" id="ordTotal">0</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="mfoot">
+      <button id="ordOk">Cerrar</button>
     </div>
   </div>
 </div>
@@ -641,29 +677,50 @@ let seleccion = new Set();
 let filtros = {};          // por columna
 let textoBusqueda = '';
 
-/* Materiales agregados para Necesidades Reproceso: UNA línea por material
-   (consolida el stock bloqueado de todas sus órdenes y suma por motivo). */
+/* Convierte "dd/mm/yyyy[ hh:mm:ss]" a Date (para ordenar por fecha) */
+function parseFecha(s){
+  if (!s) return null;
+  const [f, h] = s.split(' ');
+  const [d, m, y] = f.split('/').map(Number);
+  const [hh = 0, mm = 0, ss = 0] = (h || '').split(':').map(Number);
+  return new Date(y, m - 1, d, hh, mm, ss);
+}
+
+/* Materiales agregados para Necesidades Reproceso: UNA línea por material.
+   Consolida el stock bloqueado (suma por motivo), las órdenes ya lanzadas del
+   material (para saber dónde se produce) y la fecha de rotura más próxima. */
 const NECMAT = (() => {
   const map = new Map();
   ROWS.forEach(r => {
-    if (r.tipo === 'reproceso' || r.bloq <= 0) return;
+    if (r.tipo === 'reproceso') return;
     let e = map.get(r.mat);
     if (!e){
       e = { mat: r.mat, matfab: r.matfab, nom: r.nom, fmt: r.fmt,
             estrategia: r.estrategia, grupoPlanif: r.grupoPlanif,
-            puesto: r.puesto, opcPuestos: PUESTOS, _mot: new Map() };
+            puesto: r.puesto, opcPuestos: PUESTOS, _mot: new Map(), ordenes: [] };
       map.set(r.mat, e);
     }
     r.bloqDet.forEach(m => e._mot.set(m.motivo, (e._mot.get(m.motivo) || 0) + m.cant));
+    e.ordenes.push({
+      orden: r.oenv || r.ofab, linea: r.puesto,
+      ini: r.ini, fin: r.fin, cant: r.plan, rot: r.rot, brk: r.brk,
+    });
   });
-  const arr = [...map.values()];
+  let arr = [...map.values()];
   arr.forEach(e => {
     e.bloqDet = [...e._mot.entries()].sort((a, b) => b[1] - a[1])
       .map(([motivo, cant]) => ({ motivo, cant, puesto: e.puesto }));
     e.bloq = e.bloqDet.reduce((s, m) => s + m.cant, 0);
     delete e._mot;
+    // órdenes lanzadas ordenadas por inicio; total planificado
+    e.ordenes.sort((a, b) => (parseFecha(a.ini) || 0) - (parseFecha(b.ini) || 0));
+    e.planificado = e.ordenes.reduce((s, o) => s + o.cant, 0);
+    // fecha de rotura más próxima (y si está vencida)
+    const conRot = e.ordenes.filter(o => o.rot).sort((a, b) => parseFecha(a.rot) - parseFecha(b.rot));
+    e.rotura = conRot.length ? conRot[0].rot : '';
+    e.brk    = conRot.length ? conRot[0].brk : false;
   });
-  return arr;
+  return arr.filter(e => e.bloq > 0);   // solo materiales con stock bloqueado
 })();
 
 /* estado de la pantalla Necesidades Reproceso */
@@ -831,7 +888,30 @@ function cerrarBloqueo(){ $('#bloqOverlay').classList.remove('show'); bloqRowAct
 $('#bloqClose').addEventListener('click', cerrarBloqueo);
 $('#bloqOk').addEventListener('click', cerrarBloqueo);
 $('#bloqOverlay').addEventListener('click', e => { if (e.target.id === 'bloqOverlay') cerrarBloqueo(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarBloqueo(); });
+
+/* ---------- Modal órdenes lanzadas del material ---------- */
+function abrirOrdenes(e){
+  $('#ordSub').innerHTML =
+    `Material <b>${e.mat}</b> · ${e.nom} &nbsp;·&nbsp; Formato <b>${e.fmt}</b> &nbsp;·&nbsp; ` +
+    `<b>${e.ordenes.length}</b> orden(es) lanzada(s)`;
+  $('#ordBody').innerHTML = e.ordenes.length
+    ? e.ordenes.map(o => `<tr>
+        <td class="mono">${o.orden || '—'}</td>
+        <td class="linea">${o.linea || '—'}</td>
+        <td class="mono">${o.ini || '—'}</td>
+        <td class="mono">${o.fin || '—'}</td>
+        <td class="n">${nf0(o.cant)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="5" style="text-align:center;color:#8494a6;padding:16px">Sin órdenes lanzadas.</td></tr>`;
+  $('#ordTotal').textContent = nf0(e.planificado);
+  $('#ordOverlay').classList.add('show');
+}
+function cerrarOrdenes(){ $('#ordOverlay').classList.remove('show'); }
+$('#ordClose').addEventListener('click', cerrarOrdenes);
+$('#ordOk').addEventListener('click', cerrarOrdenes);
+$('#ordOverlay').addEventListener('click', e => { if (e.target.id === 'ordOverlay') cerrarOrdenes(); });
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ cerrarBloqueo(); cerrarOrdenes(); } });
 
 /* ===================================================================
    ÓRDENES DE REPROCESO (acciones de la cinta en Control de Producción)
@@ -883,7 +963,7 @@ function necRender(){
   const tb = $('#necBody');
   const mats = necMateriales().filter(necCoincide);
   if (!mats.length){
-    tb.innerHTML = `<tr><td colspan="10" style="padding:26px;text-align:center;color:#8494a6">Sin materiales con stock bloqueado.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="12" style="padding:26px;text-align:center;color:#8494a6">Sin materiales con stock bloqueado.</td></tr>`;
     $('#necCount').textContent = ''; return;
   }
   let html = '';
@@ -905,6 +985,10 @@ function necRender(){
       <td><select class="puesto-sel" data-hdr="${i}" title="Puesto de trabajo (cabecera)">${puestoOptions(r.puesto)}</select></td>
       <td class="center">${r.estrategia}</td>
       <td class="center">${r.grupoPlanif}</td>
+      <td class="${r.brk ? 'rotura brk' : 'center'}">${r.rotura || '—'}</td>
+      <td class="plan2">${r.ordenes.length
+          ? `<span class="lnk2" data-ord="${i}" title="Ver órdenes lanzadas del material">${nf0(r.planificado)}</span>`
+          : `<span class="zero">0</span>`}</td>
       <td class="bloq"><span class="lnk" data-bloqn="${i}">${nf0(r.bloq)}</span></td>
       <td class="planilla">${suma ? nf0(suma) : ''}</td>
     </tr>`;
@@ -919,6 +1003,8 @@ function necRender(){
           <td></td>
           <td class="motname">${m.motivo}</td>
           <td><select class="puesto-sel" data-motpuesto="${k}" title="Puesto de trabajo (motivo)">${puestoOptions(m.puesto)}</select></td>
+          <td></td>
+          <td></td>
           <td></td>
           <td></td>
           <td class="bloq"><span class="zero">${nf0(m.cant)}</span></td>
@@ -954,6 +1040,8 @@ function necRender(){
   }));
   // desglose (mismo pop-up de control de producción)
   tb.querySelectorAll('.lnk[data-bloqn]').forEach(sp => sp.addEventListener('click', () => abrirBloqueo(NECMAT[+sp.dataset.bloqn])));
+  // desglose de órdenes lanzadas del material
+  tb.querySelectorAll('.lnk2[data-ord]').forEach(sp => sp.addEventListener('click', () => abrirOrdenes(NECMAT[+sp.dataset.ord])));
   // puesto de cabecera: propaga a todos los motivos del material
   tb.querySelectorAll('select[data-hdr]').forEach(sel => sel.addEventListener('change', e => {
     const i = +e.target.dataset.hdr, v = e.target.value;

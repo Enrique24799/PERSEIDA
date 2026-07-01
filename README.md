@@ -178,7 +178,13 @@ otra solo se completa, sumándose a la orden). Se opera en dos pasos:
 Segunda pantalla del visor (pestaña junto a *Control de Producción*). Muestra **una línea por material**
 con stock bloqueado y su **desglose por motivo de bloqueo** (expandible). Toma campos de la pantalla de
 necesidades estándar: `Código`, `Material Fab.`, `Material`, **Opciones Puestos**, `Estrategia`,
-`Grupo Planif.`, además de **Stock Bloqueado** y **Cant. a Reprocesar** (sumatorio de lo seleccionado).
+`Grupo Planif.`, **Fecha Rotura**, **Planificado**, además de **Stock Bloqueado** y **Cant. a
+Reprocesar** (sumatorio de lo seleccionado).
+
+- **Fecha Rotura:** fecha de rotura más próxima del material (en rojo si está vencida), para priorizar.
+- **Planificado:** cantidad total ya planificada del material; al pulsar la cifra se abre un **pop-up
+  con las órdenes ya lanzadas** de ese material (Orden, **Línea/Puesto**, Inicio, Fin y Cantidad),
+  para saber **dónde se produce** y decidir en qué línea lanzar el reproceso.
 
 - **Selección de motivos:** casilla por motivo, casilla de material (selecciona todos sus motivos),
   botón **Seleccionar todo** / **Quitar selección** y casilla global en la cabecera.
