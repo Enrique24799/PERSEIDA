@@ -271,15 +271,82 @@
   }
   .modal .mfoot button.primary { background: #2f80ed; color: #fff; border-color: #2f80ed; font-weight: 600; }
   .modal .mfoot button.primary:hover { background: #2b73d4; }
+
+  /* ===================== Pestañas / vistas ===================== */
+  .doctab .tab { cursor: pointer; opacity: .7; }
+  .doctab .tab.active { opacity: 1; background: linear-gradient(180deg, #61666e, #4b4f57); }
+  .doctab .tab:hover { opacity: 1; }
+  .view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .view[hidden] { display: none; }
+
+  /* ===================== Necesidades Reproceso ===================== */
+  .nec-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(180deg, var(--ribbon-grad-1), var(--ribbon-grad-2));
+    border-bottom: 1px solid var(--border); padding: 7px 12px;
+  }
+  .nec-toolbar .sep { width: 1px; height: 20px; background: #cbd6e2; }
+  .nec-toolbar .spacer { flex: 1; }
+  .nec-toolbar #necSearch {
+    width: 240px; max-width: 40vw; font-size: 12px; padding: 6px 9px;
+    border: 1px solid #b9c6d6; border-radius: 4px;
+  }
+  .nbtn {
+    font-size: 12px; padding: 6px 12px; border-radius: 4px; cursor: pointer;
+    border: 1px solid #b9c6d6; background: #fff; color: var(--ink);
+  }
+  .nbtn:hover { background: #eef4fc; border-color: #9bb2cc; }
+  .nbtn.primary { background: #c0392b; color: #fff; border-color: #a5281c; font-weight: 600; }
+  .nbtn.primary:hover { background: #a5281c; }
+  .nbtn.primary:disabled { background: #d9a29b; border-color: #d9a29b; cursor: default; }
+  .nec-hint {
+    padding: 7px 12px; font-size: 11.5px; color: #51637a;
+    background: #f7fafd; border-bottom: 1px solid var(--border); line-height: 1.5;
+  }
+  .nec-hint b { color: var(--ink); }
+
+  table.nec-grid thead th.exp, table.nec-grid tbody td.exp { width: 26px; text-align: center; }
+  table.nec-grid .expbtn { cursor: pointer; color: #5b6b7d; user-select: none; font-size: 11px; }
+  /* fila material (cabecera) */
+  table.nec-grid tbody tr.matrow td { background: #fff; font-weight: 500; }
+  table.nec-grid tbody tr.matrow:nth-child(even) td { background: #f7f9fc; }
+  table.nec-grid tbody tr.matrow:hover td { background: #eef5ff; }
+  table.nec-grid tbody tr.matrow.sel td { background: #e6f0fb; }
+  td.matdesc { background: #56b4d3 !important; color: #fff; font-weight: 600; white-space: normal; min-width: 220px; }
+  /* subfilas motivo */
+  table.nec-grid tbody tr.motrow td { background: #fbfdff; color: #3a4a5c; border-bottom: 1px solid #eef2f7; }
+  table.nec-grid tbody tr.motrow:hover td { background: #f0f6ff; }
+  table.nec-grid tbody tr.motrow.sel td { background: #eaf4fc; }
+  td.motname { padding-left: 26px; white-space: normal; }
+  td.motname::before { content: "↳ "; color: #9aa8b8; }
+  .puesto-sel {
+    font-size: 12px; padding: 3px 6px; border: 1px solid #b9c6d6; border-radius: 4px;
+    background: #fff; min-width: 150px; max-width: 220px;
+  }
+  tr.motrow .puesto-sel { min-width: 130px; }
+
+  /* ===================== Filas de reproceso en Control de Producción ===================== */
+  table.grid tbody tr.reprow td { box-shadow: inset 3px 0 0 #c0392b; }
+  table.grid tbody tr.reprow td:first-child { box-shadow: none; }
+  .repbadge {
+    display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 10px; font-weight: 700;
+    background: #fbe6e6; color: #a5281c; margin-right: 5px;
+  }
+  .repbadge.creada { background: #e7f0fd; color: #1f5fc0; }
+  .repbadge.liberada { background: #e3f5ea; color: #1e7a44; }
 </style>
 </head>
 <body>
 <div class="win">
 
-  <!-- ===================== Pestaña de documento ===================== -->
+  <!-- ===================== Pestañas de documento ===================== -->
   <div class="doctab">
-    <span class="tab"><span class="dot">◉</span> Control de Producción <span class="close">✕</span></span>
+    <span class="tab active" data-view="control"><span class="dot">◉</span> Control de Producción <span class="close">✕</span></span>
+    <span class="tab" data-view="necesidades"><span class="dot">◉</span> Necesidades Reproceso <span class="close">✕</span></span>
   </div>
+
+  <!-- ===================== VISTA: Control de Producción ===================== -->
+  <div class="view" id="viewControl">
 
   <!-- ===================== Cinta ===================== -->
   <div class="ribbon-tabrow"><span class="rtab">Menú</span></div>
@@ -312,6 +379,8 @@
         <button class="rbtn" data-act="Liberar Orden de Fabricación"><span class="ic">📂</span><span class="lb">Liberar Orden de Fabricación</span></button>
         <button class="rbtn" data-act="Crear Orden de Envasado"><span class="ic">📋</span><span class="lb">Crear Orden de Envasado</span></button>
         <button class="rbtn" data-act="Liberar Orden de Envasado"><span class="ic">📤</span><span class="lb">Liberar Orden de Envasado</span></button>
+        <button class="rbtn" data-act="Crear Orden de Reproceso"><span class="ic" style="color:#c0392b">♻</span><span class="lb">Crear Orden de Reproceso</span></button>
+        <button class="rbtn" data-act="Liberar Orden de Reproceso"><span class="ic" style="color:#c0392b">♻</span><span class="lb">Liberar Orden de Reproceso</span></button>
         <button class="rbtn sm" data-act="Anular"><span class="ic" style="color:#d9534f">⊘</span><span class="lb">Anular</span></button>
         <button class="rbtn sm" data-act="Baja"><span class="ic" style="color:#d9534f">🗑</span><span class="lb">Baja</span></button>
         <button class="rbtn sm" data-act="Pausa"><span class="ic" style="color:#5a86c4">⏸</span><span class="lb">Pausa</span></button>
@@ -398,7 +467,60 @@
     <span id="stMsg">Listo</span>
     <span class="right" id="stCount"></span>
   </div>
-</div>
+  </div><!-- /viewControl -->
+
+  <!-- ===================== VISTA: Necesidades Reproceso ===================== -->
+  <div class="view" id="viewNecesidades" hidden>
+
+    <!-- Barra de funcionalidades -->
+    <div class="nec-toolbar">
+      <button class="nbtn primary" id="necCrear">➕ Crear necesidad(es) de reproceso</button>
+      <span class="sep"></span>
+      <button class="nbtn" data-nec="selall">☑ Seleccionar todo</button>
+      <button class="nbtn" data-nec="selnone">☐ Quitar selección</button>
+      <span class="sep"></span>
+      <button class="nbtn" data-nec="expand">⊞ Expandir todo</button>
+      <button class="nbtn" data-nec="collapse">⊟ Contraer todo</button>
+      <span class="spacer"></span>
+      <input type="text" id="necSearch" placeholder="Buscar material / motivo..." />
+    </div>
+
+    <div class="nec-hint">
+      Una línea por material con desglose por <b>motivo de bloqueo</b>. Seleccione los motivos a
+      reprocesar y pulse <b>Crear necesidad(es)</b>: se generará en <em>Control de Producción</em> una
+      línea <b>sin orden de fabricación ni envasado</b>, en el <b>puesto de trabajo</b> indicado y con
+      el <b>sumatorio</b> de las cantidades seleccionadas. El puesto de cabecera propaga a los motivos;
+      el de un motivo solo afecta a esa línea.
+    </div>
+
+    <!-- Rejilla de necesidades -->
+    <div class="gridwrap">
+      <table class="grid nec-grid">
+        <thead>
+          <tr>
+            <th class="exp"></th>
+            <th class="chk"><input type="checkbox" id="necChkAll" title="Seleccionar todo" /></th>
+            <th>Código</th>
+            <th>Material Fab.</th>
+            <th>Material</th>
+            <th>Opciones Puestos</th>
+            <th>Estrategia</th>
+            <th>Grupo Planif.</th>
+            <th class="bloq">Stock Bloqueado</th>
+            <th class="plan">Cant. a Reprocesar</th>
+          </tr>
+        </thead>
+        <tbody id="necBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Barra de estado -->
+    <div class="statusbar">
+      <span class="dot" id="necDot"></span>
+      <span id="necMsg">Listo</span>
+      <span class="right" id="necCount"></span>
+    </div>
+  </div><!-- /viewNecesidades -->
 
 <!-- ===================== Modal: desglose stock bloqueado ===================== -->
 <div class="overlay" id="bloqOverlay">
@@ -417,7 +539,6 @@
       </table>
     </div>
     <div class="mfoot">
-      <button id="bloqReproc" class="primary" title="Crear orden de reproceso con el material bloqueado">Crear Orden de Reproceso</button>
       <button id="bloqOk">Cerrar</button>
     </div>
   </div>
@@ -498,15 +619,58 @@ function generarBloqueo(mat){
   return out;
 }
 
-/* Precalcular bloqueo por fila y total */
+/* ---------- Puestos de trabajo (opciones) ----------
+   Líneas internas (L1…L6) y centros externos / maquila (nombres). */
+const PUESTOS = ['L1','L2','L3','L4','L5','L6','SANCHEZ ANTUNEZ S.L','ALMUDENA MENDEZ MORALES'];
+function puestoPorDefecto(mat){
+  let s = 0; for (const c of mat) s = (s * 17 + c.charCodeAt(0)) >>> 0;
+  return 'L' + (1 + (s % 6));
+}
+
+/* Precalcular bloqueo, puesto y datos de planificación por fila */
 ROWS.forEach(r => {
-  r.bloqDet = generarBloqueo(r.mat);
-  r.bloq = r.bloqDet.reduce((s, m) => s + m.cant, 0);
+  r.estrategia  = r.estrategia  || 'MTS';
+  r.grupoPlanif = r.grupoPlanif || String(20 + (parseInt(r.mat.slice(-3), 10) % 180)).padStart(3, '0');
+  r.puesto      = puestoPorDefecto(r.mat);
+  r.opcPuestos  = PUESTOS;
+  r.bloqDet     = generarBloqueo(r.mat).map(m => ({ ...m, puesto: r.puesto }));
+  r.bloq        = r.bloqDet.reduce((s, m) => s + m.cant, 0);
 });
 
 let seleccion = new Set();
 let filtros = {};          // por columna
 let textoBusqueda = '';
+
+/* Materiales agregados para Necesidades Reproceso: UNA línea por material
+   (consolida el stock bloqueado de todas sus órdenes y suma por motivo). */
+const NECMAT = (() => {
+  const map = new Map();
+  ROWS.forEach(r => {
+    if (r.tipo === 'reproceso' || r.bloq <= 0) return;
+    let e = map.get(r.mat);
+    if (!e){
+      e = { mat: r.mat, matfab: r.matfab, nom: r.nom, fmt: r.fmt,
+            estrategia: r.estrategia, grupoPlanif: r.grupoPlanif,
+            puesto: r.puesto, opcPuestos: PUESTOS, _mot: new Map() };
+      map.set(r.mat, e);
+    }
+    r.bloqDet.forEach(m => e._mot.set(m.motivo, (e._mot.get(m.motivo) || 0) + m.cant));
+  });
+  const arr = [...map.values()];
+  arr.forEach(e => {
+    e.bloqDet = [...e._mot.entries()].sort((a, b) => b[1] - a[1])
+      .map(([motivo, cant]) => ({ motivo, cant, puesto: e.puesto }));
+    e.bloq = e.bloqDet.reduce((s, m) => s + m.cant, 0);
+    delete e._mot;
+  });
+  return arr;
+})();
+
+/* estado de la pantalla Necesidades Reproceso */
+let necExpanded = new Set();   // índices de material expandidos
+let necSel = new Set();        // motivos seleccionados, clave "i:j"
+let necBusqueda = '';
+let repSeq = 108000;           // secuencia de nº de orden de reproceso
 
 /* columnas para la fila de filtros (índice → key) */
 const FILTER_COLS = [
@@ -546,16 +710,27 @@ function coincide(r){
   return true;
 }
 
+const REP_LBL = { need:'Necesidad', creada:'Orden creada', liberada:'Orden liberada' };
+function procContent(r){
+  if (r.tipo === 'reproceso'){
+    const cls = r.repState === 'creada' ? 'creada' : (r.repState === 'liberada' ? 'liberada' : '');
+    return `<span class="repbadge ${cls}">${REP_LBL[r.repState]}</span> ${r.puesto || ''}`;
+  }
+  return r.proc;
+}
+
 function fila(r, i){
   const st = ESTATUS[r.est];
   const sel = seleccion.has(i);
   const rotCls = r.brk ? 'rotura brk' : '';
-  return `<tr class="${sel ? 'rsel' : ''}" data-i="${i}">
+  const rep = r.tipo === 'reproceso';
+  const cls = [sel ? 'rsel' : '', rep ? 'reprow' : ''].filter(Boolean).join(' ');
+  return `<tr class="${cls}" data-i="${i}">
     <td class="chk"><input type="checkbox" data-sel="${i}" ${sel ? 'checked' : ''}></td>
     <td class="center" title="${st.txt}"><span class="st ${st.cls}">${st.glyph}</span></td>
     <td class="chk"><input type="checkbox" ${r.semi ? 'checked' : ''} disabled></td>
     <td class="mono ordfab">${r.ofab}</td>
-    <td class="num ordfab">${nf(r.cfab)}</td>
+    <td class="num ordfab">${rep && !r.cfab ? '' : nf(r.cfab)}</td>
     <td class="mono ordenv">${r.oenv}</td>
     <td class="mono">${r.ini}</td>
     <td class="mono">${r.fin}</td>
@@ -570,7 +745,7 @@ function fila(r, i){
         : `<span class="zero">0</span>`}</td>
     <td class="mono">${r.matfab}</td>
     <td class="mono">${r.pedido}</td>
-    <td>${r.proc}</td>
+    <td>${procContent(r)}</td>
     <td class="planilla">${nf0(r.plan)}</td>
     <td class="fabricada">${nf0(r.fab)}</td>
   </tr>`;
@@ -594,7 +769,7 @@ function render(){
   });
   // enlazar desglose de stock bloqueado
   tb.querySelectorAll('.lnk[data-bloq]').forEach(sp => {
-    sp.addEventListener('click', () => abrirBloqueo(+sp.dataset.bloq));
+    sp.addEventListener('click', () => abrirBloqueo(ROWS[+sp.dataset.bloq]));
   });
   const total = ROWS.length, vis = rows.length;
   $('#stCount').textContent = `Órdenes: ${vis} de ${total}  ·  Seleccionadas: ${seleccion.size}`;
@@ -619,6 +794,8 @@ document.addEventListener('click', e => {
   const n = seleccion.size;
   if (act === 'Refrescar'){ seleccion.clear(); render(); toast('Datos refrescados'); return; }
   if (['Column Chooser','Export to'].includes(act)){ toast(act + ' (demo)'); return; }
+  if (act === 'Crear Orden de Reproceso'){ crearOrdenReproceso(); return; }
+  if (act === 'Liberar Orden de Reproceso'){ liberarOrdenReproceso(); return; }
   if (n === 0 && !['Crear Orden de Fabricación','Crear Orden de Envasado','Alta'].includes(act)){
     toast('Seleccione al menos una orden para «' + act + '»', 'warn'); return;
   }
@@ -639,11 +816,10 @@ $('#lineSel').addEventListener('change', e => toast('Línea: ' + e.target.value)
 /* ---------- Modal desglose stock bloqueado ---------- */
 let bloqRowActual = null;
 
-function abrirBloqueo(i){
-  const r = ROWS[i];
+function abrirBloqueo(r){
   bloqRowActual = r;
   $('#bloqSub').innerHTML =
-    `Material <b>${r.mat}</b> · ${r.nom} &nbsp;·&nbsp; Orden Fab. <b>${r.ofab}</b>`;
+    `Material <b>${r.mat}</b> · ${r.nom}` + (r.ofab ? ` &nbsp;·&nbsp; Orden Fab. <b>${r.ofab}</b>` : '');
   $('#bloqBody').innerHTML = r.bloqDet
     .map(m => `<tr><td>${m.motivo}</td><td class="n">${nf0(m.cant)}</td></tr>`)
     .join('');
@@ -656,15 +832,232 @@ $('#bloqClose').addEventListener('click', cerrarBloqueo);
 $('#bloqOk').addEventListener('click', cerrarBloqueo);
 $('#bloqOverlay').addEventListener('click', e => { if (e.target.id === 'bloqOverlay') cerrarBloqueo(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarBloqueo(); });
-$('#bloqReproc').addEventListener('click', () => {
-  const r = bloqRowActual; cerrarBloqueo();
-  if (r) toast(`Orden de Reproceso para ${r.mat} · ${nf0(r.bloq)} ud. bloqueadas (demo)`);
+
+/* ===================================================================
+   ÓRDENES DE REPROCESO (acciones de la cinta en Control de Producción)
+   =================================================================== */
+function crearOrdenReproceso(){
+  const sel = [...seleccion].map(i => ROWS[i]).filter(Boolean);
+  const objetivo = sel.filter(r => r.tipo === 'reproceso' && r.repState === 'need');
+  if (!objetivo.length){
+    toast('Seleccione líneas de reproceso pendientes (sin orden) para crear la orden', 'warn');
+    return;
+  }
+  objetivo.forEach(r => { r.ofab = String(++repSeq); r.repState = 'creada'; });
+  render();
+  toast(`Orden(es) de reproceso creada(s): ${objetivo.length}`);
+}
+function liberarOrdenReproceso(){
+  const sel = [...seleccion].map(i => ROWS[i]).filter(Boolean);
+  const objetivo = sel.filter(r => r.tipo === 'reproceso' && r.repState === 'creada');
+  if (!objetivo.length){
+    toast('Seleccione órdenes de reproceso creadas para liberarlas', 'warn');
+    return;
+  }
+  objetivo.forEach(r => { r.repState = 'liberada'; r.est = 'run'; });
+  render();
+  toast(`Orden(es) de reproceso liberada(s): ${objetivo.length}`);
+}
+
+/* ===================================================================
+   PANTALLA: NECESIDADES REPROCESO
+   =================================================================== */
+function necMateriales(){
+  // una línea por material con stock bloqueado (dataset agregado NECMAT)
+  return NECMAT.map((r, i) => ({ r, i }));
+}
+function necCoincide(o){
+  if (!necBusqueda) return true;
+  const blob = (o.r.mat + ' ' + o.r.nom + ' ' + o.r.matfab + ' ' +
+    o.r.bloqDet.map(m => m.motivo).join(' ')).toLowerCase();
+  return blob.includes(necBusqueda);
+}
+function puestoOptions(sel){
+  return PUESTOS.map(p => `<option ${p === sel ? 'selected' : ''}>${p}</option>`).join('');
+}
+function sumSelMat(i, r){
+  return r.bloqDet.reduce((s, m, j) => s + (necSel.has(i + ':' + j) ? m.cant : 0), 0);
+}
+
+function necRender(){
+  const tb = $('#necBody');
+  const mats = necMateriales().filter(necCoincide);
+  if (!mats.length){
+    tb.innerHTML = `<tr><td colspan="10" style="padding:26px;text-align:center;color:#8494a6">Sin materiales con stock bloqueado.</td></tr>`;
+    $('#necCount').textContent = ''; return;
+  }
+  let html = '';
+  mats.forEach(({ r, i }) => {
+    const exp = necExpanded.has(i);
+    const nMot = r.bloqDet.length;
+    const nSel = r.bloqDet.filter((m, j) => necSel.has(i + ':' + j)).length;
+    const allSel = nSel === nMot && nMot > 0;
+    const someSel = nSel > 0 && !allSel;
+    const selCls = nSel > 0 ? 'sel' : '';
+    const suma = sumSelMat(i, r);
+    html += `<tr class="matrow ${selCls}" data-mat="${i}">
+      <td class="exp"><span class="expbtn" data-exp="${i}">${exp ? '▼' : '▶'}</span></td>
+      <td class="chk"><input type="checkbox" data-matchk="${i}" ${allSel ? 'checked' : ''}
+           ${someSel ? 'data-indet="1"' : ''}></td>
+      <td class="mono">${r.mat}</td>
+      <td class="mono">${r.matfab}</td>
+      <td class="matdesc">${r.nom}</td>
+      <td><select class="puesto-sel" data-hdr="${i}" title="Puesto de trabajo (cabecera)">${puestoOptions(r.puesto)}</select></td>
+      <td class="center">${r.estrategia}</td>
+      <td class="center">${r.grupoPlanif}</td>
+      <td class="bloq"><span class="lnk" data-bloqn="${i}">${nf0(r.bloq)}</span></td>
+      <td class="planilla">${suma ? nf0(suma) : ''}</td>
+    </tr>`;
+    if (exp){
+      r.bloqDet.forEach((m, j) => {
+        const k = i + ':' + j;
+        const s = necSel.has(k);
+        html += `<tr class="motrow ${s ? 'sel' : ''}" data-mot="${k}">
+          <td class="exp"></td>
+          <td class="chk"><input type="checkbox" data-motchk="${k}" ${s ? 'checked' : ''}></td>
+          <td></td>
+          <td></td>
+          <td class="motname">${m.motivo}</td>
+          <td><select class="puesto-sel" data-motpuesto="${k}" title="Puesto de trabajo (motivo)">${puestoOptions(m.puesto)}</select></td>
+          <td></td>
+          <td></td>
+          <td class="bloq"><span class="zero">${nf0(m.cant)}</span></td>
+          <td class="planilla">${s ? nf0(m.cant) : ''}</td>
+        </tr>`;
+      });
+    }
+  });
+  tb.innerHTML = html;
+
+  // checkboxes con estado indeterminado
+  tb.querySelectorAll('input[data-indet]').forEach(cb => cb.indeterminate = true);
+
+  // material: seleccionar/deseleccionar todos sus motivos
+  tb.querySelectorAll('input[data-matchk]').forEach(cb => cb.addEventListener('change', e => {
+    const i = +e.target.dataset.matchk;
+    NECMAT[i].bloqDet.forEach((m, j) => {
+      if (e.target.checked) necSel.add(i + ':' + j); else necSel.delete(i + ':' + j);
+    });
+    necRender();
+  }));
+  // motivo: seleccionar/deseleccionar
+  tb.querySelectorAll('input[data-motchk]').forEach(cb => cb.addEventListener('change', e => {
+    const k = e.target.dataset.motchk;
+    if (e.target.checked) necSel.add(k); else necSel.delete(k);
+    necRender();
+  }));
+  // expandir/contraer
+  tb.querySelectorAll('.expbtn[data-exp]').forEach(sp => sp.addEventListener('click', () => {
+    const i = +sp.dataset.exp;
+    if (necExpanded.has(i)) necExpanded.delete(i); else necExpanded.add(i);
+    necRender();
+  }));
+  // desglose (mismo pop-up de control de producción)
+  tb.querySelectorAll('.lnk[data-bloqn]').forEach(sp => sp.addEventListener('click', () => abrirBloqueo(NECMAT[+sp.dataset.bloqn])));
+  // puesto de cabecera: propaga a todos los motivos del material
+  tb.querySelectorAll('select[data-hdr]').forEach(sel => sel.addEventListener('change', e => {
+    const i = +e.target.dataset.hdr, v = e.target.value;
+    NECMAT[i].puesto = v;
+    NECMAT[i].bloqDet.forEach(m => m.puesto = v);
+    necRender();
+  }));
+  // puesto de motivo: solo afecta a esa línea
+  tb.querySelectorAll('select[data-motpuesto]').forEach(sel => sel.addEventListener('change', e => {
+    const [i, j] = e.target.dataset.motpuesto.split(':').map(Number);
+    NECMAT[i].bloqDet[j].puesto = e.target.value;
+    necRender();
+  }));
+
+  const totalMat = mats.length;
+  const totalSel = necSel.size;
+  const sumaTotal = mats.reduce((s, { r, i }) => s + sumSelMat(i, r), 0);
+  $('#necCount').textContent =
+    `Materiales: ${totalMat}  ·  Motivos seleccionados: ${totalSel}  ·  Cant. a reprocesar: ${nf0(sumaTotal)}`;
+  $('#necCrear').disabled = totalSel === 0;
+  const visMats = mats.every(({ r, i }) => r.bloqDet.every((m, j) => necSel.has(i + ':' + j)));
+  $('#necChkAll').checked = totalSel > 0 && visMats;
+}
+
+/* Crear las líneas de necesidad en Control de Producción.
+   Se agrupan los motivos seleccionados por (material, puesto) → una línea por grupo. */
+function necCrearNecesidades(){
+  const grupos = new Map();   // clave "mat|puesto" → {r, puesto, cant, motivos}
+  necMateriales().forEach(({ r, i }) => {
+    r.bloqDet.forEach((m, j) => {
+      if (!necSel.has(i + ':' + j)) return;
+      const key = i + '|' + m.puesto;
+      if (!grupos.has(key)) grupos.set(key, { r, puesto: m.puesto, cant: 0, motivos: [] });
+      const g = grupos.get(key);
+      g.cant += m.cant;
+      g.motivos.push({ motivo: m.motivo, cant: m.cant });
+    });
+  });
+  if (!grupos.size){ toast('Seleccione al menos un motivo de bloqueo', 'warn'); return; }
+
+  const nuevas = [];
+  grupos.forEach(g => {
+    const r = g.r;
+    nuevas.push({
+      tipo: 'reproceso', repState: 'need',
+      est: 'wait', semi: false,
+      ofab: '', cfab: 0, oenv: '',
+      ini: '', fin: '', lote: '',
+      mat: r.mat, rot: '', brk: false,
+      nom: r.nom, fmt: r.fmt, granel: 0,
+      matfab: r.matfab, pedido: '',
+      puesto: g.puesto, proc: '',
+      plan: g.cant, fab: 0,
+      bloq: 0, bloqDet: [],
+      motivos: g.motivos,
+    });
+  });
+  // insertar arriba en Control de Producción
+  ROWS.unshift(...nuevas);
+  necSel.clear();
+
+  render();
+  necRender();
+  cambiarVista('control');
+  toast(`Necesidad(es) de reproceso creada(s): ${nuevas.length} línea(s) en Control de Producción`);
+}
+
+/* ---------- Barra de funcionalidades de Necesidades ---------- */
+$('#necCrear').addEventListener('click', necCrearNecesidades);
+$('#necSearch').addEventListener('input', e => { necBusqueda = e.target.value.trim().toLowerCase(); necRender(); });
+$('#necChkAll').addEventListener('change', e => {
+  necMateriales().filter(necCoincide).forEach(({ r, i }) => {
+    r.bloqDet.forEach((m, j) => {
+      if (e.target.checked) necSel.add(i + ':' + j); else necSel.delete(i + ':' + j);
+    });
+  });
+  necRender();
 });
+document.querySelectorAll('[data-nec]').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.nec;
+  const mats = necMateriales().filter(necCoincide);
+  if (a === 'selall')  mats.forEach(({ r, i }) => r.bloqDet.forEach((m, j) => necSel.add(i + ':' + j)));
+  if (a === 'selnone') necSel.clear();
+  if (a === 'expand')  mats.forEach(({ i }) => necExpanded.add(i));
+  if (a === 'collapse') necExpanded.clear();
+  necRender();
+}));
+
+/* ---------- Cambio de pestaña / vista ---------- */
+function cambiarVista(v){
+  document.querySelectorAll('.doctab .tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  $('#viewControl').hidden = v !== 'control';
+  $('#viewNecesidades').hidden = v !== 'necesidades';
+  if (v === 'necesidades') necRender();
+}
+document.querySelectorAll('.doctab .tab').forEach(t =>
+  t.addEventListener('click', () => cambiarVista(t.dataset.view)));
 
 /* ---------- Init ---------- */
 buildFilterRow();
 render();
-toast('Control de Producción cargado');
+necExpanded = new Set(necMateriales().map(o => o.i)); // arranca expandido
+necRender();
+toast('Gestión de Envasados cargada');
 </script>
 </body>
 </html>

@@ -130,7 +130,7 @@ herramienta de escritorio.
 - **Opciones de Búsqueda:** selector de **línea** (L1…L5 / Todas), botón **Refrescar** y los
   interruptores **Mostrar Centros Externos** y **Mostrar Planificación Futura**.
 - **Gestión Órdenes Operativas:** Crear/Liberar Orden de Fabricación, Crear/Liberar Orden de
-  Envasado, Anular, Baja, Pausa, Finalizar y Alta.
+  Envasado, **Crear/Liberar Orden de Reproceso**, Anular, Baja, Pausa, Finalizar y Alta.
 - **Ajuste de Órdenes:** Cambiar Orden, Modificar PT, Cambiar Fecha y Dividir Fab.
 - **Control de Órdenes:** En Marcha, Notificar SAP, Activar Finalizado y Consultar Fab.
 
@@ -150,9 +150,8 @@ En envasado, si por rotura de stock de un componente (etiquetas, estuches, cajas
 notifica pero queda **bloqueado**, esas unidades se acumulan por material. La columna **Stock
 Bloqueado** muestra el total bloqueado por material (`7090*`). Al pulsar sobre la cifra se abre un
 **pop-up con el desglose por motivo** (CUARENTENA MICRO, SIN ETIQUETA, NO ALMACEN, KO CALIDAD,
-REPROCESO, PDTE REVISIÓN, etc.) con su total. Desde el pop-up se ofrece el botón **Crear Orden de
-Reproceso** — el nuevo tipo de orden previsto para **completar** los materiales con faltante (una
-parte se rehace y otra solo se completa, sumándose a la orden). El maestro de motivos
+REPROCESO, PDTE REVISIÓN, etc.) con su total. El pop-up es **solo de consulta**: las necesidades de
+reproceso se generan desde la pantalla *Necesidades Reproceso* (ver abajo). El maestro de motivos
 (`MOTIVOS_BLOQUEO`) y el reparto por material son de **ejemplo**; para datos reales basta sustituir
 esa lista y el campo `bloqDet` de cada fila.
 
@@ -160,3 +159,36 @@ Incluye fila de **filtros por columna**, **búsqueda** global, **selección múl
 la cinta operan sobre las filas seleccionadas) y barra de estado con el recuento de órdenes. Los datos
 son de **ejemplo**; para datos reales basta sustituir el array `ROWS` del `<script>` (mismos nombres
 de campo).
+
+### Órdenes de reproceso
+
+El nuevo tipo de orden previsto para **completar** los materiales con faltante (una parte se rehace y
+otra solo se completa, sumándose a la orden). Se opera en dos pasos:
+
+1. En la pestaña **Necesidades Reproceso** se seleccionan los motivos a reprocesar y se genera en
+   *Control de Producción* una **línea sin orden de fabricación ni envasado** (estado *Necesidad*).
+2. En la cinta de *Control de Producción*, el grupo *Gestión Órdenes Operativas* incorpora
+   **Crear Orden de Reproceso** (asigna nº de orden a las líneas *Necesidad* seleccionadas → estado
+   *Orden creada*) y **Liberar Orden de Reproceso** (libera las órdenes creadas → estado
+   *Orden liberada*). Las líneas de reproceso se distinguen con un borde rojo y una etiqueta de
+   estado en *Procedencia*.
+
+## Pestaña `Necesidades Reproceso`
+
+Segunda pantalla del visor (pestaña junto a *Control de Producción*). Muestra **una línea por material**
+con stock bloqueado y su **desglose por motivo de bloqueo** (expandible). Toma campos de la pantalla de
+necesidades estándar: `Código`, `Material Fab.`, `Material`, **Opciones Puestos**, `Estrategia`,
+`Grupo Planif.`, además de **Stock Bloqueado** y **Cant. a Reprocesar** (sumatorio de lo seleccionado).
+
+- **Selección de motivos:** casilla por motivo, casilla de material (selecciona todos sus motivos),
+  botón **Seleccionar todo** / **Quitar selección** y casilla global en la cabecera.
+- **Puesto de trabajo (Opciones Puestos):** editable a **nivel de cabecera** (material) y a **nivel de
+  motivo**. Cambiar el de cabecera propaga a todos los motivos del material; cambiar el de un motivo
+  solo afecta a esa línea.
+- **Crear necesidad(es) de reproceso:** agrupa los motivos seleccionados por **material y puesto** y
+  crea en *Control de Producción* una línea por grupo, **sin órdenes**, en el puesto indicado y con el
+  **sumatorio** de las cantidades. Se cambia automáticamente a la pestaña de control para verlas.
+- Utilidades: **Expandir / Contraer todo**, **buscador** (material o motivo) y barra de estado con el
+  recuento de motivos seleccionados y la cantidad total a reprocesar.
+
+Los puestos (`PUESTOS`), la estrategia y el grupo de planificación son de **ejemplo**.
