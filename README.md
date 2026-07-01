@@ -181,10 +181,12 @@ necesidades estándar: `Código`, `Material Fab.`, `Material`, **Opciones Puesto
 `Grupo Planif.`, **Fecha Rotura**, **Planificado**, además de **Stock Bloqueado** y **Cant. a
 Reprocesar** (sumatorio de lo seleccionado).
 
-- **Fecha Rotura:** fecha de rotura más próxima del material (en rojo si está vencida), para priorizar.
-- **Planificado:** cantidad total ya planificada del material; al pulsar la cifra se abre un **pop-up
-  con las órdenes ya lanzadas** de ese material (Orden, **Línea/Puesto**, Inicio, Fin y Cantidad),
-  para saber **dónde se produce** y decidir en qué línea lanzar el reproceso.
+- **Fecha Rotura:** fecha de rotura **del material** (dato de SAP: cuándo nos quedaríamos sin material
+  según las necesidades); en rojo si está vencida. No se deriva del inicio de las órdenes.
+- **Planificado:** cantidad planificada del material contando **solo las órdenes en marcha o
+  planificadas** (se excluyen las finalizadas); al pulsar la cifra se abre un **pop-up con esas
+  órdenes** (Orden, **Estado**, **Línea/Puesto**, Inicio, Fin y Cantidad), para saber **dónde se
+  produce** y decidir en qué línea lanzar el reproceso.
 
 - **Selección de motivos:** casilla por motivo, casilla de material (selecciona todos sus motivos),
   botón **Seleccionar todo** / **Quitar selección** y casilla global en la cabecera.

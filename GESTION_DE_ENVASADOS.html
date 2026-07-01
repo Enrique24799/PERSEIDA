@@ -343,9 +343,12 @@
     border-bottom: 1px dotted #1e7a44; font-variant-numeric: tabular-nums;
   }
   td.plan2 .lnk2:hover { color: #15582f; background: #e3f5ea; }
-  .modal.wide { width: 620px; }
+  .modal.wide { width: 660px; }
   .modal .mhead.blue { background: linear-gradient(180deg, #2f80ed, #2266c9); }
   table.dsg td.linea { font-weight: 600; color: #2c3a4b; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 10.5px; font-weight: 700; }
+  .pill.p-b { background: #e7f0fd; color: #1f5fc0; }   /* en marcha */
+  .pill.p-n { background: #eceff3; color: #5b6b7d; }   /* planificada */
 </style>
 </head>
 <body>
@@ -563,15 +566,15 @@
   <div class="modal wide">
     <div class="mhead blue">
       <span>📋</span>
-      <span>Órdenes lanzadas del material — planificación</span>
+      <span>Órdenes en marcha / planificadas del material</span>
       <span class="x" id="ordClose">✕</span>
     </div>
     <div class="msub" id="ordSub"></div>
     <div class="mbody">
       <table class="dsg">
-        <thead><tr><th>Orden</th><th>Línea / Puesto</th><th>Inicio</th><th>Fin</th><th class="n">Cantidad</th></tr></thead>
+        <thead><tr><th>Orden</th><th>Estado</th><th>Línea / Puesto</th><th>Inicio</th><th>Fin</th><th class="n">Cantidad</th></tr></thead>
         <tbody id="ordBody"></tbody>
-        <tfoot><tr><td colspan="4">TOTAL PLANIFICADO</td><td class="n" id="ordTotal">0</td></tr></tfoot>
+        <tfoot><tr><td colspan="5">TOTAL PLANIFICADO</td><td class="n" id="ordTotal">0</td></tr></tfoot>
       </table>
     </div>
     <div class="mfoot">
@@ -687,8 +690,10 @@ function parseFecha(s){
 }
 
 /* Materiales agregados para Necesidades Reproceso: UNA línea por material.
-   Consolida el stock bloqueado (suma por motivo), las órdenes ya lanzadas del
-   material (para saber dónde se produce) y la fecha de rotura más próxima. */
+   Consolida el stock bloqueado (suma por motivo) y las órdenes del material.
+   - Planificado: solo órdenes EN MARCHA o PLANIFICADAS (excluye finalizadas).
+   - Fecha Rotura: fecha de rotura del material (dato de SAP: cuándo nos
+     quedaríamos sin material según las necesidades), no el inicio de órdenes. */
 const NECMAT = (() => {
   const map = new Map();
   ROWS.forEach(r => {
@@ -697,13 +702,14 @@ const NECMAT = (() => {
     if (!e){
       e = { mat: r.mat, matfab: r.matfab, nom: r.nom, fmt: r.fmt,
             estrategia: r.estrategia, grupoPlanif: r.grupoPlanif,
-            puesto: r.puesto, opcPuestos: PUESTOS, _mot: new Map(), ordenes: [] };
+            puesto: r.puesto, opcPuestos: PUESTOS, _mot: new Map(), ordenes: [],
+            rotura: r.rot, brk: r.brk };   // rotura del material (SAP)
       map.set(r.mat, e);
     }
     r.bloqDet.forEach(m => e._mot.set(m.motivo, (e._mot.get(m.motivo) || 0) + m.cant));
     e.ordenes.push({
-      orden: r.oenv || r.ofab, linea: r.puesto,
-      ini: r.ini, fin: r.fin, cant: r.plan, rot: r.rot, brk: r.brk,
+      orden: r.oenv || r.ofab, linea: r.puesto, est: r.est,
+      ini: r.ini, fin: r.fin, cant: r.plan,
     });
   });
   let arr = [...map.values()];
@@ -712,13 +718,10 @@ const NECMAT = (() => {
       .map(([motivo, cant]) => ({ motivo, cant, puesto: e.puesto }));
     e.bloq = e.bloqDet.reduce((s, m) => s + m.cant, 0);
     delete e._mot;
-    // órdenes lanzadas ordenadas por inicio; total planificado
-    e.ordenes.sort((a, b) => (parseFecha(a.ini) || 0) - (parseFecha(b.ini) || 0));
+    // solo órdenes en marcha ('run') o planificadas ('wait'); fuera finalizadas ('ok')
+    e.ordenes = e.ordenes.filter(o => o.est !== 'ok')
+      .sort((a, b) => (parseFecha(a.ini) || 0) - (parseFecha(b.ini) || 0));
     e.planificado = e.ordenes.reduce((s, o) => s + o.cant, 0);
-    // fecha de rotura más próxima (y si está vencida)
-    const conRot = e.ordenes.filter(o => o.rot).sort((a, b) => parseFecha(a.rot) - parseFecha(b.rot));
-    e.rotura = conRot.length ? conRot[0].rot : '';
-    e.brk    = conRot.length ? conRot[0].brk : false;
   });
   return arr.filter(e => e.bloq > 0);   // solo materiales con stock bloqueado
 })();
@@ -890,19 +893,24 @@ $('#bloqOk').addEventListener('click', cerrarBloqueo);
 $('#bloqOverlay').addEventListener('click', e => { if (e.target.id === 'bloqOverlay') cerrarBloqueo(); });
 
 /* ---------- Modal órdenes lanzadas del material ---------- */
+const ORD_EST = { run: { txt: 'En marcha', cls: 'p-b' }, wait: { txt: 'Planificada', cls: 'p-n' } };
 function abrirOrdenes(e){
   $('#ordSub').innerHTML =
     `Material <b>${e.mat}</b> · ${e.nom} &nbsp;·&nbsp; Formato <b>${e.fmt}</b> &nbsp;·&nbsp; ` +
-    `<b>${e.ordenes.length}</b> orden(es) lanzada(s)`;
+    `<b>${e.ordenes.length}</b> orden(es) en marcha / planificada(s)`;
   $('#ordBody').innerHTML = e.ordenes.length
-    ? e.ordenes.map(o => `<tr>
-        <td class="mono">${o.orden || '—'}</td>
-        <td class="linea">${o.linea || '—'}</td>
-        <td class="mono">${o.ini || '—'}</td>
-        <td class="mono">${o.fin || '—'}</td>
-        <td class="n">${nf0(o.cant)}</td>
-      </tr>`).join('')
-    : `<tr><td colspan="5" style="text-align:center;color:#8494a6;padding:16px">Sin órdenes lanzadas.</td></tr>`;
+    ? e.ordenes.map(o => {
+        const s = ORD_EST[o.est] || { txt: o.est, cls: 'p-n' };
+        return `<tr>
+          <td class="mono">${o.orden || '—'}</td>
+          <td><span class="pill ${s.cls}">${s.txt}</span></td>
+          <td class="linea">${o.linea || '—'}</td>
+          <td class="mono">${o.ini || '—'}</td>
+          <td class="mono">${o.fin || '—'}</td>
+          <td class="n">${nf0(o.cant)}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:#8494a6;padding:16px">Sin órdenes en marcha ni planificadas.</td></tr>`;
   $('#ordTotal').textContent = nf0(e.planificado);
   $('#ordOverlay').classList.add('show');
 }
