@@ -141,8 +141,20 @@ derecha, **Column Chooser** y **Export to**; y un **buscador** global (*Enter te
 
 Columnas: **Estatus** (finalizada / en marcha / pendiente), **Tiene Semi**, `Ord.Fab.Sap`,
 `Cant.Fab.SAP`, `Ord.Env.SAP`, `Inicio Previsto`, `Fin Previsto`, `Num.Lote.SAP`, `Material`,
-**Fecha Rotura** (en rojo si está vencida), `Nombre`, `Formato`, `Stock Granel`, `Mat.Fabricacion`,
-`Pedido SAP`, `Procedencia`, **Cant.Planificada** y **Cant.Fabricada**.
+**Fecha Rotura** (en rojo si está vencida), `Nombre`, `Formato`, `Stock Granel`, **Stock Bloqueado**,
+`Mat.Fabricacion`, `Pedido SAP`, `Procedencia`, **Cant.Planificada** y **Cant.Fabricada**.
+
+### Stock bloqueado (falta de componentes)
+
+En envasado, si por rotura de stock de un componente (etiquetas, estuches, cajas…) el material se
+notifica pero queda **bloqueado**, esas unidades se acumulan por material. La columna **Stock
+Bloqueado** muestra el total bloqueado por material (`7090*`). Al pulsar sobre la cifra se abre un
+**pop-up con el desglose por motivo** (CUARENTENA MICRO, SIN ETIQUETA, NO ALMACEN, KO CALIDAD,
+REPROCESO, PDTE REVISIÓN, etc.) con su total. Desde el pop-up se ofrece el botón **Crear Orden de
+Reproceso** — el nuevo tipo de orden previsto para **completar** los materiales con faltante (una
+parte se rehace y otra solo se completa, sumándose a la orden). El maestro de motivos
+(`MOTIVOS_BLOQUEO`) y el reparto por material son de **ejemplo**; para datos reales basta sustituir
+esa lista y el campo `bloqDet` de cada fila.
 
 Incluye fila de **filtros por columna**, **búsqueda** global, **selección múltiple** (las acciones de
 la cinta operan sobre las filas seleccionadas) y barra de estado con el recuento de órdenes. Los datos

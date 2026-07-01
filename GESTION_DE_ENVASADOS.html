@@ -192,6 +192,14 @@
   td.rotura.brk { background: var(--bad) !important; color: #fff; font-weight: 600; text-align: center; }
   td.planilla { background: var(--plan-cell); text-align: right; font-weight: 600; color: #0d3a4f; }
   td.fabricada { background: var(--fab-cell); color: #fff; text-align: right; font-weight: 600; }
+  table.grid thead th.bloq { background: linear-gradient(180deg, #fbe6e6, #f4c9c9); color: #6b1414; }
+  td.bloq { text-align: right; }
+  td.bloq .lnk {
+    color: #c0392b; font-weight: 700; cursor: pointer;
+    border-bottom: 1px dotted #c0392b; font-variant-numeric: tabular-nums;
+  }
+  td.bloq .lnk:hover { color: #922; background: #fbe6e6; }
+  td.bloq .zero { color: #a9b3bf; }
   tbody tr:hover td.planilla { background: #b0dcee; }
   tbody tr:hover td.fabricada { background: #356fb0; }
   td.ordfab { background: #fbe9d0; }
@@ -219,6 +227,50 @@
     transition: opacity .18s, transform .18s; z-index: 100;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===================== Modal desglose stock bloqueado ===================== */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(20,32,48,.45);
+    display: none; align-items: center; justify-content: center; z-index: 120;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: #fff; width: 460px; max-width: 94vw; border-radius: 8px;
+    box-shadow: 0 14px 44px rgba(0,0,0,.34); overflow: hidden; display: flex; flex-direction: column;
+  }
+  .modal .mhead {
+    background: linear-gradient(180deg, #c0392b, #a5281c); color: #fff;
+    padding: 10px 14px; font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal .mhead .x { margin-left: auto; cursor: pointer; opacity: .85; font-weight: 400; }
+  .modal .msub {
+    padding: 8px 14px; font-size: 12px; color: #51637a;
+    background: #f7fafd; border-bottom: 1px solid var(--border);
+  }
+  .modal .msub b { color: var(--ink); }
+  .modal .mbody { max-height: 52vh; overflow: auto; }
+  table.dsg { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.dsg th {
+    position: sticky; top: 0; background: #eef3f9; color: #41546a; text-align: left;
+    padding: 7px 12px; border-bottom: 1px solid #c4d0de; font-weight: 600;
+  }
+  table.dsg th.n, table.dsg td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.dsg td { padding: 6px 12px; border-bottom: 1px solid var(--grid); }
+  table.dsg tbody tr:hover td { background: #fbf2f2; }
+  table.dsg tfoot td {
+    padding: 8px 12px; border-top: 2px solid #c4d0de; font-weight: 700; color: #6b1414; background: #fbe6e6;
+  }
+  .modal .mfoot {
+    padding: 10px 14px; border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 8px; background: #f7fafd;
+  }
+  .modal .mfoot button {
+    font-size: 12px; padding: 7px 16px; border-radius: 5px; cursor: pointer;
+    border: 1px solid #b9c6d6; background: #fff; color: var(--ink);
+  }
+  .modal .mfoot button.primary { background: #2f80ed; color: #fff; border-color: #2f80ed; font-weight: 600; }
+  .modal .mfoot button.primary:hover { background: #2b73d4; }
 </style>
 </head>
 <body>
@@ -327,6 +379,7 @@
           <th>Nombre</th>
           <th>Formato</th>
           <th>Stock Granel</th>
+          <th class="bloq">Stock Bloqueado</th>
           <th>Mat.Fabricacion</th>
           <th>Pedido SAP</th>
           <th>Procedencia</th>
@@ -344,6 +397,29 @@
     <span class="dot" id="stDot"></span>
     <span id="stMsg">Listo</span>
     <span class="right" id="stCount"></span>
+  </div>
+</div>
+
+<!-- ===================== Modal: desglose stock bloqueado ===================== -->
+<div class="overlay" id="bloqOverlay">
+  <div class="modal">
+    <div class="mhead">
+      <span>⛔</span>
+      <span>Stock bloqueado — desglose por motivo</span>
+      <span class="x" id="bloqClose">✕</span>
+    </div>
+    <div class="msub" id="bloqSub"></div>
+    <div class="mbody">
+      <table class="dsg">
+        <thead><tr><th>Motivo</th><th class="n">Cantidad</th></tr></thead>
+        <tbody id="bloqBody"></tbody>
+        <tfoot><tr><td>TOTAL BLOQUEADO</td><td class="n" id="bloqTotal">0</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="mfoot">
+      <button id="bloqReproc" class="primary" title="Crear orden de reproceso con el material bloqueado">Crear Orden de Reproceso</button>
+      <button id="bloqOk">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -386,6 +462,48 @@ const ROWS = [
   { est:'wait', semi:false, ofab:'10151495', cfab:0,    oenv:'20083127', ini:'20/07/2026 0:39:00',  fin:'20/07/2026 13:20:00', lote:'26181008', mat:'70907028', rot:'01/07/2026', brk:true,  nom:'BELLE LOCION CORP NUTRITI PSECA 400ML', fmt:'111', granel:0,    matfab:'29323566', pedido:'',            proc:'',                    plan:12147, fab:0 },
 ];
 
+/* ---------- Motivos de bloqueo (maestro de ejemplo) ----------
+   Cantidad = stock bloqueado por ese motivo (falta de componentes, etc.).
+   Para datos reales basta sustituir esta lista y la asignación por material. */
+const MOTIVOS_BLOQUEO = [
+  ['CAJA BLANCA',2],['CAJA MAL ESTADO',1],['CALIDAD',12],['CAMBIO CAJAS',5],
+  ['CAMBIO DE MARCA',2],['CAMBIO ETIQUETA',9],['CAMBIO ETIQUETA CAJA',1],['CUARENTENA',7],
+  ['CUARENTENA CALIDAD',11],['CUARENTENA CLORHEXIDINA',13],['CUARENTENA GRANEL',1],
+  ['CUARENTENA MICRO',77],['DETERIORO',3],['ENCAJADO',2],['ESTUCHAR',6],['EXCESO GRANEL',1],
+  ['INCIDENCIA PROVEEDOR',3],['KO CALIDAD',38],['KO MICRO',37],['KO TEXTURA',1],['KO TURBIDEZ',14],
+  ['NO ALMACEN',100],['PALET GOLPEADO',1],['PALET MOJADO',4],['PDTE REPROCESO PESOS BAJO',13],
+  ['PDTE REVISIÓN',28],['PRODUCTO CON AIRE',1],['PRODUCTO EN MAL ESTADO',1],['PRODUCTO ERRONEO',1],
+  ['PRODUCTO MEZCLADO',1],['PRODUCTO MOJADO',6],['PRODUCTO RECHAZADO',1],['PRUEBAS',8],
+  ['RECHAZADO',1],['RECUENTO ALMACEN',10],['REPROCESO',25],['RETIRADA',6],['ROBO',6],['SIN',5],
+  ['SIN CAJA',12],['SIN ESTUCHE',4],['SIN ESTUCHE SIN CAJA',2],['SIN ETIQUETA',207],
+  ['SIN ETIQUETA DE SEGURIDAD',1],
+].map(([motivo, cant]) => ({ motivo, cant }));
+
+/* Reparto determinista del stock bloqueado por material (solo 7090*).
+   Devuelve un array [{motivo, cant}] por cada fila; algunos materiales sin bloqueo. */
+function generarBloqueo(mat){
+  if (!/^7090/.test(mat)) return [];
+  let seed = 0; for (const c of mat) seed = (seed * 31 + c.charCodeAt(0)) & 0x7fffffff;
+  const rng = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  if (rng() < 0.18) return [];                       // ~18% de materiales sin bloqueo
+  const pool = MOTIVOS_BLOQUEO.slice();
+  const n = 2 + Math.floor(rng() * 4);               // 2–5 motivos
+  const out = [];
+  for (let k = 0; k < n && pool.length; k++){
+    const m = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+    const cant = 1 + Math.floor(rng() * Math.min(m.cant, 60));
+    out.push({ motivo: m.motivo, cant });
+  }
+  out.sort((a, b) => b.cant - a.cant);
+  return out;
+}
+
+/* Precalcular bloqueo por fila y total */
+ROWS.forEach(r => {
+  r.bloqDet = generarBloqueo(r.mat);
+  r.bloq = r.bloqDet.reduce((s, m) => s + m.cant, 0);
+});
+
 let seleccion = new Set();
 let filtros = {};          // por columna
 let textoBusqueda = '';
@@ -393,7 +511,7 @@ let textoBusqueda = '';
 /* columnas para la fila de filtros (índice → key) */
 const FILTER_COLS = [
   {key:'est'}, {key:'semi'}, {key:'ofab'}, {key:'cfab'}, {key:'oenv'}, {key:'ini'}, {key:'fin'},
-  {key:'lote'}, {key:'mat'}, {key:'rot'}, {key:'nom'}, {key:'fmt'}, {key:'granel'},
+  {key:'lote'}, {key:'mat'}, {key:'rot'}, {key:'nom'}, {key:'fmt'}, {key:'granel'}, {key:'bloq'},
   {key:'matfab'}, {key:'pedido'}, {key:'proc'}, {key:'plan'}, {key:'fab'}
 ];
 
@@ -447,6 +565,9 @@ function fila(r, i){
     <td class="nom">${r.nom}</td>
     <td class="center">${r.fmt}</td>
     <td class="num">${nf(r.granel)}</td>
+    <td class="bloq">${r.bloq > 0
+        ? `<span class="lnk" data-bloq="${i}" title="Ver desglose por motivo">${nf0(r.bloq)}</span>`
+        : `<span class="zero">0</span>`}</td>
     <td class="mono">${r.matfab}</td>
     <td class="mono">${r.pedido}</td>
     <td>${r.proc}</td>
@@ -459,7 +580,7 @@ function render(){
   const tb = $('#tbody');
   const rows = ROWS.map((r, i) => ({ r, i })).filter(o => coincide(o.r));
   if (!rows.length){
-    tb.innerHTML = `<tr><td colspan="19" style="padding:26px;text-align:center;color:#8494a6">Sin registros para los criterios actuales.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="20" style="padding:26px;text-align:center;color:#8494a6">Sin registros para los criterios actuales.</td></tr>`;
   } else {
     tb.innerHTML = rows.map(o => fila(o.r, o.i)).join('');
   }
@@ -470,6 +591,10 @@ function render(){
       if (e.target.checked) seleccion.add(idx); else seleccion.delete(idx);
       render();
     });
+  });
+  // enlazar desglose de stock bloqueado
+  tb.querySelectorAll('.lnk[data-bloq]').forEach(sp => {
+    sp.addEventListener('click', () => abrirBloqueo(+sp.dataset.bloq));
   });
   const total = ROWS.length, vis = rows.length;
   $('#stCount').textContent = `Órdenes: ${vis} de ${total}  ·  Seleccionadas: ${seleccion.size}`;
@@ -510,6 +635,31 @@ $('#chkAll').addEventListener('change', e => {
 });
 
 $('#lineSel').addEventListener('change', e => toast('Línea: ' + e.target.value));
+
+/* ---------- Modal desglose stock bloqueado ---------- */
+let bloqRowActual = null;
+
+function abrirBloqueo(i){
+  const r = ROWS[i];
+  bloqRowActual = r;
+  $('#bloqSub').innerHTML =
+    `Material <b>${r.mat}</b> · ${r.nom} &nbsp;·&nbsp; Orden Fab. <b>${r.ofab}</b>`;
+  $('#bloqBody').innerHTML = r.bloqDet
+    .map(m => `<tr><td>${m.motivo}</td><td class="n">${nf0(m.cant)}</td></tr>`)
+    .join('');
+  $('#bloqTotal').textContent = nf0(r.bloq);
+  $('#bloqOverlay').classList.add('show');
+}
+function cerrarBloqueo(){ $('#bloqOverlay').classList.remove('show'); bloqRowActual = null; }
+
+$('#bloqClose').addEventListener('click', cerrarBloqueo);
+$('#bloqOk').addEventListener('click', cerrarBloqueo);
+$('#bloqOverlay').addEventListener('click', e => { if (e.target.id === 'bloqOverlay') cerrarBloqueo(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarBloqueo(); });
+$('#bloqReproc').addEventListener('click', () => {
+  const r = bloqRowActual; cerrarBloqueo();
+  if (r) toast(`Orden de Reproceso para ${r.mat} · ${nf0(r.bloq)} ud. bloqueadas (demo)`);
+});
 
 /* ---------- Init ---------- */
 buildFilterRow();
