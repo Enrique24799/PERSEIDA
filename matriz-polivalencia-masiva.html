@@ -101,6 +101,9 @@
     padding: 5px 8px; font: inherit; font-size: 13px;
   }
   .toolbar input[type="search"] { width: 210px; }
+  .selgroup { display: flex; align-items: center; gap: 6px; padding-left: 12px; border-left: 1px solid var(--border); }
+  .selgroup-label { font-size: 12px; color: var(--text-dim); }
+  .selgroup button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
   .legend { margin-left: auto; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text-dim); }
 
   .badge {
@@ -271,6 +274,11 @@
       </select>
     </label>
     <input type="search" id="fBusca" placeholder="Buscar persona…" aria-label="Buscar persona">
+    <span class="selgroup" role="group" aria-label="Selección rápida">
+      <span class="selgroup-label">Selección:</span>
+      <button id="btnAllPeople" title="Marca/desmarca todas las personas visibles. Si ya hay líneas seleccionadas, solo extiende esas líneas a todas las personas.">Todas las personas</button>
+      <button id="btnAllLines" title="Marca/desmarca todas las líneas visibles. Si ya hay personas seleccionadas, solo extiende esas personas a todas las líneas.">Todas las líneas</button>
+    </span>
     <div class="legend">
       Leyenda:
       <span class="badge p1">P1 natural</span>
@@ -556,6 +564,31 @@ function applyOp(op) {
 }
 document.querySelectorAll(".actionbar button").forEach(b =>
   b.addEventListener("click", () => applyOp(b.dataset.op)));
+
+// ---------- Selección rápida: todas las personas / todas las líneas ----------
+function selScopeCols() {
+  const inSel = new Set([...selected].map(k => +k.split(":")[1]));
+  const cols = visCols.filter(c => inSel.has(c));
+  return cols.length ? cols : visCols.slice();
+}
+function selScopeRows() {
+  const inSel = new Set([...selected].map(k => +k.split(":")[0]));
+  const rows = visRows.filter(r => inSel.has(r));
+  return rows.length ? rows : visRows.slice();
+}
+function toggleAll(keys) {
+  const allIn = keys.length > 0 && keys.every(k => selected.has(k));
+  allIn ? keys.forEach(k => selected.delete(k)) : keys.forEach(k => selected.add(k));
+  repaintAll();
+}
+$("btnAllPeople").addEventListener("click", () => {
+  // todas las personas visibles, en las líneas ya seleccionadas (o todas si no hay selección)
+  toggleAll(selScopeCols().flatMap(c => visRows.map(r => key(r, c))));
+});
+$("btnAllLines").addEventListener("click", () => {
+  // todas las líneas visibles, para las personas ya seleccionadas (o todas si no hay selección)
+  toggleAll(selScopeRows().flatMap(r => visCols.map(c => key(r, c))));
+});
 
 // ---------- Barras de estado ----------
 function updateBars() {
