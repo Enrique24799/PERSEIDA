@@ -1,0 +1,176 @@
+///////////////////////////////////////////////////////////////////////////////
+//  BALBOA — FACTURACIÓN
+//
+//  Réplica de la facturación de la otra empresa, adaptada a BALBOA.
+//
+//  Se construyen 2 líneas (orígenes) dentro de una única tabla FACTURACION:
+//
+//    1) EXPEDIDO  -> lo ya servido/expedido (albaranes).  La fecha de
+//                    facturación es la fecha del albarán (albl_fec).
+//
+//    2) CARTERA   -> lo pendiente de servir (pedido - servido).  La fecha
+//                    de entrega que se tiene en cuenta es:
+//                        - la fecha de entrega del PEDIDO (pedl_fecent), y
+//                        - si el pedido tiene NOTA DE CARGA, la fecha de la
+//                          nota de carga (max notc_fecent del pedido).
+//
+//  Particularidades BALBOA respecto de la otra empresa:
+//    - NO hay fecha de disponibilidad.
+//    - POR AHORA NO se meten previsiones -> la 3ª línea (Previsión) queda
+//      preparada y comentada al final para cuando se quiera activar.
+//
+//  Salida: se genera un QVD propio (Facturacion_Balboa.qvd), igual que los
+//  demás (STOCK_Balboa.qvd, Rotacion_Balboa.qvd).  El modelo final cargará
+//  ese QVD y lo concatenará a DATOS (ver bloque comentado del final).
+///////////////////////////////////////////////////////////////////////////////
+
+
+// ==========================================================================
+//  LÍNEA 1 · EXPEDIDO  (facturación real ya servida — albaranes)
+//  Fecha de facturación = fecha del albarán.
+// ==========================================================================
+NoConcatenate
+FACTURACION:
+
+Load
+	Tabla,
+	Origen,
+	Fecha,
+	Year(Fecha) & '_' & Num(Month(Fecha),'00')   as Año_Mes,
+	Text(Material)                                as Material,
+	Pedido,
+	Linea_Pedido,
+	Albaran,
+	Linea_albaran,
+	Nota_Carga,
+	Con_Nota,
+	Cantidad
+;
+select
+	'Facturacion'                                                          as Tabla,
+	'Expedido'                                                             as Origen,
+	date(albl_fec)                                                         as Fecha,
+	albl_art                                                               as Material,
+	albl_ped                                                               as Pedido,
+	albl_pedlin                                                            as Linea_Pedido,
+	albl_num                                                               as Albaran,
+	albl_lin                                                               as Linea_albaran,
+	albl_nota                                                              as Nota_Carga,
+	case when albl_nota in (0,999999) then 'SIN NOTA DE CARGA'
+	     else 'CON NOTA DE CARGA' end                                      as Con_Nota,
+	albl_kil                                                               as Cantidad
+from dba.albl a
+where year(albl_fec) > year(getdate()) - 2
+  and a.albl_lin > 0
+  and albl_kil > 0
+  and albl_art not in (100202);
+
+
+// ==========================================================================
+//  LÍNEA 2 · CARTERA  (pendiente de servir = pedido - servido)
+//  Fecha = fecha de entrega del pedido; si tiene nota de carga -> fecha nota.
+// ==========================================================================
+Concatenate(FACTURACION)
+
+Load
+	Tabla,
+	Origen,
+	Fecha,
+	Year(Fecha) & '_' & Num(Month(Fecha),'00')   as Año_Mes,
+	Text(Material)                                as Material,
+	Pedido,
+	Linea_Pedido,
+	Null()                                        as Albaran,
+	Null()                                        as Linea_albaran,
+	Null()                                        as Nota_Carga,
+	Con_Nota,
+	Cantidad
+;
+select
+	'Facturacion'                                                          as Tabla,
+	'Cartera'                                                              as Origen,
+	case when n.Fecha_Entrega_Nota is null then date(pedl_fecent)
+	     else date(n.Fecha_Entrega_Nota) end                              as Fecha,
+	pedl_art                                                               as Material,
+	pedl_num                                                               as Pedido,
+	pedl_lin                                                               as Linea_Pedido,
+	case when n.Fecha_Entrega_Nota is null then 'SIN NOTA DE CARGA'
+	     else 'CON NOTA DE CARGA' end                                      as Con_Nota,
+	case when (pedl_kil - pedl_kilser) < 0 then 0
+	     else pedl_kil - pedl_kilser end                                   as Cantidad
+from dba.pedl p
+left join dba.pedc p2
+	on p.pedl_num = p2.pedc_num
+left join
+	(select notc_ped, max(notc_fecent) as Fecha_Entrega_Nota
+	 from dba.notc n
+	 group by notc_ped) n
+	on p.pedl_num = n.notc_ped
+where year(pedl_fec) > year(getdate()) - 3
+  and pedl_sem > 4
+  and p2.pedc_tip not in (8,91)
+  and (pedl_kil - pedl_kilser) > 0;
+
+
+// ==========================================================================
+//  LÍNEA 3 · PREVISIÓN  ->  POR AHORA NO SE METE (dejar comentado).
+//  Cuando exista fuente de previsión en BALBOA, activar un tercer origen
+//  'Prevision' concatenado a FACTURACION con los mismos campos:
+//     Tabla='Facturacion', Origen='Prevision', Fecha (mes previsto),
+//     Material, Cantidad (previsión), Con_Nota='SIN NOTA DE CARGA'.
+// ==========================================================================
+/*
+Concatenate(FACTURACION)
+
+Load
+	'Facturacion'                                 as Tabla,
+	'Prevision'                                   as Origen,
+	Fecha,
+	Year(Fecha) & '_' & Num(Month(Fecha),'00')   as Año_Mes,
+	Text(Material)                                as Material,
+	Null()                                        as Pedido,
+	Null()                                        as Linea_Pedido,
+	Null()                                        as Albaran,
+	Null()                                        as Linea_albaran,
+	Null()                                        as Nota_Carga,
+	'SIN NOTA DE CARGA'                           as Con_Nota,
+	Cantidad
+Resident <FuentePrevisionBalboa>;
+*/
+
+
+// ==========================================================================
+//  STORE al QVD propio de BALBOA
+// ==========================================================================
+directory 'lib://QlikRepository\2.DATOS_NIVEL_2\CLGI_PLANIFICACION\BALBOA';
+
+store FACTURACION into Facturacion_Balboa.qvd(qvd);
+
+// La tabla se deja en memoria; en el modelo final se recarga desde el QVD
+// y se concatena a DATOS.  Si se prefiere no arrastrarla aquí, descomentar:
+// drop table FACTURACION;
+
+
+// ==========================================================================
+//  BLOQUE PARA EL MODELO FINAL (cargar el QVD y concatenar a DATOS)
+//  Colocar donde se construye DATOS, junto al resto de orígenes.
+// ==========================================================================
+/*
+Concatenate(DATOS)
+
+LOAD
+	Tabla,
+	Origen,
+	Fecha,
+	Año_Mes,
+	Text(Material) as Material,
+	Pedido,
+	Linea_Pedido,
+	Albaran,
+	Linea_albaran,
+	Nota_Carga,
+	Con_Nota,
+	Cantidad
+FROM [lib://QlikRepository/2.DATOS_NIVEL_2/CLGI_PLANIFICACION/BALBOA/Facturacion_Balboa.qvd]
+(qvd);
+*/

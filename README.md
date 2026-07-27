@@ -5,6 +5,31 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 
+Scripts de carga Qlik:
+
+- `scripts/BALBOA_Facturacion.qvs` — Facturación de BALBOA (ver más abajo).
+
+## `scripts/BALBOA_Facturacion.qvs` — Facturación (BALBOA)
+
+Réplica de la facturación de la otra empresa, adaptada a BALBOA. Construye una
+tabla `FACTURACION` con **2 líneas** (orígenes) y la guarda en su propio QVD
+(`Facturacion_Balboa.qvd`), listo para cargarlo y concatenarlo a `DATOS` en el
+modelo final.
+
+| Origen | Fuente | Cantidad | Fecha de facturación |
+|--------|--------|----------|----------------------|
+| `Expedido` | Albaranes (`dba.albl`) | `albl_kil` (ya servido) | Fecha del albarán (`albl_fec`) |
+| `Cartera` | Líneas de pedido (`dba.pedl`) | `pedl_kil - pedl_kilser` (pendiente) | Fecha de entrega del pedido (`pedl_fecent`); si el pedido tiene **nota de carga**, la fecha de la nota (`max(notc_fecent)`) |
+
+Particularidades respecto de la otra empresa:
+
+- **No** hay fecha de disponibilidad.
+- **Por ahora no se meten previsiones**: la 3ª línea (`Prevision`) queda
+  preparada y comentada al final del script para activarla cuando exista fuente.
+
+Campos de la tabla: `Tabla`, `Origen`, `Fecha`, `Año_Mes`, `Material`, `Pedido`,
+`Linea_Pedido`, `Albaran`, `Linea_albaran`, `Nota_Carga`, `Con_Nota`, `Cantidad`.
+
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
 Muestra los tiempos de cambio de las líneas internas.
