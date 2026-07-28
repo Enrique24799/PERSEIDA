@@ -165,45 +165,57 @@ de campo).
 El nuevo tipo de orden previsto para **completar** los materiales con faltante (una parte se rehace y
 otra solo se completa, sumándose a la orden). Se opera en dos pasos:
 
-1. En la pestaña **Necesidades Reproceso** se seleccionan los motivos a reprocesar y se genera en
-   *Control de Producción* una **línea sin orden de fabricación ni envasado** (estado *Necesidad*).
-2. En la cinta de *Control de Producción*, el grupo *Gestión Órdenes Operativas* incorpora
-   **Crear Orden de Reproceso** y **Liberar Orden de Reproceso** (libera las órdenes creadas → estado
-   *Orden liberada*). Las líneas de reproceso se distinguen con un borde rojo y una etiqueta de
-   estado en *Procedencia*.
-   - Al pulsar **Crear Orden de Reproceso** sobre una línea *Necesidad* (sin orden de envasado/
-     reproceso) se abre un **pop-up con las operaciones de la hoja de ruta** del material (la ruta en
-     la que se ha lanzado): **Oper.** (id), **Descripción** y un **check** por operación (con
-     seleccionar todo). Se marcan las operaciones que debe llevar la orden y, al confirmar, se crea la
-     orden (estado *Orden creada*, con el nº de operaciones en la etiqueta) guardando las operaciones
-     elegidas. Si hay varias líneas seleccionadas, el pop-up se pide una por una. Ej.: el material
-     `70909534` tiene `0010 LLENADO`, `0020 ETIQUETADO 2`, `0030 LOTEADO PLASTICO`, `0040 FINAL`.
-     Las hojas de ruta (`RUTA_MATERIAL` / `hojaRuta`) son de **ejemplo**; en real vendrían de SAP.
+1. La orden se **crea** desde la pestaña **Necesidades Reproceso** (ver abajo): se marcan los motivos
+   de bloqueo de **un lote**, se eligen las **operaciones y componentes** de la hoja de ruta y se
+   inserta en *Control de Producción* la línea de la orden, con su **lote** y en el **puesto** elegido.
+2. En la cinta de *Control de Producción* la orden solo se **libera**: *Gestión Órdenes Operativas* →
+   **Liberar Orden de Reproceso** (estado *Orden creada* → *Orden liberada*). Las líneas de reproceso
+   se distinguen con un borde rojo y una etiqueta de estado en *Procedencia* con el nº de operaciones.
 
 ## Pestaña `Necesidades Reproceso`
 
-Segunda pantalla del visor (pestaña junto a *Control de Producción*). Muestra **una línea por material**
-con stock bloqueado y su **desglose por motivo de bloqueo** (expandible). Toma campos de la pantalla de
-necesidades estándar: `Código`, `Material Fab.`, `Material`, **Opciones Puestos**, `Estrategia`,
-`Grupo Planif.`, **Fecha Rotura**, **Planificado**, además de **Stock Bloqueado** y **Cant. a
-Reprocesar** (sumatorio de lo seleccionado).
+Segunda pantalla del visor (pestaña junto a *Control de Producción*), con **cuatro niveles**:
 
-- **Fecha Rotura:** fecha de rotura **del material** (dato de SAP: cuándo nos quedaríamos sin material
-  según las necesidades); en rojo si está vencida. No se deriva del inicio de las órdenes.
+| Nivel | Contenido |
+|-------|-----------|
+| 1 | **Material** a reprocesar (datos de planificación y **puesto de trabajo**) |
+| 2 | **Lotes** de ese material con stock bloqueado |
+| 3 | **Motivos de bloqueo** de ese lote y sus cantidades |
+| 4 | **Matrículas** y sus **ubicaciones** (detalle) |
+
+Columnas: `Código`, `Material Fab.`, `Material / Lote / Motivo / Matrícula`, **Ubicación**,
+**Opciones Puestos**, `Estrategia`, `Grupo Planif.`, **Fecha 1ª Planif.**, **Línea 1ª Planif.**,
+**Planificado**, **Stock Bloqueado** y **Cant. a Reprocesar** (sumatorio de lo seleccionado).
+
 - **Planificado:** cantidad planificada del material contando **solo las órdenes en marcha o
   planificadas** (se excluyen las finalizadas); al pulsar la cifra se abre un **pop-up con esas
   órdenes** (Orden, **Estado**, **Línea/Puesto**, Inicio, Fin y Cantidad), para saber **dónde se
   produce** y decidir en qué línea lanzar el reproceso.
+- **Fecha / Línea 1ª Planif.:** inicio y línea de la **primera orden planificada pendiente** del
+  material en cualquiera de las líneas.
+- **Selección:** casilla en el **lote** (marca todos sus motivos) y casilla por **motivo**. El nivel 1
+  no tiene casilla y el nivel 4 es solo detalle.
+- **Puesto de trabajo (Opciones Puestos):** solo se visualiza y modifica en el **nivel 1** (material).
+- **Crear Orden de Reproceso:** con los motivos de **un único lote** marcados. Es un **control**: si la
+  selección abarca más de un lote se avisa (barra de estado en rojo) y no se crea la orden.
+- Utilidades: **Expandir / Contraer todo**, **Quitar selección**, **buscador** (material, lote o
+  motivo) y barra de estado con motivos seleccionados y cantidad total a reprocesar.
 
-- **Selección de motivos:** casilla por motivo, casilla de material (selecciona todos sus motivos),
-  botón **Seleccionar todo** / **Quitar selección** y casilla global en la cabecera.
-- **Puesto de trabajo (Opciones Puestos):** editable a **nivel de cabecera** (material) y a **nivel de
-  motivo**. Cambiar el de cabecera propaga a todos los motivos del material; cambiar el de un motivo
-  solo afecta a esa línea.
-- **Crear necesidad(es) de reproceso:** agrupa los motivos seleccionados por **material y puesto** y
-  crea en *Control de Producción* una línea por grupo, **sin órdenes**, en el puesto indicado y con el
-  **sumatorio** de las cantidades. Se cambia automáticamente a la pestaña de control para verlas.
-- Utilidades: **Expandir / Contraer todo**, **buscador** (material o motivo) y barra de estado con el
-  recuento de motivos seleccionados y la cantidad total a reprocesar.
+### Pop-up de operaciones y componentes
 
-Los puestos (`PUESTOS`), la estrategia y el grupo de planificación son de **ejemplo**.
+Al pulsar **Crear Orden de Reproceso** se abre el pop-up de la **hoja de ruta** del material, con dos
+niveles: **operaciones** (Oper., Descripción) y, desplegando cada una, sus **componentes** (Pos.,
+componente, denominación, Cantidad y UM) tal como figuran en la lista de materiales de la orden.
+
+- Casilla por operación y por componente; al **marcar una operación se marcan todos sus componentes**
+  (se pueden desmarcar individualmente) y al marcar un componente entra su operación.
+- Al confirmar se inserta en *Control de Producción* la línea de la **orden de reproceso** con el
+  **lote** seleccionado, la **cantidad** (suma de los motivos marcados) y en la **línea/puesto**
+  elegido; el nº de orden va en `Ord.Env.SAP` y el lote en `Num.Lote.SAP`.
+- Ej.: el material `70909534` tiene `0010 LLENADO` (granel `29324480`, bote `01901230`, bomba
+  `02681647`), `0020 ETIQUETADO 2` (etiqueta `03451526`), `0030 LOTEADO PLASTICO` (sin componentes) y
+  `0040 FINAL` (caja `04965276`, palet `04969359`).
+
+Las hojas de ruta y listas de materiales (`RUTA_MATERIAL` / `hojaRuta`), los lotes, matrículas y
+ubicaciones (`generarBloqueo`), los puestos (`PUESTOS`), la estrategia y el grupo de planificación son
+de **ejemplo**; en real vendrían de SAP.

@@ -352,10 +352,33 @@
 
   /* ===================== Modal operaciones (hoja de ruta) ===================== */
   .modal .mhead.teal { background: linear-gradient(180deg, #1f9e8a, #158073); }
-  .modal .mhint { padding: 8px 14px; font-size: 12px; color: #51637a; background: #fff; }
+  .modal .mhint { padding: 8px 14px; font-size: 12px; color: #51637a; background: #fff; line-height: 1.5; }
+  .modal .mhint b { color: var(--ink); }
   table.dsg th.chk, table.dsg td.chk { text-align: center; width: 44px; }
+  table.dsg th.exp, table.dsg td.exp { width: 26px; text-align: center; }
   table.dsg td.chk input { transform: scale(1.1); }
+  table.dsg tbody tr.oprow td { background: #f4fbf9; font-weight: 600; }
   table.dsg tbody tr.oprow:hover td { background: #eafaf6; }
+  table.dsg tbody tr.comprow td { font-weight: 400; color: #3a4a5c; }
+  table.dsg tbody tr.comprow:hover td { background: #f4f9ff; }
+  table.dsg td.compden { padding-left: 22px; white-space: normal; }
+  table.dsg td.compden::before { content: "↳ "; color: #9aa8b8; }
+  table.dsg td.nocomp { padding-left: 22px; color: #9aa8b8; font-style: italic; }
+  table.dsg .expbtn { cursor: pointer; color: #5b6b7d; user-select: none; font-size: 11px; }
+
+  /* ===================== Niveles de la rejilla de necesidades ===================== */
+  td.lotecell { font-weight: 600; color: #1f5fc0; }
+  td.lotecell::before { content: "▪ "; color: #7aa3dd; }
+  table.nec-grid tbody tr.loterow td { background: #f4f8fd; }
+  table.nec-grid tbody tr.loterow:hover td { background: #eaf2fd; }
+  table.nec-grid tbody tr.loterow.sel td { background: #e0edfb; }
+  table.nec-grid tbody tr.matrirow td { background: #fcfdfe; color: #5b6b7d; }
+  table.nec-grid tbody tr.matrirow:hover td { background: #f5f8fc; }
+  td.matriname { padding-left: 46px; }
+  td.matriname::before { content: "▫ "; color: #b8c3d0; }
+  td.ubic { font-family: "Consolas", monospace; color: #41546a; }
+  td.motname2 { padding-left: 34px; white-space: normal; }
+  td.motname2::before { content: "↳ "; color: #9aa8b8; }
 </style>
 </head>
 <body>
@@ -401,7 +424,6 @@
         <button class="rbtn" data-act="Liberar Orden de Fabricación"><span class="ic">📂</span><span class="lb">Liberar Orden de Fabricación</span></button>
         <button class="rbtn" data-act="Crear Orden de Envasado"><span class="ic">📋</span><span class="lb">Crear Orden de Envasado</span></button>
         <button class="rbtn" data-act="Liberar Orden de Envasado"><span class="ic">📤</span><span class="lb">Liberar Orden de Envasado</span></button>
-        <button class="rbtn" data-act="Crear Orden de Reproceso"><span class="ic" style="color:#c0392b">♻</span><span class="lb">Crear Orden de Reproceso</span></button>
         <button class="rbtn" data-act="Liberar Orden de Reproceso"><span class="ic" style="color:#c0392b">♻</span><span class="lb">Liberar Orden de Reproceso</span></button>
         <button class="rbtn sm" data-act="Anular"><span class="ic" style="color:#d9534f">⊘</span><span class="lb">Anular</span></button>
         <button class="rbtn sm" data-act="Baja"><span class="ic" style="color:#d9534f">🗑</span><span class="lb">Baja</span></button>
@@ -496,9 +518,8 @@
 
     <!-- Barra de funcionalidades -->
     <div class="nec-toolbar">
-      <button class="nbtn primary" id="necCrear">➕ Crear necesidad(es) de reproceso</button>
+      <button class="nbtn primary" id="necCrear">♻ Crear Orden de Reproceso</button>
       <span class="sep"></span>
-      <button class="nbtn" data-nec="selall">☑ Seleccionar todo</button>
       <button class="nbtn" data-nec="selnone">☐ Quitar selección</button>
       <span class="sep"></span>
       <button class="nbtn" data-nec="expand">⊞ Expandir todo</button>
@@ -508,11 +529,12 @@
     </div>
 
     <div class="nec-hint">
-      Una línea por material con desglose por <b>motivo de bloqueo</b>. Seleccione los motivos a
-      reprocesar y pulse <b>Crear necesidad(es)</b>: se generará en <em>Control de Producción</em> una
-      línea <b>sin orden de fabricación ni envasado</b>, en el <b>puesto de trabajo</b> indicado y con
-      el <b>sumatorio</b> de las cantidades seleccionadas. El puesto de cabecera propaga a los motivos;
-      el de un motivo solo afecta a esa línea.
+      Jerarquía: <b>material</b> → <b>lote</b> → <b>motivo de bloqueo</b> → <b>matrícula / ubicación</b>.
+      Marque los motivos de <b>un único lote</b> y pulse <b>Crear Orden de Reproceso</b>: se elegirán las
+      <b>operaciones y componentes</b> de la hoja de ruta y se insertará la orden en
+      <em>Control de Producción</em>, con ese lote y en el <b>puesto de trabajo</b> indicado (el puesto
+      solo se edita a nivel de material). Desde <em>Control de Producción</em> la orden solo se
+      <b>libera</b>.
     </div>
 
     <!-- Rejilla de necesidades -->
@@ -521,14 +543,16 @@
         <thead>
           <tr>
             <th class="exp"></th>
-            <th class="chk"><input type="checkbox" id="necChkAll" title="Seleccionar todo" /></th>
+            <th class="chk"></th>
             <th>Código</th>
             <th>Material Fab.</th>
-            <th>Material</th>
+            <th>Material / Lote / Motivo / Matrícula</th>
+            <th>Ubicación</th>
             <th>Opciones Puestos</th>
             <th>Estrategia</th>
             <th>Grupo Planif.</th>
-            <th>Fecha Rotura</th>
+            <th>Fecha 1ª Planif.</th>
+            <th>Línea 1ª Planif.</th>
             <th class="plan2">Planificado</th>
             <th class="bloq">Stock Bloqueado</th>
             <th class="plan">Cant. a Reprocesar</th>
@@ -592,26 +616,30 @@
 
 <!-- ===================== Modal: operaciones de la hoja de ruta (orden de reproceso) ===================== -->
 <div class="overlay" id="opsOverlay">
-  <div class="modal">
+  <div class="modal wide">
     <div class="mhead teal">
       <span>🧭</span>
-      <span>Operaciones de la hoja de ruta — orden de reproceso</span>
+      <span>Operaciones y componentes de la hoja de ruta — orden de reproceso</span>
       <span class="x" id="opsClose">✕</span>
     </div>
     <div class="msub" id="opsSub"></div>
-    <div class="mhint">Marque las operaciones que debe llevar la orden de reproceso.</div>
+    <div class="mhint">
+      Marque las <b>operaciones</b> que debe llevar la orden de reproceso; al marcar una operación se
+      marcan todos sus <b>componentes</b> (se pueden desmarcar individualmente).
+    </div>
     <div class="mbody">
       <table class="dsg">
         <thead><tr>
+          <th class="exp"></th>
           <th class="chk"><input type="checkbox" id="opsChkAll" title="Seleccionar todo"></th>
-          <th>Oper.</th><th>Descripción</th>
+          <th>Oper. / Pos.</th><th>Descripción</th><th class="n">Cantidad</th><th>UM</th>
         </tr></thead>
         <tbody id="opsBody"></tbody>
       </table>
     </div>
     <div class="mfoot">
       <button id="opsCancel">Cancelar</button>
-      <button id="opsOk" class="primary">Crear orden con las operaciones marcadas</button>
+      <button id="opsOk" class="primary">Crear orden de reproceso</button>
     </div>
   </div>
 </div>
@@ -672,24 +700,68 @@ const MOTIVOS_BLOQUEO = [
   ['SIN ETIQUETA DE SEGURIDAD',1],
 ].map(([motivo, cant]) => ({ motivo, cant }));
 
-/* Reparto determinista del stock bloqueado por material (solo 7090*).
-   Devuelve un array [{motivo, cant}] por cada fila; algunos materiales sin bloqueo. */
+/* ---------- Ubicaciones de almacén (ejemplo) ---------- */
+const ZONAS = ['PT', 'AL', 'BL'];
+
+/* Reparte una cantidad entre n matrículas (cada una >= 1) */
+function repartir(total, n, rng){
+  const out = [];
+  let resto = total;
+  for (let k = 0; k < n - 1; k++){
+    const max = resto - (n - 1 - k);
+    const c = max <= 1 ? 1 : 1 + Math.floor(rng() * Math.min(max - 1, Math.ceil(total / n) + 3));
+    out.push(c); resto -= c;
+  }
+  out.push(Math.max(resto, 1));
+  return out;
+}
+
+/* Stock bloqueado por material con jerarquía LOTE → MOTIVO → MATRÍCULA (ejemplo).
+   Solo materiales 7090*. Devuelve [] si el material no tiene bloqueo. */
 function generarBloqueo(mat){
   if (!/^7090/.test(mat)) return [];
   let seed = 0; for (const c of mat) seed = (seed * 31 + c.charCodeAt(0)) & 0x7fffffff;
   const rng = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   if (rng() < 0.18) return [];                       // ~18% de materiales sin bloqueo
-  const pool = MOTIVOS_BLOQUEO.slice();
-  const n = 2 + Math.floor(rng() * 4);               // 2–5 motivos
-  const out = [];
-  for (let k = 0; k < n && pool.length; k++){
-    const m = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-    const cant = 1 + Math.floor(rng() * Math.min(m.cant, 60));
-    out.push({ motivo: m.motivo, cant });
+  const nLotes = 1 + Math.floor(rng() * 3);          // 1–3 lotes por material
+  const lotes = [];
+  for (let L = 0; L < nLotes; L++){
+    const lote = '2618' + String(1000 + Math.floor(rng() * 8999));
+    const pool = MOTIVOS_BLOQUEO.slice();
+    const nMot = 1 + Math.floor(rng() * 3);          // 1–3 motivos por lote
+    const motivos = [];
+    for (let k = 0; k < nMot && pool.length; k++){
+      const m = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+      const cant = 1 + Math.floor(rng() * Math.min(m.cant, 60));
+      const nMatr = 1 + Math.floor(rng() * Math.min(cant, 3));   // 1–3 matrículas
+      const matriculas = repartir(cant, nMatr, rng).map(c => ({
+        matricula: '1000' + String(100000 + Math.floor(rng() * 899999)),
+        ubic: `${ZONAS[Math.floor(rng() * ZONAS.length)]}-${String(1 + Math.floor(rng() * 40)).padStart(2,'0')}` +
+              `-${String(1 + Math.floor(rng() * 9)).padStart(2,'0')}-${1 + Math.floor(rng() * 4)}`,
+        cant: c,
+      }));
+      motivos.push({ motivo: m.motivo, cant, matriculas });
+    }
+    motivos.sort((a, b) => b.cant - a.cant);
+    lotes.push({ lote, motivos, cant: motivos.reduce((s, m) => s + m.cant, 0) });
   }
-  out.sort((a, b) => b.cant - a.cant);
-  return out;
+  lotes.sort((a, b) => a.lote.localeCompare(b.lote));
+  return lotes;
 }
+
+/* Bloqueo calculado UNA vez por material (lo comparten sus órdenes) */
+const BLOQ_MAT = (() => {
+  const map = new Map();
+  [...new Set(ROWS.map(r => r.mat))].forEach(mat => {
+    const lotes = generarBloqueo(mat);
+    const porMotivo = new Map();
+    lotes.forEach(l => l.motivos.forEach(m => porMotivo.set(m.motivo, (porMotivo.get(m.motivo) || 0) + m.cant)));
+    const bloqDet = [...porMotivo.entries()].sort((a, b) => b[1] - a[1])
+      .map(([motivo, cant]) => ({ motivo, cant }));
+    map.set(mat, { lotes, bloqDet, bloq: bloqDet.reduce((s, m) => s + m.cant, 0) });
+  });
+  return map;
+})();
 
 /* ---------- Puestos de trabajo (opciones) ----------
    Líneas internas (L1…L6) y centros externos / maquila (nombres). */
@@ -699,17 +771,45 @@ function puestoPorDefecto(mat){
   return 'L' + (1 + (s % 6));
 }
 
-/* ---------- Hojas de ruta (operaciones por material) ----------
-   Operaciones de la hoja de ruta en la que se ha lanzado el material. En SAP
-   vendrían de la hoja de ruta / orden; aquí son de ejemplo. Rutas concretas en
+/* ---------- Hojas de ruta: operaciones y sus componentes (lista de materiales) ----------
+   Operaciones de la hoja de ruta en la que se ha lanzado el material, con los
+   componentes asignados a cada operación. En SAP vendrían de la hoja de ruta y de
+   la lista de materiales de la orden; aquí son de ejemplo. Rutas concretas en
    RUTA_MATERIAL; el resto se generan de forma determinista. */
 const RUTA_MATERIAL = {
-  '70909534': [['0010','LLENADO'], ['0020','ETIQUETADO 2'], ['0030','LOTEADO PLASTICO'], ['0040','FINAL']],
+  '70909534': [
+    { id:'0010', nom:'LLENADO', comps:[
+      { pos:'0010', tpp:'L', comp:'29324480', den:'FORM. GEL LIMPIADOR FACIAL TP DES.MARCAS', cant:'258',   um:'KG' },
+      { pos:'0020', tpp:'L', comp:'01901230', den:'BOTE BLANCO SPRAY 250 24/410 CACHO DORAD', cant:'1,000', um:'UN' },
+      { pos:'0030', tpp:'L', comp:'02681647', den:'AYC5204F BOMBA 24/410 BLANC CAÑA 139-129', cant:'1,000', um:'UN' },
+    ]},
+    { id:'0020', nom:'ETIQUETADO 2', comps:[
+      { pos:'0040', tpp:'L', comp:'03451526', den:'ET GEL LIMPIADOR CROWE 250ML 81A 26',      cant:'1,000', um:'UN' },
+    ]},
+    { id:'0030', nom:'LOTEADO PLASTICO', comps:[] },
+    { id:'0040', nom:'FINAL', comps:[
+      { pos:'0050', tpp:'L', comp:'04965276', den:'CAJA ACONDIC LEAVE 250ML 12 UDS RDOS TOT', cant:'84',    um:'UN' },
+      { pos:'0060', tpp:'L', comp:'04969359', den:'EUR Rojo 80x120 PER',                      cant:'0,477', um:'UN' },
+    ]},
+  ],
 };
 const OPS_NOMBRES = ['ETIQUETADO', 'ETIQUETADO 2', 'LOTEADO PLASTICO', 'ESTUCHADO', 'ENCAJADO',
                      'RETRACTILADO', 'CONTROL PESO', 'CELOFANADO'];
-function hojaRuta(mat){
-  if (RUTA_MATERIAL[mat]) return RUTA_MATERIAL[mat].map(([id, nom]) => ({ id, nom }));
+/* Componentes de ejemplo por tipo de operación (packaging: 049xxxxx / 019xxxxx / 026xxxxx) */
+const COMPS_OP = {
+  'LLENADO':          [['BOTE', 'UN'], ['TAPON', 'UN']],
+  'ETIQUETADO':       [['ETIQUETA', 'UN']],
+  'ETIQUETADO 2':     [['ETIQUETA TRASERA', 'UN']],
+  'LOTEADO PLASTICO': [],
+  'ESTUCHADO':        [['ESTUCHE', 'UN']],
+  'ENCAJADO':         [['CAJA ACONDICIONAMIENTO', 'UN']],
+  'RETRACTILADO':     [['FILM RETRACTIL', 'UN']],
+  'CONTROL PESO':     [],
+  'CELOFANADO':       [['CELOFAN', 'UN']],
+  'FINAL':            [['CAJA ACONDICIONAMIENTO', 'UN'], ['PALET EUR 80x120', 'UN']],
+};
+function hojaRuta(mat, matfab, nom){
+  if (RUTA_MATERIAL[mat]) return RUTA_MATERIAL[mat].map(o => ({ ...o, comps: o.comps.map(c => ({ ...c })) }));
   let seed = 0; for (const c of mat) seed = (seed * 31 + c.charCodeAt(0)) >>> 0;
   const rng = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const nombres = ['LLENADO'];                       // siempre empieza por LLENADO
@@ -717,17 +817,44 @@ function hojaRuta(mat){
   const n = 2 + Math.floor(rng() * 3);               // 2–4 operaciones intermedias
   for (let k = 0; k < n && pool.length; k++) nombres.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
   nombres.push('FINAL');                             // y termina en FINAL
-  return nombres.map((nom, i) => ({ id: String((i + 1) * 10).padStart(4, '0'), nom }));
+  const marca = (nom || '').split(' ')[0];
+  let pos = 0;
+  return nombres.map((op, i) => {
+    const comps = [];
+    if (op === 'LLENADO' && matfab){                 // el granel/semielaborado
+      pos += 10;
+      comps.push({ pos: String(pos).padStart(4,'0'), tpp:'L', comp: matfab,
+                   den: `FORM. ${nom || mat}`.slice(0, 42), cant: String(120 + Math.floor(rng()*400)), um:'KG' });
+    }
+    (COMPS_OP[op] || []).forEach(([den, um]) => {
+      pos += 10;
+      const pref = ['019','026','034','049'][Math.floor(rng()*4)];
+      comps.push({ pos: String(pos).padStart(4,'0'), tpp:'L',
+                   comp: pref + String(10000 + Math.floor(rng()*89999)),
+                   den: `${den} ${marca}`.trim().slice(0, 42),
+                   cant: um === 'KG' ? String(50 + Math.floor(rng()*200)) : '1,000', um });
+    });
+    return { id: String((i + 1) * 10).padStart(4, '0'), nom: op, comps };
+  });
+}
+
+/* Línea en la que está lanzada cada orden (varía entre órdenes del material) */
+function lineaOrden(r){
+  const k = (r.oenv || r.ofab || '') + r.mat;
+  let s = 0; for (const c of k) s = (s * 31 + c.charCodeAt(0)) >>> 0;
+  return 'L' + (1 + (s % 6));
 }
 
 /* Precalcular bloqueo, puesto y datos de planificación por fila */
 ROWS.forEach(r => {
   r.estrategia  = r.estrategia  || 'MTS';
   r.grupoPlanif = r.grupoPlanif || String(20 + (parseInt(r.mat.slice(-3), 10) % 180)).padStart(3, '0');
-  r.puesto      = puestoPorDefecto(r.mat);
+  r.puesto      = puestoPorDefecto(r.mat);   // puesto propuesto para el reproceso del material
+  r.linea       = lineaOrden(r);             // línea donde está lanzada esta orden
   r.opcPuestos  = PUESTOS;
-  r.bloqDet     = generarBloqueo(r.mat).map(m => ({ ...m, puesto: r.puesto }));
-  r.bloq        = r.bloqDet.reduce((s, m) => s + m.cant, 0);
+  const b       = BLOQ_MAT.get(r.mat) || { bloqDet: [], bloq: 0 };
+  r.bloqDet     = b.bloqDet;
+  r.bloq        = b.bloq;
 });
 
 let seleccion = new Set();
@@ -743,46 +870,47 @@ function parseFecha(s){
   return new Date(y, m - 1, d, hh, mm, ss);
 }
 
-/* Materiales agregados para Necesidades Reproceso: UNA línea por material.
-   Consolida el stock bloqueado (suma por motivo) y las órdenes del material.
+/* Materiales agregados para Necesidades Reproceso: UNA línea por material, con
+   jerarquía nivel 2 LOTE → nivel 3 MOTIVO de bloqueo → nivel 4 MATRÍCULA/UBICACIÓN.
    - Planificado: solo órdenes EN MARCHA o PLANIFICADAS (excluye finalizadas).
-   - Fecha Rotura: fecha de rotura del material (dato de SAP: cuándo nos
-     quedaríamos sin material según las necesidades), no el inicio de órdenes. */
+   - 1ª Planificación: inicio y línea de la primera orden planificada pendiente. */
 const NECMAT = (() => {
   const map = new Map();
   ROWS.forEach(r => {
     if (r.tipo === 'reproceso') return;
     let e = map.get(r.mat);
     if (!e){
+      const b = BLOQ_MAT.get(r.mat) || { lotes: [], bloqDet: [], bloq: 0 };
       e = { mat: r.mat, matfab: r.matfab, nom: r.nom, fmt: r.fmt,
             estrategia: r.estrategia, grupoPlanif: r.grupoPlanif,
-            puesto: r.puesto, opcPuestos: PUESTOS, _mot: new Map(), ordenes: [],
-            rotura: r.rot, brk: r.brk };   // rotura del material (SAP)
+            puesto: r.puesto, opcPuestos: PUESTOS, ordenes: [],
+            lotes: b.lotes, bloqDet: b.bloqDet, bloq: b.bloq };
       map.set(r.mat, e);
     }
-    r.bloqDet.forEach(m => e._mot.set(m.motivo, (e._mot.get(m.motivo) || 0) + m.cant));
     e.ordenes.push({
-      orden: r.oenv || r.ofab, linea: r.puesto, est: r.est,
+      orden: r.oenv || r.ofab, linea: r.linea, est: r.est,
       ini: r.ini, fin: r.fin, cant: r.plan,
     });
   });
-  let arr = [...map.values()];
+  const arr = [...map.values()];
   arr.forEach(e => {
-    e.bloqDet = [...e._mot.entries()].sort((a, b) => b[1] - a[1])
-      .map(([motivo, cant]) => ({ motivo, cant, puesto: e.puesto }));
-    e.bloq = e.bloqDet.reduce((s, m) => s + m.cant, 0);
-    delete e._mot;
     // solo órdenes en marcha ('run') o planificadas ('wait'); fuera finalizadas ('ok')
     e.ordenes = e.ordenes.filter(o => o.est !== 'ok')
       .sort((a, b) => (parseFecha(a.ini) || 0) - (parseFecha(b.ini) || 0));
     e.planificado = e.ordenes.reduce((s, o) => s + o.cant, 0);
+    // primera orden planificada pendiente (en cualquier línea)
+    const p = e.ordenes[0];
+    e.fecha1 = p ? p.ini : '';
+    e.linea1 = p ? p.linea : '';
   });
   return arr.filter(e => e.bloq > 0);   // solo materiales con stock bloqueado
 })();
 
 /* estado de la pantalla Necesidades Reproceso */
-let necExpanded = new Set();   // índices de material expandidos
-let necSel = new Set();        // motivos seleccionados, clave "i:j"
+let necExpMat  = new Set();    // materiales expandidos            "i"
+let necExpLote = new Set();    // lotes expandidos                 "i:l"
+let necExpMot  = new Set();    // motivos expandidos (matrículas)  "i:l:m"
+let necSel     = new Set();    // motivos seleccionados            "i:l:m"
 let necBusqueda = '';
 let repSeq = 108000;           // secuencia de nº de orden de reproceso
 
@@ -909,7 +1037,6 @@ document.addEventListener('click', e => {
   const n = seleccion.size;
   if (act === 'Refrescar'){ seleccion.clear(); render(); toast('Datos refrescados'); return; }
   if (['Column Chooser','Export to'].includes(act)){ toast(act + ' (demo)'); return; }
-  if (act === 'Crear Orden de Reproceso'){ crearOrdenReproceso(); return; }
   if (act === 'Liberar Orden de Reproceso'){ liberarOrdenReproceso(); return; }
   if (n === 0 && !['Crear Orden de Fabricación','Crear Orden de Envasado','Alta'].includes(act)){
     toast('Seleccione al menos una orden para «' + act + '»', 'warn'); return;
@@ -977,21 +1104,10 @@ $('#ordOverlay').addEventListener('click', e => { if (e.target.id === 'ordOverla
 document.addEventListener('keydown', e => { if (e.key === 'Escape'){ cerrarBloqueo(); cerrarOrdenes(); cerrarOperaciones(); } });
 
 /* ===================================================================
-   ÓRDENES DE REPROCESO (acciones de la cinta en Control de Producción)
+   ÓRDENES DE REPROCESO
+   La orden se CREA desde «Necesidades Reproceso»; en Control de Producción
+   solo se LIBERA.
    =================================================================== */
-function crearOrdenReproceso(){
-  const idxs = [...seleccion].filter(i => {
-    const r = ROWS[i]; return r && r.tipo === 'reproceso' && r.repState === 'need';
-  });
-  if (!idxs.length){
-    toast('Seleccione líneas de reproceso pendientes (sin orden) para crear la orden', 'warn');
-    return;
-  }
-  // por cada línea se elige, mediante pop-up, qué operaciones de la hoja de ruta lleva
-  repQueue = idxs.slice();
-  repCreadas = 0;
-  abrirOperaciones(repQueue[0]);
-}
 function liberarOrdenReproceso(){
   const sel = [...seleccion].map(i => ROWS[i]).filter(Boolean);
   const objetivo = sel.filter(r => r.tipo === 'reproceso' && r.repState === 'creada');
@@ -1004,59 +1120,145 @@ function liberarOrdenReproceso(){
   toast(`Orden(es) de reproceso liberada(s): ${objetivo.length}`);
 }
 
-/* ---------- Pop-up de operaciones de la hoja de ruta ---------- */
-let repQueue = [];        // líneas de reproceso pendientes de asignar operaciones
-let repCreadas = 0;       // contador de órdenes creadas en la tanda
-let opsRowIdx = null;     // fila en curso
-let opsSel = new Set();   // ids de operación marcados
+/* ---------- Pop-up de operaciones y componentes de la hoja de ruta ----------
+   Se abre al crear la orden desde «Necesidades Reproceso». Nivel 1: operaciones;
+   nivel 2: componentes de cada operación (lista de materiales de la orden). */
+let opsCtx     = null;         // {nec, lote, puesto, motivos, cant}
+let opsRuta    = [];           // hoja de ruta del material
+let opsSelOp   = new Set();    // operaciones marcadas: "id"
+let opsSelComp = new Set();    // componentes marcados: "idOp:pos"
+let opsExp     = new Set();    // operaciones desplegadas
 
-function abrirOperaciones(i){
-  opsRowIdx = i;
-  const r = ROWS[i];
-  r._ruta = hojaRuta(r.mat);
-  opsSel = new Set(r._ruta.map(o => o.id));   // por defecto, todas marcadas
+const ckComp = (op, c) => `${op}:${c.pos}`;
+
+function abrirOperaciones(ctx){
+  opsCtx  = ctx;
+  const e = ctx.nec;
+  opsRuta = hojaRuta(e.mat, e.matfab, e.nom);
+  // por defecto, todas las operaciones y todos sus componentes marcados
+  opsSelOp   = new Set(opsRuta.map(o => o.id));
+  opsSelComp = new Set();
+  opsExp     = new Set(opsRuta.map(o => o.id));
+  opsRuta.forEach(o => o.comps.forEach(c => opsSelComp.add(ckComp(o.id, c))));
   $('#opsSub').innerHTML =
-    `Material <b>${r.mat}</b> · ${r.nom} &nbsp;·&nbsp; Puesto <b>${r.puesto || '—'}</b> ` +
-    `&nbsp;·&nbsp; <b>${nf0(r.plan)}</b> ud.` +
-    (repQueue.length > 1 ? ` &nbsp;·&nbsp; ${repQueue.length} líneas en cola` : '');
+    `Material <b>${e.mat}</b> · ${e.nom} &nbsp;·&nbsp; Lote <b>${ctx.lote}</b> ` +
+    `&nbsp;·&nbsp; Puesto <b>${ctx.puesto}</b> &nbsp;·&nbsp; <b>${nf0(ctx.cant)}</b> ud. ` +
+    `&nbsp;·&nbsp; ${ctx.motivos.map(m => m.motivo).join(', ')}`;
   renderOperaciones();
   $('#opsOverlay').classList.add('show');
 }
+
 function renderOperaciones(){
-  const ruta = ROWS[opsRowIdx]._ruta;
   const tb = $('#opsBody');
-  tb.innerHTML = ruta.map(o => `<tr class="oprow">
-      <td class="chk"><input type="checkbox" data-op="${o.id}" ${opsSel.has(o.id) ? 'checked' : ''}></td>
+  let html = '';
+  opsRuta.forEach(o => {
+    const selOp   = opsSelOp.has(o.id);
+    const nComp   = o.comps.length;
+    const nCompS  = o.comps.filter(c => opsSelComp.has(ckComp(o.id, c))).length;
+    const someOp  = selOp && nComp > 0 && nCompS < nComp;
+    const exp     = opsExp.has(o.id);
+    html += `<tr class="oprow">
+      <td class="exp">${nComp ? `<span class="expbtn" data-expop="${o.id}">${exp ? '▼' : '▶'}</span>` : ''}</td>
+      <td class="chk"><input type="checkbox" data-op="${o.id}" ${selOp ? 'checked' : ''} ${someOp ? 'data-indet="1"' : ''}></td>
       <td class="mono">${o.id}</td>
       <td>${o.nom}</td>
-    </tr>`).join('');
+      <td class="n">${nComp ? nComp + ' comp.' : ''}</td>
+      <td></td>
+    </tr>`;
+    if (!exp) return;
+    if (!nComp){
+      html += `<tr class="comprow"><td></td><td></td><td></td>
+        <td class="nocomp">Sin componentes</td><td></td><td></td></tr>`;
+      return;
+    }
+    o.comps.forEach(c => {
+      const s = opsSelComp.has(ckComp(o.id, c));
+      html += `<tr class="comprow">
+        <td class="exp"></td>
+        <td class="chk"><input type="checkbox" data-comp="${ckComp(o.id, c)}" ${s ? 'checked' : ''}></td>
+        <td class="mono">${c.pos}</td>
+        <td class="compden"><span class="mono">${c.comp}</span> · ${c.den}</td>
+        <td class="n">${c.cant}</td>
+        <td>${c.um}</td>
+      </tr>`;
+    });
+  });
+  tb.innerHTML = html;
+  tb.querySelectorAll('input[data-indet]').forEach(cb => cb.indeterminate = true);
+
+  // operación: al marcarla se marcan todos sus componentes (y al desmarcarla, se quitan)
   tb.querySelectorAll('input[data-op]').forEach(cb => cb.addEventListener('change', e => {
-    if (e.target.checked) opsSel.add(e.target.dataset.op); else opsSel.delete(e.target.dataset.op);
-    $('#opsChkAll').checked = ruta.every(o => opsSel.has(o.id));
+    const id = e.target.dataset.op;
+    const op = opsRuta.find(o => o.id === id);
+    if (e.target.checked){
+      opsSelOp.add(id);
+      op.comps.forEach(c => opsSelComp.add(ckComp(id, c)));
+    } else {
+      opsSelOp.delete(id);
+      op.comps.forEach(c => opsSelComp.delete(ckComp(id, c)));
+    }
+    renderOperaciones();
   }));
-  $('#opsChkAll').checked = ruta.every(o => opsSel.has(o.id));
+  // componente: si se marca uno, su operación entra en la orden
+  tb.querySelectorAll('input[data-comp]').forEach(cb => cb.addEventListener('change', e => {
+    const k = e.target.dataset.comp;
+    if (e.target.checked){ opsSelComp.add(k); opsSelOp.add(k.split(':')[0]); }
+    else opsSelComp.delete(k);
+    renderOperaciones();
+  }));
+  // desplegar / plegar los componentes de una operación
+  tb.querySelectorAll('.expbtn[data-expop]').forEach(sp => sp.addEventListener('click', () => {
+    const id = sp.dataset.expop;
+    if (opsExp.has(id)) opsExp.delete(id); else opsExp.add(id);
+    renderOperaciones();
+  }));
+  $('#opsChkAll').checked = opsRuta.every(o => opsSelOp.has(o.id));
 }
+
+/* Confirmar: crea la orden de reproceso y la inserta en Control de Producción,
+   con su lote y en la línea (puesto) seleccionada. */
 function confirmarOperaciones(){
-  if (!opsSel.size){ toast('Marque al menos una operación de la hoja de ruta', 'warn'); return; }
-  const r = ROWS[opsRowIdx];
-  r.operaciones = r._ruta.filter(o => opsSel.has(o.id));
-  r.ofab = String(++repSeq);
-  r.repState = 'creada';
-  delete r._ruta;
-  repCreadas++;
-  repQueue.shift();
-  if (repQueue.length){ abrirOperaciones(repQueue[0]); }
-  else { cerrarOperaciones(); render(); toast(`Orden(es) de reproceso creada(s): ${repCreadas}`); }
+  if (!opsSelOp.size){ toast('Marque al menos una operación de la hoja de ruta', 'warn'); return; }
+  const ctx = opsCtx, e = ctx.nec;
+  const operaciones = opsRuta.filter(o => opsSelOp.has(o.id)).map(o => ({
+    id: o.id, nom: o.nom,
+    comps: o.comps.filter(c => opsSelComp.has(ckComp(o.id, c))),
+  }));
+  const nComp = operaciones.reduce((s, o) => s + o.comps.length, 0);
+  const orden = String(++repSeq);
+
+  ROWS.unshift({
+    tipo: 'reproceso', repState: 'creada',
+    est: 'wait', semi: false,
+    ofab: '', cfab: 0, oenv: orden,
+    ini: '', fin: '', lote: ctx.lote,
+    mat: e.mat, rot: '', brk: false,
+    nom: e.nom, fmt: e.fmt, granel: 0,
+    matfab: e.matfab, pedido: '',
+    puesto: ctx.puesto, linea: ctx.puesto, proc: '',
+    plan: ctx.cant, fab: 0,
+    bloq: 0, bloqDet: [],
+    motivos: ctx.motivos, operaciones,
+  });
+  seleccion.clear();          // los índices de ROWS se desplazan al insertar
+  necSel.clear();
+  cerrarOperaciones();
+  necRender();
+  cambiarVista('control');
+  toast(`Orden de reproceso ${orden} creada · lote ${ctx.lote} · ${nf0(ctx.cant)} ud. · ` +
+        `${operaciones.length} op. / ${nComp} comp. · ${ctx.puesto}`);
 }
+
 function cerrarOperaciones(){
   $('#opsOverlay').classList.remove('show');
-  if (opsRowIdx != null) delete ROWS[opsRowIdx]._ruta;
-  opsRowIdx = null; repQueue = [];
+  opsCtx = null; opsRuta = [];
+  opsSelOp.clear(); opsSelComp.clear(); opsExp.clear();
   render();
 }
 $('#opsChkAll').addEventListener('change', e => {
-  const ruta = ROWS[opsRowIdx]._ruta;
-  if (e.target.checked) ruta.forEach(o => opsSel.add(o.id)); else opsSel.clear();
+  if (e.target.checked){
+    opsRuta.forEach(o => { opsSelOp.add(o.id); o.comps.forEach(c => opsSelComp.add(ckComp(o.id, c))); });
+  } else { opsSelOp.clear(); opsSelComp.clear(); }
   renderOperaciones();
 });
 $('#opsOk').addEventListener('click', confirmarOperaciones);
@@ -1074,184 +1276,203 @@ function necMateriales(){
 function necCoincide(o){
   if (!necBusqueda) return true;
   const blob = (o.r.mat + ' ' + o.r.nom + ' ' + o.r.matfab + ' ' +
-    o.r.bloqDet.map(m => m.motivo).join(' ')).toLowerCase();
+    o.r.lotes.map(l => l.lote + ' ' + l.motivos.map(m => m.motivo).join(' ')).join(' ')).toLowerCase();
   return blob.includes(necBusqueda);
 }
 function puestoOptions(sel){
   return PUESTOS.map(p => `<option ${p === sel ? 'selected' : ''}>${p}</option>`).join('');
 }
-function sumSelMat(i, r){
-  return r.bloqDet.reduce((s, m, j) => s + (necSel.has(i + ':' + j) ? m.cant : 0), 0);
+
+/* ---------- Selección: clave "material:lote:motivo" ---------- */
+const kMot = (i, l, j) => `${i}:${l}:${j}`;
+function sumSelLote(i, l){
+  return NECMAT[i].lotes[l].motivos.reduce((s, m, j) => s + (necSel.has(kMot(i, l, j)) ? m.cant : 0), 0);
+}
+function sumSelMat(i){
+  return NECMAT[i].lotes.reduce((s, lo, l) => s + sumSelLote(i, l), 0);
+}
+/* lotes distintos presentes en la selección → control "una orden = un lote" */
+function lotesSeleccionados(){
+  const m = new Map();
+  necSel.forEach(k => {
+    const [i, l] = k.split(':').map(Number);
+    m.set(i + ':' + l, { i, l });
+  });
+  return [...m.values()];
 }
 
 function necRender(){
   const tb = $('#necBody');
   const mats = necMateriales().filter(necCoincide);
   if (!mats.length){
-    tb.innerHTML = `<tr><td colspan="12" style="padding:26px;text-align:center;color:#8494a6">Sin materiales con stock bloqueado.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="14" style="padding:26px;text-align:center;color:#8494a6">Sin materiales con stock bloqueado.</td></tr>`;
     $('#necCount').textContent = ''; return;
   }
   let html = '';
   mats.forEach(({ r, i }) => {
-    const exp = necExpanded.has(i);
-    const nMot = r.bloqDet.length;
-    const nSel = r.bloqDet.filter((m, j) => necSel.has(i + ':' + j)).length;
-    const allSel = nSel === nMot && nMot > 0;
-    const someSel = nSel > 0 && !allSel;
-    const selCls = nSel > 0 ? 'sel' : '';
-    const suma = sumSelMat(i, r);
-    html += `<tr class="matrow ${selCls}" data-mat="${i}">
-      <td class="exp"><span class="expbtn" data-exp="${i}">${exp ? '▼' : '▶'}</span></td>
-      <td class="chk"><input type="checkbox" data-matchk="${i}" ${allSel ? 'checked' : ''}
-           ${someSel ? 'data-indet="1"' : ''}></td>
+    /* ---- Nivel 1: MATERIAL (aquí se ve y edita el puesto de trabajo) ---- */
+    const expM  = necExpMat.has(String(i));
+    const sumaM = sumSelMat(i);
+    html += `<tr class="matrow ${sumaM ? 'sel' : ''}">
+      <td class="exp"><span class="expbtn" data-expmat="${i}">${expM ? '▼' : '▶'}</span></td>
+      <td class="chk"></td>
       <td class="mono">${r.mat}</td>
       <td class="mono">${r.matfab}</td>
       <td class="matdesc">${r.nom}</td>
-      <td><select class="puesto-sel" data-hdr="${i}" title="Puesto de trabajo (cabecera)">${puestoOptions(r.puesto)}</select></td>
+      <td></td>
+      <td><select class="puesto-sel" data-hdr="${i}" title="Puesto de trabajo del reproceso">${puestoOptions(r.puesto)}</select></td>
       <td class="center">${r.estrategia}</td>
       <td class="center">${r.grupoPlanif}</td>
-      <td class="${r.brk ? 'rotura brk' : 'center'}">${r.rotura || '—'}</td>
+      <td class="mono">${r.fecha1 || '—'}</td>
+      <td class="center linea1">${r.linea1 || '—'}</td>
       <td class="plan2">${r.ordenes.length
-          ? `<span class="lnk2" data-ord="${i}" title="Ver órdenes lanzadas del material">${nf0(r.planificado)}</span>`
+          ? `<span class="lnk2" data-ord="${i}" title="Ver órdenes en marcha / planificadas">${nf0(r.planificado)}</span>`
           : `<span class="zero">0</span>`}</td>
-      <td class="bloq"><span class="lnk" data-bloqn="${i}">${nf0(r.bloq)}</span></td>
-      <td class="planilla">${suma ? nf0(suma) : ''}</td>
+      <td class="bloq"><span class="lnk" data-bloqn="${i}" title="Ver desglose por motivo">${nf0(r.bloq)}</span></td>
+      <td class="planilla">${sumaM ? nf0(sumaM) : ''}</td>
     </tr>`;
-    if (exp){
-      r.bloqDet.forEach((m, j) => {
-        const k = i + ':' + j;
-        const s = necSel.has(k);
-        html += `<tr class="motrow ${s ? 'sel' : ''}" data-mot="${k}">
-          <td class="exp"></td>
-          <td class="chk"><input type="checkbox" data-motchk="${k}" ${s ? 'checked' : ''}></td>
-          <td></td>
-          <td></td>
-          <td class="motname">${m.motivo}</td>
-          <td><select class="puesto-sel" data-motpuesto="${k}" title="Puesto de trabajo (motivo)">${puestoOptions(m.puesto)}</select></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
+    if (!expM) return;
+
+    r.lotes.forEach((lo, l) => {
+      /* ---- Nivel 2: LOTE (su check marca todos los motivos del lote) ---- */
+      const lk    = i + ':' + l;
+      const expL  = necExpLote.has(lk);
+      const nSelL = lo.motivos.filter((m, j) => necSel.has(kMot(i, l, j))).length;
+      const allL  = nSelL === lo.motivos.length && lo.motivos.length > 0;
+      const someL = nSelL > 0 && !allL;
+      const sumaL = sumSelLote(i, l);
+      html += `<tr class="loterow ${nSelL ? 'sel' : ''}">
+        <td class="exp"><span class="expbtn" data-explote="${lk}">${expL ? '▼' : '▶'}</span></td>
+        <td class="chk"><input type="checkbox" data-lotechk="${lk}" title="Seleccionar todos los motivos del lote"
+             ${allL ? 'checked' : ''} ${someL ? 'data-indet="1"' : ''}></td>
+        <td></td><td></td>
+        <td class="lotecell">Lote ${lo.lote}</td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        <td class="bloq"><span class="zero">${nf0(lo.cant)}</span></td>
+        <td class="planilla">${sumaL ? nf0(sumaL) : ''}</td>
+      </tr>`;
+      if (!expL) return;
+
+      lo.motivos.forEach((m, j) => {
+        /* ---- Nivel 3: MOTIVO de bloqueo del lote ---- */
+        const mk   = kMot(i, l, j);
+        const s    = necSel.has(mk);
+        const expO = necExpMot.has(mk);
+        html += `<tr class="motrow ${s ? 'sel' : ''}">
+          <td class="exp"><span class="expbtn" data-expmot="${mk}">${expO ? '▼' : '▶'}</span></td>
+          <td class="chk"><input type="checkbox" data-motchk="${mk}" ${s ? 'checked' : ''}></td>
+          <td></td><td></td>
+          <td class="motname2">${m.motivo}</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
           <td class="bloq"><span class="zero">${nf0(m.cant)}</span></td>
           <td class="planilla">${s ? nf0(m.cant) : ''}</td>
         </tr>`;
+        if (!expO) return;
+
+        /* ---- Nivel 4: MATRÍCULAS y ubicaciones ---- */
+        m.matriculas.forEach(mt => {
+          html += `<tr class="matrirow">
+            <td class="exp"></td><td class="chk"></td>
+            <td></td><td></td>
+            <td class="matriname mono">${mt.matricula}</td>
+            <td class="ubic">${mt.ubic}</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td>
+            <td class="bloq"><span class="zero">${nf0(mt.cant)}</span></td>
+            <td></td>
+          </tr>`;
+        });
       });
-    }
+    });
   });
   tb.innerHTML = html;
 
   // checkboxes con estado indeterminado
   tb.querySelectorAll('input[data-indet]').forEach(cb => cb.indeterminate = true);
 
-  // material: seleccionar/deseleccionar todos sus motivos
-  tb.querySelectorAll('input[data-matchk]').forEach(cb => cb.addEventListener('change', e => {
-    const i = +e.target.dataset.matchk;
-    NECMAT[i].bloqDet.forEach((m, j) => {
-      if (e.target.checked) necSel.add(i + ':' + j); else necSel.delete(i + ':' + j);
+  // lote: marca/desmarca todos sus motivos
+  tb.querySelectorAll('input[data-lotechk]').forEach(cb => cb.addEventListener('change', e => {
+    const [i, l] = e.target.dataset.lotechk.split(':').map(Number);
+    NECMAT[i].lotes[l].motivos.forEach((m, j) => {
+      if (e.target.checked) necSel.add(kMot(i, l, j)); else necSel.delete(kMot(i, l, j));
     });
     necRender();
   }));
-  // motivo: seleccionar/deseleccionar
+  // motivo: marca/desmarca
   tb.querySelectorAll('input[data-motchk]').forEach(cb => cb.addEventListener('change', e => {
     const k = e.target.dataset.motchk;
     if (e.target.checked) necSel.add(k); else necSel.delete(k);
     necRender();
   }));
-  // expandir/contraer
-  tb.querySelectorAll('.expbtn[data-exp]').forEach(sp => sp.addEventListener('click', () => {
-    const i = +sp.dataset.exp;
-    if (necExpanded.has(i)) necExpanded.delete(i); else necExpanded.add(i);
-    necRender();
-  }));
-  // desglose (mismo pop-up de control de producción)
-  tb.querySelectorAll('.lnk[data-bloqn]').forEach(sp => sp.addEventListener('click', () => abrirBloqueo(NECMAT[+sp.dataset.bloqn])));
-  // desglose de órdenes lanzadas del material
-  tb.querySelectorAll('.lnk2[data-ord]').forEach(sp => sp.addEventListener('click', () => abrirOrdenes(NECMAT[+sp.dataset.ord])));
-  // puesto de cabecera: propaga a todos los motivos del material
+  // expandir / contraer los tres niveles
+  const toggle = (set, key) => { if (set.has(key)) set.delete(key); else set.add(key); necRender(); };
+  tb.querySelectorAll('.expbtn[data-expmat]').forEach(sp =>
+    sp.addEventListener('click', () => toggle(necExpMat, sp.dataset.expmat)));
+  tb.querySelectorAll('.expbtn[data-explote]').forEach(sp =>
+    sp.addEventListener('click', () => toggle(necExpLote, sp.dataset.explote)));
+  tb.querySelectorAll('.expbtn[data-expmot]').forEach(sp =>
+    sp.addEventListener('click', () => toggle(necExpMot, sp.dataset.expmot)));
+  // pop-ups de consulta
+  tb.querySelectorAll('.lnk[data-bloqn]').forEach(sp =>
+    sp.addEventListener('click', () => abrirBloqueo(NECMAT[+sp.dataset.bloqn])));
+  tb.querySelectorAll('.lnk2[data-ord]').forEach(sp =>
+    sp.addEventListener('click', () => abrirOrdenes(NECMAT[+sp.dataset.ord])));
+  // puesto de trabajo: solo a nivel de material
   tb.querySelectorAll('select[data-hdr]').forEach(sel => sel.addEventListener('change', e => {
-    const i = +e.target.dataset.hdr, v = e.target.value;
-    NECMAT[i].puesto = v;
-    NECMAT[i].bloqDet.forEach(m => m.puesto = v);
-    necRender();
-  }));
-  // puesto de motivo: solo afecta a esa línea
-  tb.querySelectorAll('select[data-motpuesto]').forEach(sel => sel.addEventListener('change', e => {
-    const [i, j] = e.target.dataset.motpuesto.split(':').map(Number);
-    NECMAT[i].bloqDet[j].puesto = e.target.value;
+    NECMAT[+e.target.dataset.hdr].puesto = e.target.value;
     necRender();
   }));
 
-  const totalMat = mats.length;
-  const totalSel = necSel.size;
-  const sumaTotal = mats.reduce((s, { r, i }) => s + sumSelMat(i, r), 0);
+  const lotesSel = lotesSeleccionados();
+  const sumaTotal = mats.reduce((s, { i }) => s + sumSelMat(i), 0);
+  const avisoLotes = lotesSel.length > 1
+    ? `  ·  ⚠ ${lotesSel.length} lotes seleccionados (una orden solo puede llevar 1)` : '';
   $('#necCount').textContent =
-    `Materiales: ${totalMat}  ·  Motivos seleccionados: ${totalSel}  ·  Cant. a reprocesar: ${nf0(sumaTotal)}`;
-  $('#necCrear').disabled = totalSel === 0;
-  const visMats = mats.every(({ r, i }) => r.bloqDet.every((m, j) => necSel.has(i + ':' + j)));
-  $('#necChkAll').checked = totalSel > 0 && visMats;
+    `Materiales: ${mats.length}  ·  Motivos seleccionados: ${necSel.size}  ·  ` +
+    `Cant. a reprocesar: ${nf0(sumaTotal)}${avisoLotes}`;
+  $('#necDot').style.background = lotesSel.length > 1 ? '#d9534f' : '#27ae60';
+  $('#necCrear').disabled = necSel.size === 0;
 }
 
-/* Crear las líneas de necesidad en Control de Producción.
-   Se agrupan los motivos seleccionados por (material, puesto) → una línea por grupo. */
-function necCrearNecesidades(){
-  const grupos = new Map();   // clave "mat|puesto" → {r, puesto, cant, motivos}
-  necMateriales().forEach(({ r, i }) => {
-    r.bloqDet.forEach((m, j) => {
-      if (!necSel.has(i + ':' + j)) return;
-      const key = i + '|' + m.puesto;
-      if (!grupos.has(key)) grupos.set(key, { r, puesto: m.puesto, cant: 0, motivos: [] });
-      const g = grupos.get(key);
-      g.cant += m.cant;
-      g.motivos.push({ motivo: m.motivo, cant: m.cant });
-    });
+/* Crear la ORDEN de reproceso desde Necesidades: valida un único lote y abre
+   el pop-up de operaciones / componentes de la hoja de ruta. */
+function necCrearOrden(){
+  const lotesSel = lotesSeleccionados();
+  if (!lotesSel.length){
+    toast('Marque los motivos de bloqueo del lote que quiere reprocesar', 'warn'); return;
+  }
+  if (lotesSel.length > 1){
+    toast(`Una orden de reproceso solo puede llevar UN lote (hay ${lotesSel.length} seleccionados)`, 'bad');
+    return;
+  }
+  const { i, l } = lotesSel[0];
+  const e = NECMAT[i], lo = e.lotes[l];
+  const motivos = lo.motivos
+    .map((m, j) => ({ m, j }))
+    .filter(({ j }) => necSel.has(kMot(i, l, j)))
+    .map(({ m }) => ({ motivo: m.motivo, cant: m.cant }));
+  abrirOperaciones({
+    nec: e, lote: lo.lote, puesto: e.puesto, motivos,
+    cant: motivos.reduce((s, m) => s + m.cant, 0),
   });
-  if (!grupos.size){ toast('Seleccione al menos un motivo de bloqueo', 'warn'); return; }
-
-  const nuevas = [];
-  grupos.forEach(g => {
-    const r = g.r;
-    nuevas.push({
-      tipo: 'reproceso', repState: 'need',
-      est: 'wait', semi: false,
-      ofab: '', cfab: 0, oenv: '',
-      ini: '', fin: '', lote: '',
-      mat: r.mat, rot: '', brk: false,
-      nom: r.nom, fmt: r.fmt, granel: 0,
-      matfab: r.matfab, pedido: '',
-      puesto: g.puesto, proc: '',
-      plan: g.cant, fab: 0,
-      bloq: 0, bloqDet: [],
-      motivos: g.motivos,
-    });
-  });
-  // insertar arriba en Control de Producción
-  ROWS.unshift(...nuevas);
-  necSel.clear();
-
-  render();
-  necRender();
-  cambiarVista('control');
-  toast(`Necesidad(es) de reproceso creada(s): ${nuevas.length} línea(s) en Control de Producción`);
 }
 
 /* ---------- Barra de funcionalidades de Necesidades ---------- */
-$('#necCrear').addEventListener('click', necCrearNecesidades);
+$('#necCrear').addEventListener('click', necCrearOrden);
 $('#necSearch').addEventListener('input', e => { necBusqueda = e.target.value.trim().toLowerCase(); necRender(); });
-$('#necChkAll').addEventListener('change', e => {
-  necMateriales().filter(necCoincide).forEach(({ r, i }) => {
-    r.bloqDet.forEach((m, j) => {
-      if (e.target.checked) necSel.add(i + ':' + j); else necSel.delete(i + ':' + j);
-    });
-  });
-  necRender();
-});
 document.querySelectorAll('[data-nec]').forEach(b => b.addEventListener('click', () => {
   const a = b.dataset.nec;
   const mats = necMateriales().filter(necCoincide);
-  if (a === 'selall')  mats.forEach(({ r, i }) => r.bloqDet.forEach((m, j) => necSel.add(i + ':' + j)));
   if (a === 'selnone') necSel.clear();
-  if (a === 'expand')  mats.forEach(({ i }) => necExpanded.add(i));
-  if (a === 'collapse') necExpanded.clear();
+  if (a === 'expand'){
+    mats.forEach(({ r, i }) => {
+      necExpMat.add(String(i));
+      r.lotes.forEach((lo, l) => {
+        necExpLote.add(i + ':' + l);
+        lo.motivos.forEach((m, j) => necExpMot.add(kMot(i, l, j)));
+      });
+    });
+  }
+  if (a === 'collapse'){ necExpMat.clear(); necExpLote.clear(); necExpMot.clear(); }
   necRender();
 }));
 
@@ -1268,7 +1489,8 @@ document.querySelectorAll('.doctab .tab').forEach(t =>
 /* ---------- Init ---------- */
 buildFilterRow();
 render();
-necExpanded = new Set(necMateriales().map(o => o.i)); // arranca expandido
+// arranca con los materiales desplegados (lotes visibles) y los lotes plegados
+necExpMat = new Set(necMateriales().map(o => String(o.i)));
 necRender();
 toast('Gestión de Envasados cargada');
 </script>
