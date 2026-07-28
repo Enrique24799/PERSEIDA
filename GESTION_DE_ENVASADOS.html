@@ -349,6 +349,13 @@
   .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 10.5px; font-weight: 700; }
   .pill.p-b { background: #e7f0fd; color: #1f5fc0; }   /* en marcha */
   .pill.p-n { background: #eceff3; color: #5b6b7d; }   /* planificada */
+
+  /* ===================== Modal operaciones (hoja de ruta) ===================== */
+  .modal .mhead.teal { background: linear-gradient(180deg, #1f9e8a, #158073); }
+  .modal .mhint { padding: 8px 14px; font-size: 12px; color: #51637a; background: #fff; }
+  table.dsg th.chk, table.dsg td.chk { text-align: center; width: 44px; }
+  table.dsg td.chk input { transform: scale(1.1); }
+  table.dsg tbody tr.oprow:hover td { background: #eafaf6; }
 </style>
 </head>
 <body>
@@ -583,6 +590,32 @@
   </div>
 </div>
 
+<!-- ===================== Modal: operaciones de la hoja de ruta (orden de reproceso) ===================== -->
+<div class="overlay" id="opsOverlay">
+  <div class="modal">
+    <div class="mhead teal">
+      <span>🧭</span>
+      <span>Operaciones de la hoja de ruta — orden de reproceso</span>
+      <span class="x" id="opsClose">✕</span>
+    </div>
+    <div class="msub" id="opsSub"></div>
+    <div class="mhint">Marque las operaciones que debe llevar la orden de reproceso.</div>
+    <div class="mbody">
+      <table class="dsg">
+        <thead><tr>
+          <th class="chk"><input type="checkbox" id="opsChkAll" title="Seleccionar todo"></th>
+          <th>Oper.</th><th>Descripción</th>
+        </tr></thead>
+        <tbody id="opsBody"></tbody>
+      </table>
+    </div>
+    <div class="mfoot">
+      <button id="opsCancel">Cancelar</button>
+      <button id="opsOk" class="primary">Crear orden con las operaciones marcadas</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -664,6 +697,27 @@ const PUESTOS = ['L1','L2','L3','L4','L5','L6','SANCHEZ ANTUNEZ S.L','ALMUDENA M
 function puestoPorDefecto(mat){
   let s = 0; for (const c of mat) s = (s * 17 + c.charCodeAt(0)) >>> 0;
   return 'L' + (1 + (s % 6));
+}
+
+/* ---------- Hojas de ruta (operaciones por material) ----------
+   Operaciones de la hoja de ruta en la que se ha lanzado el material. En SAP
+   vendrían de la hoja de ruta / orden; aquí son de ejemplo. Rutas concretas en
+   RUTA_MATERIAL; el resto se generan de forma determinista. */
+const RUTA_MATERIAL = {
+  '70909534': [['0010','LLENADO'], ['0020','ETIQUETADO 2'], ['0030','LOTEADO PLASTICO'], ['0040','FINAL']],
+};
+const OPS_NOMBRES = ['ETIQUETADO', 'ETIQUETADO 2', 'LOTEADO PLASTICO', 'ESTUCHADO', 'ENCAJADO',
+                     'RETRACTILADO', 'CONTROL PESO', 'CELOFANADO'];
+function hojaRuta(mat){
+  if (RUTA_MATERIAL[mat]) return RUTA_MATERIAL[mat].map(([id, nom]) => ({ id, nom }));
+  let seed = 0; for (const c of mat) seed = (seed * 31 + c.charCodeAt(0)) >>> 0;
+  const rng = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const nombres = ['LLENADO'];                       // siempre empieza por LLENADO
+  const pool = OPS_NOMBRES.slice();
+  const n = 2 + Math.floor(rng() * 3);               // 2–4 operaciones intermedias
+  for (let k = 0; k < n && pool.length; k++) nombres.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+  nombres.push('FINAL');                             // y termina en FINAL
+  return nombres.map((nom, i) => ({ id: String((i + 1) * 10).padStart(4, '0'), nom }));
 }
 
 /* Precalcular bloqueo, puesto y datos de planificación por fila */
@@ -774,7 +828,8 @@ const REP_LBL = { need:'Necesidad', creada:'Orden creada', liberada:'Orden liber
 function procContent(r){
   if (r.tipo === 'reproceso'){
     const cls = r.repState === 'creada' ? 'creada' : (r.repState === 'liberada' ? 'liberada' : '');
-    return `<span class="repbadge ${cls}">${REP_LBL[r.repState]}</span> ${r.puesto || ''}`;
+    const ops = r.operaciones && r.operaciones.length ? ` · ${r.operaciones.length} op.` : '';
+    return `<span class="repbadge ${cls}">${REP_LBL[r.repState]}${ops}</span> ${r.puesto || ''}`;
   }
   return r.proc;
 }
@@ -919,21 +974,23 @@ $('#ordClose').addEventListener('click', cerrarOrdenes);
 $('#ordOk').addEventListener('click', cerrarOrdenes);
 $('#ordOverlay').addEventListener('click', e => { if (e.target.id === 'ordOverlay') cerrarOrdenes(); });
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape'){ cerrarBloqueo(); cerrarOrdenes(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ cerrarBloqueo(); cerrarOrdenes(); cerrarOperaciones(); } });
 
 /* ===================================================================
    ÓRDENES DE REPROCESO (acciones de la cinta en Control de Producción)
    =================================================================== */
 function crearOrdenReproceso(){
-  const sel = [...seleccion].map(i => ROWS[i]).filter(Boolean);
-  const objetivo = sel.filter(r => r.tipo === 'reproceso' && r.repState === 'need');
-  if (!objetivo.length){
+  const idxs = [...seleccion].filter(i => {
+    const r = ROWS[i]; return r && r.tipo === 'reproceso' && r.repState === 'need';
+  });
+  if (!idxs.length){
     toast('Seleccione líneas de reproceso pendientes (sin orden) para crear la orden', 'warn');
     return;
   }
-  objetivo.forEach(r => { r.ofab = String(++repSeq); r.repState = 'creada'; });
-  render();
-  toast(`Orden(es) de reproceso creada(s): ${objetivo.length}`);
+  // por cada línea se elige, mediante pop-up, qué operaciones de la hoja de ruta lleva
+  repQueue = idxs.slice();
+  repCreadas = 0;
+  abrirOperaciones(repQueue[0]);
 }
 function liberarOrdenReproceso(){
   const sel = [...seleccion].map(i => ROWS[i]).filter(Boolean);
@@ -946,6 +1003,66 @@ function liberarOrdenReproceso(){
   render();
   toast(`Orden(es) de reproceso liberada(s): ${objetivo.length}`);
 }
+
+/* ---------- Pop-up de operaciones de la hoja de ruta ---------- */
+let repQueue = [];        // líneas de reproceso pendientes de asignar operaciones
+let repCreadas = 0;       // contador de órdenes creadas en la tanda
+let opsRowIdx = null;     // fila en curso
+let opsSel = new Set();   // ids de operación marcados
+
+function abrirOperaciones(i){
+  opsRowIdx = i;
+  const r = ROWS[i];
+  r._ruta = hojaRuta(r.mat);
+  opsSel = new Set(r._ruta.map(o => o.id));   // por defecto, todas marcadas
+  $('#opsSub').innerHTML =
+    `Material <b>${r.mat}</b> · ${r.nom} &nbsp;·&nbsp; Puesto <b>${r.puesto || '—'}</b> ` +
+    `&nbsp;·&nbsp; <b>${nf0(r.plan)}</b> ud.` +
+    (repQueue.length > 1 ? ` &nbsp;·&nbsp; ${repQueue.length} líneas en cola` : '');
+  renderOperaciones();
+  $('#opsOverlay').classList.add('show');
+}
+function renderOperaciones(){
+  const ruta = ROWS[opsRowIdx]._ruta;
+  const tb = $('#opsBody');
+  tb.innerHTML = ruta.map(o => `<tr class="oprow">
+      <td class="chk"><input type="checkbox" data-op="${o.id}" ${opsSel.has(o.id) ? 'checked' : ''}></td>
+      <td class="mono">${o.id}</td>
+      <td>${o.nom}</td>
+    </tr>`).join('');
+  tb.querySelectorAll('input[data-op]').forEach(cb => cb.addEventListener('change', e => {
+    if (e.target.checked) opsSel.add(e.target.dataset.op); else opsSel.delete(e.target.dataset.op);
+    $('#opsChkAll').checked = ruta.every(o => opsSel.has(o.id));
+  }));
+  $('#opsChkAll').checked = ruta.every(o => opsSel.has(o.id));
+}
+function confirmarOperaciones(){
+  if (!opsSel.size){ toast('Marque al menos una operación de la hoja de ruta', 'warn'); return; }
+  const r = ROWS[opsRowIdx];
+  r.operaciones = r._ruta.filter(o => opsSel.has(o.id));
+  r.ofab = String(++repSeq);
+  r.repState = 'creada';
+  delete r._ruta;
+  repCreadas++;
+  repQueue.shift();
+  if (repQueue.length){ abrirOperaciones(repQueue[0]); }
+  else { cerrarOperaciones(); render(); toast(`Orden(es) de reproceso creada(s): ${repCreadas}`); }
+}
+function cerrarOperaciones(){
+  $('#opsOverlay').classList.remove('show');
+  if (opsRowIdx != null) delete ROWS[opsRowIdx]._ruta;
+  opsRowIdx = null; repQueue = [];
+  render();
+}
+$('#opsChkAll').addEventListener('change', e => {
+  const ruta = ROWS[opsRowIdx]._ruta;
+  if (e.target.checked) ruta.forEach(o => opsSel.add(o.id)); else opsSel.clear();
+  renderOperaciones();
+});
+$('#opsOk').addEventListener('click', confirmarOperaciones);
+$('#opsCancel').addEventListener('click', cerrarOperaciones);
+$('#opsClose').addEventListener('click', cerrarOperaciones);
+$('#opsOverlay').addEventListener('click', e => { if (e.target.id === 'opsOverlay') cerrarOperaciones(); });
 
 /* ===================================================================
    PANTALLA: NECESIDADES REPROCESO

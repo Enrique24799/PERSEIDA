@@ -168,10 +168,17 @@ otra solo se completa, sumándose a la orden). Se opera en dos pasos:
 1. En la pestaña **Necesidades Reproceso** se seleccionan los motivos a reprocesar y se genera en
    *Control de Producción* una **línea sin orden de fabricación ni envasado** (estado *Necesidad*).
 2. En la cinta de *Control de Producción*, el grupo *Gestión Órdenes Operativas* incorpora
-   **Crear Orden de Reproceso** (asigna nº de orden a las líneas *Necesidad* seleccionadas → estado
-   *Orden creada*) y **Liberar Orden de Reproceso** (libera las órdenes creadas → estado
+   **Crear Orden de Reproceso** y **Liberar Orden de Reproceso** (libera las órdenes creadas → estado
    *Orden liberada*). Las líneas de reproceso se distinguen con un borde rojo y una etiqueta de
    estado en *Procedencia*.
+   - Al pulsar **Crear Orden de Reproceso** sobre una línea *Necesidad* (sin orden de envasado/
+     reproceso) se abre un **pop-up con las operaciones de la hoja de ruta** del material (la ruta en
+     la que se ha lanzado): **Oper.** (id), **Descripción** y un **check** por operación (con
+     seleccionar todo). Se marcan las operaciones que debe llevar la orden y, al confirmar, se crea la
+     orden (estado *Orden creada*, con el nº de operaciones en la etiqueta) guardando las operaciones
+     elegidas. Si hay varias líneas seleccionadas, el pop-up se pide una por una. Ej.: el material
+     `70909534` tiene `0010 LLENADO`, `0020 ETIQUETADO 2`, `0030 LOTEADO PLASTICO`, `0040 FINAL`.
+     Las hojas de ruta (`RUTA_MATERIAL` / `hojaRuta`) son de **ejemplo**; en real vendrían de SAP.
 
 ## Pestaña `Necesidades Reproceso`
 
