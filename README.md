@@ -4,7 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
-- `flujos-material-multipais.html` — Flujos actual y objetivo del proceso multipaís (centros de país).
+- `flujos-material-multipais.html` — Flujos actual y objetivo del proceso con Perseida Francia (centro `12FR`).
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -66,24 +66,24 @@ totales de volumen/peso se muestran una sola vez por camión.
 Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
 si procede, `runAlgo()` por la llamada al algoritmo real.
 
-## `flujos-material-multipais.html` — Flujos multipaís (actual vs. objetivo)
+## `flujos-material-multipais.html` — Flujos Perseida ↔ Perseida Francia (actual vs. objetivo)
 
-Dibujo de los dos flujos de planificación, venta y expedición entre Perseida y las sociedades de
-país (Francia, Holanda…), tomando `70908810` como material de ejemplo.
+Dibujo de los dos flujos de planificación, venta y expedición entre Perseida y Perseida Francia,
+tomando `70908810` como material de ejemplo.
 
 ### Flujo actual
 
-Copia manual del material (`70908810FR`) en el **centro 12**, almacén `HUFR` / `HUNL`. La previsión
-del país se carga sobre `70908810` en el almacén `1202`, las necesidades llegan a GPP como
+Copia manual del material (`70908810FR`) en el **centro 12**, almacén `HUFR`. La previsión
+de Francia se carga sobre `70908810` en el almacén `1202`, las necesidades llegan a GPP como
 `70908810` mezcladas con las del centro 12, se fabrica y se da de alta en el `1201`. Logística
-lleva en un Excel lo que hay que mandar a cada país, hace el movimiento **311** del `1202` al
+lleva en un Excel lo que hay que mandar a Francia, hace el movimiento **311** del `1202` al
 `HUFR` y crea a mano el pedido de venta y el de compra entre Perseida y Perseida FR. El pedido del
 cliente final entra sobre `70908810FR` contra `HUFR` y la salida también es manual.
 
 ### Flujo objetivo
 
-Un único material `70908810` dado de alta en un **centro por país** (`12FR`, `12NL`). La previsión
-se carga en el centro del país, separada de la del centro 12; la demanda llega al centro 12 como
+Un único material `70908810` dado de alta en el **centro de Francia** (`12FR`). La previsión
+se carga en ese centro, separada de la del centro 12; la demanda llega al centro 12 como
 **necesidad de traslado** visible para logística (se elimina el Excel). El traslado se resuelve con
 **picking desde la PDA** y entrada de mercancías en el `12FR`, igual que los camiones de traslado
 actuales, y el pedido del cliente final va contra el centro `12FR`.

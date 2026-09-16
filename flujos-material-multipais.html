@@ -164,17 +164,17 @@
     <p class="eyebrow">Planificación · Logística · Comercial</p>
     <h1>Flujo multipaís del material <span class="mono k">70908810</span></h1>
     <p class="lead">
-      Hoy cada país vive como una copia del material (<span class="mono">70908810FR</span>) en un almacén
+      Hoy Francia vive como una copia del material (<span class="mono">70908810FR</span>) en un almacén
       del centro 12, y todo lo que hay entre la fabricación y el cliente final se mueve a mano: el traslado,
       el seguimiento en Excel y los pedidos entre Perseida y Perseida Francia. El objetivo es un único
-      material dado de alta en un centro por país (<span class="mono">12FR</span>, <span class="mono">12NL</span>),
-      con la demanda de país separada, la necesidad de traslado visible en el sistema y el movimiento
-      resuelto con el picking desde la PDA.
+      material dado de alta en el centro de Francia (<span class="mono">12FR</span>), con la demanda de
+      Francia separada, la necesidad de traslado visible en el sistema y el movimiento resuelto con el
+      picking desde la PDA.
     </p>
     <div class="chips">
       <span class="chip">Material de ejemplo <b>70908810</b></span>
-      <span class="chip">Centros <b>12</b> → <b>12FR</b> / <b>12NL</b></span>
-      <span class="chip">Almacenes <b>1201</b> · <b>1202</b> · <b>HUFR</b> / <b>HUNL</b></span>
+      <span class="chip">Centros <b>12</b> → <b>12FR</b></span>
+      <span class="chip">Almacenes <b>1201</b> · <b>1202</b> · <b>HUFR</b></span>
       <span class="chip">Planificación <b>GPP</b></span>
     </div>
   </header>
@@ -186,26 +186,26 @@
 
       <div class="delta">
         <h3>Un material, no dos</h3>
-        <p class="hoy"><span class="who">Hoy</span><span><span class="mono">70908810</span> más una copia <span class="mono">70908810FR</span> por país.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>Sólo <span class="mono">70908810</span>, dado de alta en cada centro de país.</span></p>
+        <p class="hoy"><span class="who">Hoy</span><span><span class="mono">70908810</span> más una copia <span class="mono">70908810FR</span> para Francia.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Sólo <span class="mono">70908810</span>, dado de alta también en el centro <span class="mono">12FR</span>.</span></p>
       </div>
 
       <div class="delta">
-        <h3>Centro de país, no almacén de país</h3>
-        <p class="hoy"><span class="who">Hoy</span><span>Almacenes <span class="mono">HUFR</span> / <span class="mono">HUNL</span> dentro del centro <span class="mono">12</span>.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>Centros propios <span class="mono">12FR</span> y <span class="mono">12NL</span>.</span></p>
+        <h3>Centro de Francia, no almacén de Francia</h3>
+        <p class="hoy"><span class="who">Hoy</span><span>Almacén <span class="mono">HUFR</span> dentro del centro <span class="mono">12</span>.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Centro propio <span class="mono">12FR</span>.</span></p>
       </div>
 
       <div class="delta">
         <h3>Previsión separada</h3>
-        <p class="hoy"><span class="who">Hoy</span><span>La previsión del país se carga sobre el almacén <span class="mono">1202</span> del centro 12 y se mezcla con la demanda nacional.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>La previsión se carga en el centro del país, separada de la del centro 12.</span></p>
+        <p class="hoy"><span class="who">Hoy</span><span>La previsión de Francia se carga sobre el almacén <span class="mono">1202</span> del centro 12 y se mezcla con la demanda nacional.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>La previsión se carga en el centro <span class="mono">12FR</span>, separada de la del centro 12.</span></p>
       </div>
 
       <div class="delta">
         <h3>La necesidad, en el sistema</h3>
-        <p class="hoy"><span class="who">Hoy</span><span>Logística lleva en un Excel lo que hay que mandar a cada país.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>La demanda del centro de país llega al centro 12 como necesidad de traslado.</span></p>
+        <p class="hoy"><span class="who">Hoy</span><span>Logística lleva en un Excel lo que hay que mandar a Francia.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>La demanda del <span class="mono">12FR</span> llega al centro 12 como necesidad de traslado.</span></p>
       </div>
 
       <div class="delta">
@@ -215,7 +215,7 @@
       </div>
 
       <div class="delta">
-        <h3>El cliente final compra al centro del país</h3>
+        <h3>El cliente final compra al centro <span class="mono">12FR</span></h3>
         <p class="hoy"><span class="who">Hoy</span><span>Pedido de <span class="mono">70908810FR</span> contra el almacén <span class="mono">HUFR</span> y salida manual.</span></p>
         <p class="obj"><span class="who">Objetivo</span><span>Pedido de <span class="mono">70908810</span> contra el centro <span class="mono">12FR</span>.</span></p>
       </div>
@@ -266,7 +266,7 @@
         <rect class="pill pill-m" x="588" y="40" width="54" height="15" rx="7.5"/>
         <text class="pt pt-m" x="615" y="51" text-anchor="middle">MANUAL</text>
         <text class="t2" x="448" y="72">Centro 12 · almacén HUFR</text>
-        <text class="t2" x="448" y="86">copia con el sufijo del país</text>
+        <text class="t2" x="448" y="86">copia con el sufijo FR</text>
 
         <path class="edge-m" d="M370,64 H428" marker-end="url(#a1m)"/>
         <text class="el-m" x="399" y="56" text-anchor="middle">copia</text>
@@ -275,7 +275,7 @@
 
         <!-- L2 · previsión y planificación -->
         <rect class="box" x="150" y="146" width="220" height="64" rx="6"/>
-        <text class="t1" x="164" y="170">Previsión de país</text>
+        <text class="t1" x="164" y="170">Previsión de Francia</text>
         <text class="t2" x="164" y="186">sobre 70908810 · almacén 1202</text>
         <text class="t2" x="164" y="200">dentro del centro 12</text>
 
@@ -314,7 +314,7 @@
         <rect class="box-m" x="150" y="374" width="220" height="64" rx="6"/>
         <text class="t1" x="164" y="398">Excel de necesidades</text>
         <text class="t2" x="164" y="414">seguimiento fuera del sistema</text>
-        <text class="t2" x="164" y="428">qué mandar a cada país</text>
+        <text class="t2" x="164" y="428">qué mandar a Francia</text>
 
         <rect class="box-m" x="434" y="374" width="220" height="64" rx="6"/>
         <text class="t1" x="448" y="398">Pedido de venta</text>
@@ -334,7 +334,7 @@
 
         <path class="edge-m" d="M200,210 V368" marker-end="url(#a1m)"/>
         <text class="el-m" x="208" y="282">desglose</text>
-        <text class="el-m" x="208" y="294">por país</text>
+        <text class="el-m" x="208" y="294">de Francia</text>
 
         <path class="edge-m" d="M230,374 V338 H1112 V332" marker-end="url(#a1m)"/>
         <text class="el-m" x="670" y="332" text-anchor="middle">qué trasladar</text>
@@ -385,7 +385,7 @@
       <span><span class="swatch" style="border-top:2px dashed var(--accent)"></span> pendiente de definir</span>
     </div>
     <div class="diagram">
-      <svg viewBox="0 0 1280 580" role="img" aria-label="Flujo objetivo: el material 70908810 se da de alta en el centro 12FR y desaparece la copia 70908810FR; la previsión del país se carga en el centro 12FR separada de la del centro 12; GPP genera una necesidad de traslado del 12 al 12FR visible para logística, que sustituye al Excel; tras la fabricación y el alta en el almacén 1201 el traslado se resuelve con picking desde la PDA y entrada de mercancías en el 12FR; el pedido del cliente final entra sobre 70908810 contra el centro 12FR y la salida se hace desde ese centro.">
+      <svg viewBox="0 0 1280 580" role="img" aria-label="Flujo objetivo: el material 70908810 se da de alta en el centro 12FR y desaparece la copia 70908810FR; la previsión de Francia se carga en el centro 12FR separada de la del centro 12; GPP genera una necesidad de traslado del 12 al 12FR visible para logística, que sustituye al Excel; tras la fabricación y el alta en el almacén 1201 el traslado se resuelve con picking desde la PDA y entrada de mercancías en el 12FR; el pedido del cliente final entra sobre 70908810 contra el centro 12FR y la salida se hace desde ese centro.">
         <defs>
           <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
           <marker id="a2a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah-a"/></marker>
@@ -414,14 +414,14 @@
         <rect class="box-x" x="434" y="32" width="220" height="64" rx="6"/>
         <text class="t1-x mono" x="448" y="56">70908810FR</text>
         <line class="strike" x1="446" y1="52" x2="528" y2="52"/>
-        <text class="t2-x" x="448" y="72">ya no se crea la copia de país</text>
-        <text class="t2-x" x="448" y="86">ni el almacén HUFR / HUNL</text>
+        <text class="t2-x" x="448" y="72">ya no se crea la copia FR</text>
+        <text class="t2-x" x="448" y="86">ni el almacén HUFR</text>
 
         <path class="edge-d" d="M260,96 V140" marker-end="url(#a2)"/>
 
         <!-- L2 · previsión y planificación -->
         <rect class="box-a" x="150" y="146" width="220" height="64" rx="6"/>
-        <text class="t1" x="164" y="170">Previsión de país</text>
+        <text class="t1" x="164" y="170">Previsión de Francia</text>
         <text class="t2" x="164" y="186">sobre 70908810 en el centro 12FR</text>
         <text class="t2" x="164" y="200">separada de la del centro 12</text>
 
@@ -510,7 +510,7 @@
     </div>
     <figcaption>
       Las dos cajas tachadas son lo que se elimina: la copia del material y el Excel. Lo que las sustituye
-      es la misma necesidad de traslado recorriendo el sistema — de la previsión del centro de país al
+      es la misma necesidad de traslado recorriendo el sistema — de la previsión del centro <code>12FR</code> al
       pedido de traslado, y de ahí al picking en la PDA y a la entrada de mercancías en el 12FR.
     </figcaption>
   </figure>
@@ -581,23 +581,22 @@
 
   <section>
     <h2>Puntos a cerrar</h2>
-    <p class="sub">Lo que el dibujo deja abierto y conviene decidir antes de parametrizar el primer país.</p>
+    <p class="sub">Lo que el dibujo deja abierto y conviene decidir antes de parametrizar el centro <code>12FR</code>.</p>
     <ol class="open">
       <li><b>Del 1201 al 1202</b> Hoy la fabricación entra en el <code>1201</code> y el movimiento 311 se hace desde el <code>1202</code>: falta confirmar el paso entre ambos almacenes y si se mantiene en el objetivo.</li>
       <li><b>Facturación entre empresas</b> Si el pedido de traslado lleva factura intercompañía asociada o siguen haciendo falta pedido de venta y de compra.</li>
-      <li><b>Convivencia y arranque</b> Qué se hace con el stock que quede en <code>HUFR</code> / <code>HUNL</code> y con los pedidos de cliente abiertos sobre <code>70908810FR</code>.</li>
+      <li><b>Convivencia y arranque</b> Qué se hace con el stock que quede en <code>HUFR</code> y con los pedidos de cliente abiertos sobre <code>70908810FR</code>.</li>
       <li><b>Reparto de la previsión</b> Cómo se separa el histórico de demanda del centro 12 respecto del <code>12FR</code> la primera vez que se cargan las previsiones por centro.</li>
       <li><b>Lote y caducidad</b> Cómo viaja el lote en el picking con PDA y con qué fecha entra en el <code>12FR</code>.</li>
-      <li><b>Valoración del stock</b> A qué precio se traslada y cómo queda valorado el stock en el centro del país.</li>
+      <li><b>Valoración del stock</b> A qué precio se traslada y cómo queda valorado el stock en el centro <code>12FR</code>.</li>
       <li><b>Plazo de traslado</b> Qué tiempo de tránsito se parametriza entre el <code>12</code> y el <code>12FR</code> para que la necesidad se genere con la antelación suficiente.</li>
-      <li><b>Siguientes países</b> Qué parte de la parametrización se hace una sola vez y qué hay que repetir para <code>12NL</code> y los que vengan detrás.</li>
     </ol>
   </section>
 
   <footer>
     Los dos flujos están dibujados a partir de la descripción del proceso de planificación, venta y
-    expedición entre Perseida y las sociedades de país. <code>70908810</code> se usa como ejemplo;
-    el patrón es el mismo para el resto de materiales y para <code>12NL</code>.
+    expedición entre Perseida y Perseida Francia. <code>70908810</code> se usa como ejemplo;
+    el patrón es el mismo para el resto de materiales.
   </footer>
 
 </div>
