@@ -4,7 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
-- `flujos-material-multipais.html` — Flujos actual y objetivo del proceso con Perseida Francia (centro `12FR`).
+- `flujos-material-multipais.html` — Flujos actual y objetivo de dos procesos de traslado, en pestañas.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -66,46 +66,45 @@ totales de volumen/peso se muestran una sola vez por camión.
 Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
 si procede, `runAlgo()` por la llamada al algoritmo real.
 
-## `flujos-material-multipais.html` — Flujos Perseida ↔ Perseida Francia (actual vs. objetivo)
+## `flujos-material-multipais.html` — Flujos de traslado (actual vs. objetivo)
 
-Dibujo de los dos flujos de planificación, venta y expedición entre Perseida y Perseida Francia,
-tomando `70908810` como material de ejemplo.
+Dos procesos, cada uno en su **pestaña**, con `70908810` como material de ejemplo. La pestaña se
+recuerda en `localStorage`.
 
-### Flujo actual
+### Pestaña 1 · Entre países (centro `12` → `12FR`)
 
-Copia manual del material (`70908810FR`) en el **centro 12**, almacén `HUFR`. La previsión
-de Francia se carga sobre `70908810` en el almacén `1202`, las necesidades llegan a GPP como
-`70908810` mezcladas con las del centro 12, se fabrica y se da de alta en el `1201`. Logística
-lleva en un Excel lo que hay que mandar a Francia, hace el movimiento **311** del `1202` al
-`HUFR` y crea a mano el pedido de venta y el de compra entre Perseida y Perseida FR, **sin
-factura**. El stock sigue siendo del centro 12, así que no hay entrada de mercancías en ninguna
-parte. El pedido del cliente final entra sobre `70908810FR` contra `HUFR` y la salida también es
-manual.
+**Actual.** Copia manual del material (`70908810FR`) en el **centro 12**, almacén `HUFR`. La
+previsión de Francia se carga sobre `70908810` en el almacén `1202`, las necesidades llegan a GPP
+mezcladas con las del centro 12, se fabrica y se da de alta en el `1201`. Logística lleva en un
+Excel lo que hay que mandar a Francia, hace el movimiento **311** del `1202` al `HUFR` y crea a mano
+el pedido de venta y el de compra, **sin factura**. El stock sigue siendo del centro 12, así que no
+hay entrada de mercancías. El pedido del cliente final entra sobre `70908810FR` contra `HUFR` y la
+salida también es manual.
 
-### Flujo objetivo
+**Objetivo.** Material único dado de alta en el **centro de Francia** (`12FR`), previsión separada y
+demanda que llega a GPP como **solped de traslado**. La conversión en **pedido de traslado**, el
+**transporte** y el **traslado** con picking desde la PDA se dan **en un mismo paso**. No se
+factura: se produce una **conversión de impuestos**. La mercancía entra en el `12FR` como
+**entrada de mercancías** (aprovisionamiento) y el pedido del cliente final queda **un escalón por
+debajo**, compensando el stock ya disponible.
 
-Un único material `70908810` dado de alta en el **centro de Francia** (`12FR`). La previsión
-se carga en ese centro, separada de la del centro 12; la demanda llega a GPP como **solped de
-traslado** (no como pedido), visible para logística, y sustituye al Excel. La conversión de la
-solped en **pedido de traslado**, la generación del **transporte** y el **traslado** con picking
-desde la PDA se dan **en un mismo paso**. No se factura: se produce una **conversión de
-impuestos**. La mercancía entra en el `12FR` como **entrada de mercancías** dentro del
-aprovisionamiento, y el pedido del cliente final queda **un escalón por debajo**, compensando el
-stock ya disponible en el `12FR`.
+### Pestaña 2 · Entre almacenes (`1202` → `12PO`)
+
+**Actual.** El material **no se duplica**: `12PO` es un almacén más del centro `12`, sin
+planificación propia. La previsión se carga sobre el almacén `1202` e incluye sin separar la del
+`12PO`; las necesidades de ese almacén se llevan en un **Excel**, de donde salen a mano el camión de
+traslado y el propio movimiento al `12PO`. Como sólo cambia de almacén, no hay entrada de
+mercancías. Las salidas se hacen a mano a medida que entran los pedidos en el `12PO`.
+
+**Objetivo.** Crear el **área de planificación `12_12PO`** en el centro `12`, sobre un almacén
+distinto del `1202` (por ejemplo el propio `12PO`), y cargar **previsión y pedidos** contra esa área.
+La necesidad sale como **solicitud de pedido de traslado** al almacén `1202`, visible en la parte
+logística, y el traslado se resuelve **como en el flujo por países**: conversión a pedido,
+transporte, traslado y entrada de mercancías en el `12PO`, sobre cuyo stock disponible salen los
+pedidos.
 
 ### Cómo leer los diagramas
 
-Los dos diagramas comparten carriles y columnas, para poder compararlos fila a fila:
-
-| Carril | Actual | Objetivo |
-|---|---|---|
-| Datos maestros | copia `70908810FR` | material único |
-| Previsión y planificación | necesidad mezclada en GPP | solped de traslado |
-| Fabricación y traslado | movimiento `311` a mano | traslado en un paso |
-| Pedidos ES–FR | Excel + pedidos espejo | conversión de impuestos |
-| Aprovisionamiento | sin entrada de mercancías | entrada en el `12FR` |
-| Cliente final (último escalón) | espera stock en `HUFR` | compensa stock del `12FR` |
-
-Ámbar discontinuo = paso manual, verde = paso automático, caja tachada = lo que desaparece. El
-apartado **Puntos a cerrar** recoge lo que la descripción del proceso deja abierto (entre otros, el
-paso del almacén `1201` al `1202` y qué operación soporta la conversión de impuestos).
+Los cuatro diagramas comparten carriles y columnas, para poder compararlos fila a fila. Ámbar
+discontinuo = paso manual, verde = paso automático, caja tachada = lo que desaparece. Cada pestaña
+termina con una tabla **paso a paso** y con sus **puntos a cerrar**.

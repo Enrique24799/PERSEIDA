@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Flujos multipaís Perseida</title>
+<title>Flujos de traslado Perseida</title>
 <style>
   :root{
     --sans:"Segoe UI", Roboto, system-ui, Arial, sans-serif;
@@ -42,6 +42,7 @@
   }
 
   *{box-sizing:border-box}
+  [hidden]{display:none !important}   /* gana a display:flex de .panel */
   body{
     margin:0; background:var(--bg); color:var(--ink);
     font-family:var(--sans); font-size:13.5px; line-height:1.5;
@@ -126,6 +127,25 @@
   .pt{font-size:8.6px; font-weight:700; letter-spacing:.05em}
   .pt-m{fill:var(--manual)} .pt-a{fill:var(--auto)} .pt-k{fill:var(--accent)}
 
+  /* ---------- Pestañas ---------- */
+  .tabs{display:flex; gap:26px; flex-wrap:wrap; border-bottom:1px solid var(--line)}
+  .tab{appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+       padding:0 0 10px; margin:0; cursor:pointer; font:inherit; text-align:left;
+       display:flex; flex-direction:column; gap:1px}
+  .tab .tab-n{font-size:14px; font-weight:700; color:var(--muted)}
+  .tab .tab-s{font-size:11px; font-family:var(--mono); font-weight:600; color:var(--ink-soft)}
+  .tab[aria-selected="true"]{border-bottom-color:var(--accent)}
+  .tab[aria-selected="true"] .tab-n{color:var(--accent)}
+  .tab:hover .tab-n{color:var(--accent)}
+  .tab:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+  .panel{display:flex; flex-direction:column; gap:34px}
+  .panel-head{display:flex; flex-direction:column}
+
+  /* ---------- Nota ---------- */
+  .note{border-left:3px solid var(--accent); background:var(--panel); padding:11px 14px;
+        font-size:12.5px; color:var(--muted); border-radius:0 6px 6px 0; margin:20px 0 0}
+  .note b{color:var(--ink)}
+
   /* ---------- Tabla ---------- */
   .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--card)}
   table{border-collapse:collapse; width:100%; min-width:760px; font-size:12.5px}
@@ -162,7 +182,28 @@
 
   <header>
     <p class="eyebrow">Planificación · Logística · Comercial</p>
-    <h1>Flujo multipaís del material <span class="mono k">70908810</span></h1>
+    <h1>Flujos de traslado del material <span class="mono k">70908810</span></h1>
+    <p class="lead">
+      Dos procesos distintos con el mismo patrón objetivo: separar la demanda de destino de la del
+      almacén <span class="mono">1202</span>, verla en el sistema como una solicitud de traslado y
+      resolver el movimiento con un pedido de traslado y picking desde la PDA. Uno cruza la frontera
+      y el otro se queda dentro del centro <span class="mono">12</span>.
+    </p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Procesos">
+    <button class="tab" id="tab-paises" role="tab" aria-selected="true" aria-controls="panel-paises" tabindex="0">
+      <span class="tab-n">Entre países</span>
+      <span class="tab-s">centro 12 → 12FR</span>
+    </button>
+    <button class="tab" id="tab-almacenes" role="tab" aria-selected="false" aria-controls="panel-almacenes" tabindex="-1">
+      <span class="tab-n">Entre almacenes</span>
+      <span class="tab-s">1202 → 12PO</span>
+    </button>
+  </div>
+
+  <section class="panel" id="panel-paises" role="tabpanel" aria-labelledby="tab-paises">
+    <div class="panel-head">
     <p class="lead">
       Hoy Francia vive como una copia del material (<span class="mono">70908810FR</span>) en un almacén
       del centro 12, y todo lo que hay entre la fabricación y el cliente final se mueve a mano: el traslado,
@@ -177,7 +218,7 @@
       <span class="chip">Almacenes <b>1201</b> · <b>1202</b> · <b>HUFR</b></span>
       <span class="chip">Planificación <b>GPP</b></span>
     </div>
-  </header>
+    </div>
 
   <section>
     <h2>Qué cambia</h2>
@@ -607,12 +648,430 @@
     </ol>
   </section>
 
+  </section>
+
+  <section class="panel" id="panel-almacenes" role="tabpanel" aria-labelledby="tab-almacenes" hidden>
+    <div class="panel-head">
+    <p class="lead">
+      El segundo proceso no cruza de centro: el destino es el almacén <span class="mono">12PO</span>,
+      dentro del propio centro <span class="mono">12</span>, y aquí el material nunca se duplica. Hoy la
+      previsión se carga sobre el almacén <span class="mono">1202</span>, las necesidades del
+      <span class="mono">12PO</span> se llevan en un Excel y tanto el camión como el traslado y las salidas
+      se hacen a mano. El objetivo es darle al <span class="mono">12PO</span> su propia área de
+      planificación y resolver el traslado con el mismo mecanismo que el flujo por países.
+    </p>
+    <div class="chips">
+      <span class="chip">Material de ejemplo <b>70908810</b></span>
+      <span class="chip">Centro <b>12</b></span>
+      <span class="chip">Almacenes <b>1202</b> → <b>12PO</b></span>
+      <span class="chip">Área de planificación <b>12_12PO</b></span>
+    </div>
+    </div>
+
+  <section>
+    <h2>Qué cambia</h2>
+    <p class="sub">Cinco diferencias entre los dos flujos, todas dentro del centro <code>12</code>.</p>
+    <div class="deltas">
+
+      <div class="delta">
+        <h3>Área de planificación propia</h3>
+        <p class="hoy"><span class="who">Hoy</span><span>El <span class="mono">12PO</span> no planifica: su demanda va dentro de la del almacén <span class="mono">1202</span>.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Área <span class="mono">12_12PO</span> en el centro 12, sobre un almacén distinto del <span class="mono">1202</span> — por ejemplo el propio <span class="mono">12PO</span>.</span></p>
+      </div>
+
+      <div class="delta">
+        <h3>Previsión y pedidos contra el área</h3>
+        <p class="hoy"><span class="who">Hoy</span><span>Las previsiones se cargan sobre el material en el almacén <span class="mono">1202</span>, sin separar lo que es del <span class="mono">12PO</span>.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Previsión y pedidos se cargan contra el área <span class="mono">12_12PO</span> y su almacén.</span></p>
+      </div>
+
+      <div class="delta">
+        <h3>La necesidad, como solped</h3>
+        <p class="hoy"><span class="who">Hoy</span><span>Las necesidades del <span class="mono">12PO</span> se llevan en un Excel.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Salen como <b>solicitud de pedido de traslado</b> al almacén <span class="mono">1202</span>, que logística ve en el sistema.</span></p>
+      </div>
+
+      <div class="delta">
+        <h3>Traslado con pedido, no a mano</h3>
+        <p class="hoy"><span class="who">Hoy</span><span>Se generan los camiones de traslado y el movimiento al <span class="mono">12PO</span> a mano.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>La solped se convierte en pedido de traslado, y el traslado y la entrada van como en el flujo por países.</span></p>
+      </div>
+
+      <div class="delta">
+        <h3>Salidas sobre stock disponible</h3>
+        <p class="hoy"><span class="who">Hoy</span><span>Las salidas se hacen a mano a medida que entran los pedidos en el <span class="mono">12PO</span>.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Tras la entrada de mercancías, los pedidos del <span class="mono">12PO</span> compensan el stock ya disponible.</span></p>
+      </div>
+
+    </div>
+    <p class="note">
+      <b>Lo que no cambia.</b> El material no se duplica en ninguno de los dos flujos —a diferencia del
+      proceso entre países—, todo ocurre dentro del centro <code>12</code>, así que no hay pedidos entre
+      empresas ni conversión de impuestos, y la fabricación sigue tirando de la demanda del almacén
+      <code>1202</code>.
+    </p>
+  </section>
+
+  <figure>
+    <div class="fighead">
+      <h2>Flujo actual</h2>
+      <span class="stamp now">Hoy</span>
+    </div>
+    <p class="sub">La demanda del <code>12PO</code> viaja en un Excel y el traslado se monta camión a camión.</p>
+    <div class="legend">
+      <span><span class="swatch"></span> paso dentro del sistema</span>
+      <span><span class="swatch m"></span> paso manual</span>
+    </div>
+    <div class="diagram">
+      <svg viewBox="0 0 1280 580" role="img" aria-label="Flujo actual entre almacenes: el material 70908810 no se duplica y el almacén 12PO no tiene planificación propia; la previsión se carga sobre el almacén 1202 e incluye sin separar la del 12PO, y GPP ve una sola demanda que tira de las órdenes y la fabricación; logística lleva en un Excel lo que necesita el 12PO, genera a mano el camión de traslado y hace a mano el movimiento del 1202 al 12PO, sin entrada de mercancías; los pedidos entran contra el almacén 12PO y las salidas se hacen a mano a medida que llegan.">
+        <defs>
+          <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+          <marker id="a3m" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah-m"/></marker>
+        </defs>
+
+        <rect class="band"     x="8" y="12"  width="1234" height="100" rx="8"/>
+        <rect class="band-alt" x="8" y="126" width="1234" height="100" rx="8"/>
+        <rect class="band"     x="8" y="240" width="1234" height="100" rx="8"/>
+        <rect class="band-alt" x="8" y="354" width="1234" height="100" rx="8"/>
+        <rect class="band"     x="8" y="468" width="1234" height="100" rx="8"/>
+
+        <text class="lane-t" x="22" y="56">DATOS</text><text class="lane-t" x="22" y="70">MAESTROS</text>
+        <text class="lane-t" x="22" y="170">PREVISIÓN Y</text><text class="lane-t" x="22" y="184">PLANIFICACIÓN</text>
+        <text class="lane-t" x="22" y="284">TRASLADO</text><text class="lane-t" x="22" y="298">1202 → 12PO</text>
+        <text class="lane-t" x="22" y="398">APROVISIONAMIENTO</text><text class="lane-t" x="22" y="412">12PO</text>
+        <text class="lane-t" x="22" y="512">PEDIDOS</text><text class="lane-t" x="22" y="526">Y SALIDAS</text>
+
+        <!-- L1 · datos maestros -->
+        <rect class="box" x="150" y="32" width="220" height="64" rx="6"/>
+        <text class="t1 mono k" x="164" y="56">70908810</text>
+        <text class="t2" x="164" y="72">Centro 12 · almacén 1202</text>
+        <text class="t2" x="164" y="86">no se duplica el material</text>
+
+        <rect class="box" x="434" y="32" width="220" height="64" rx="6"/>
+        <text class="t1" x="448" y="56">Almacén 12PO</text>
+        <text class="t2" x="448" y="72">dentro del centro 12</text>
+        <text class="t2" x="448" y="86">sin planificación propia</text>
+
+        <path class="edge" d="M370,64 H428" marker-end="url(#a3)"/>
+        <text class="el" x="399" y="56" text-anchor="middle">el mismo</text>
+        <path class="edge-d" d="M260,96 V140" marker-end="url(#a3)"/>
+
+        <!-- L2 · previsión y planificación -->
+        <rect class="box" x="150" y="146" width="220" height="64" rx="6"/>
+        <text class="t1" x="164" y="170">Previsión</text>
+        <text class="t2" x="164" y="186">sobre 70908810 · almacén 1202</text>
+        <text class="t2" x="164" y="200">incluye la del 12PO, sin separar</text>
+
+        <rect class="box" x="434" y="146" width="220" height="64" rx="6"/>
+        <text class="t1" x="448" y="170">GPP · necesidades</text>
+        <text class="t2" x="448" y="186">una sola demanda, la del 1202</text>
+        <text class="t2" x="448" y="200">no distingue el 12PO</text>
+
+        <rect class="box" x="718" y="146" width="220" height="64" rx="6"/>
+        <text class="t1" x="732" y="170">Órdenes y fabricación</text>
+        <text class="t2" x="732" y="186">contra la demanda del 1202</text>
+
+        <path class="edge" d="M370,178 H428" marker-end="url(#a3)"/>
+        <text class="el" x="399" y="170" text-anchor="middle">previsión</text>
+        <path class="edge" d="M654,178 H712" marker-end="url(#a3)"/>
+        <text class="el" x="683" y="170" text-anchor="middle">necesidad</text>
+
+        <!-- L3 · traslado -->
+        <rect class="box-m" x="150" y="260" width="220" height="64" rx="6"/>
+        <text class="t1" x="164" y="284">Excel de necesidades</text>
+        <text class="t2" x="164" y="300">qué necesita el 12PO</text>
+        <text class="t2" x="164" y="314">fuera del sistema</text>
+
+        <rect class="box-m" x="434" y="260" width="220" height="64" rx="6"/>
+        <text class="t1" x="448" y="284">Camión de traslado</text>
+        <rect class="pill pill-m" x="588" y="268" width="54" height="15" rx="7.5"/>
+        <text class="pt pt-m" x="615" y="279" text-anchor="middle">MANUAL</text>
+        <text class="t2" x="448" y="300">se genera a mano</text>
+        <text class="t2" x="448" y="314">según el Excel</text>
+
+        <rect class="box-m" x="1002" y="260" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="284">Traslado al 12PO</text>
+        <rect class="pill pill-m" x="1156" y="268" width="54" height="15" rx="7.5"/>
+        <text class="pt pt-m" x="1183" y="279" text-anchor="middle">MANUAL</text>
+        <text class="t2" x="1016" y="300">del almacén 1202 al 12PO</text>
+        <text class="t2" x="1016" y="314">movimiento a mano</text>
+
+        <path class="edge-m" d="M200,210 V254" marker-end="url(#a3m)"/>
+        <text class="el-m" x="208" y="234">necesidades del 12PO</text>
+        <path class="edge-m" d="M370,292 H428" marker-end="url(#a3m)"/>
+        <text class="el-m" x="399" y="284" text-anchor="middle">a mano</text>
+        <path class="edge-m" d="M654,292 H996" marker-end="url(#a3m)"/>
+        <text class="el-m" x="825" y="284" text-anchor="middle">carga del camión</text>
+
+        <!-- L4 · aprovisionamiento 12PO -->
+        <rect class="box" x="1002" y="374" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="398">Stock en el 12PO</text>
+        <text class="t2" x="1016" y="414">sin entrada de mercancías</text>
+        <text class="t2" x="1016" y="428">sólo cambia de almacén</text>
+
+        <path class="edge" d="M1112,324 V368" marker-end="url(#a3)"/>
+
+        <!-- L5 · pedidos y salidas -->
+        <rect class="box" x="150" y="488" width="220" height="64" rx="6"/>
+        <text class="t1" x="164" y="512">Pedidos del 12PO</text>
+        <text class="t2" x="164" y="528">entran sobre el 70908810</text>
+        <text class="t2" x="164" y="542">en el almacén 12PO</text>
+
+        <rect class="box-m" x="1002" y="488" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="512">Salidas a mano</text>
+        <rect class="pill pill-m" x="1156" y="496" width="54" height="15" rx="7.5"/>
+        <text class="pt pt-m" x="1183" y="507" text-anchor="middle">MANUAL</text>
+        <text class="t2" x="1016" y="528">a medida que entran los pedidos</text>
+
+        <path class="edge" d="M370,520 H996" marker-end="url(#a3)"/>
+        <text class="el" x="683" y="512" text-anchor="middle">pedido a pedido</text>
+        <path class="edge" d="M1112,438 V482" marker-end="url(#a3)"/>
+        <text class="el" x="1120" y="464">stock en el 12PO</text>
+      </svg>
+    </div>
+    <figcaption>
+      La demanda del <code>12PO</code> no existe como tal en el sistema: está dentro de la del
+      <code>1202</code> y se reconstruye en un Excel. De ahí salen el camión, el movimiento y, más tarde,
+      cada salida. Como el traslado sólo cambia el stock de almacén dentro del centro 12, tampoco hay
+      entrada de mercancías.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <div class="fighead">
+      <h2>Flujo objetivo</h2>
+      <span class="stamp next">Objetivo</span>
+    </div>
+    <p class="sub">El <code>12PO</code> pasa a planificarse solo y el traslado se resuelve igual que en el flujo por países.</p>
+    <div class="legend">
+      <span><span class="swatch"></span> paso dentro del sistema</span>
+      <span><span class="swatch a"></span> paso automático</span>
+      <span><span class="swatch x"></span> lo que desaparece</span>
+    </div>
+    <div class="diagram">
+      <svg viewBox="0 0 1280 580" role="img" aria-label="Flujo objetivo entre almacenes: se crea el área de planificación 12_12PO en el centro 12, sobre un almacén distinto del 1202; la previsión y los pedidos se cargan contra esa área, y GPP genera una solped de traslado del almacén 1202 al 12PO, visible para logística, que sustituye al Excel y al camión montado a mano; la solped se convierte en pedido de traslado y se generan el transporte y el traslado en un mismo paso con picking desde la PDA; la mercancía entra en el 12PO con entrada de mercancías y queda como stock disponible, sobre el que se hacen las salidas de los pedidos del 12PO.">
+        <defs>
+          <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+          <marker id="a4a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah-a"/></marker>
+        </defs>
+
+        <rect class="band"     x="8" y="12"  width="1234" height="100" rx="8"/>
+        <rect class="band-alt" x="8" y="126" width="1234" height="100" rx="8"/>
+        <rect class="band"     x="8" y="240" width="1234" height="100" rx="8"/>
+        <rect class="band-alt" x="8" y="354" width="1234" height="100" rx="8"/>
+        <rect class="band"     x="8" y="468" width="1234" height="100" rx="8"/>
+
+        <text class="lane-t" x="22" y="56">DATOS</text><text class="lane-t" x="22" y="70">MAESTROS</text>
+        <text class="lane-t" x="22" y="170">PREVISIÓN Y</text><text class="lane-t" x="22" y="184">PLANIFICACIÓN</text>
+        <text class="lane-t" x="22" y="284">TRASLADO</text><text class="lane-t" x="22" y="298">1202 → 12PO</text>
+        <text class="lane-t" x="22" y="398">APROVISIONAMIENTO</text><text class="lane-t" x="22" y="412">12PO</text>
+        <text class="lane-t" x="22" y="512">PEDIDOS</text><text class="lane-t" x="22" y="526">Y SALIDAS</text>
+
+        <!-- L1 · datos maestros -->
+        <rect class="box" x="150" y="32" width="220" height="64" rx="6"/>
+        <text class="t1 mono k" x="164" y="56">70908810</text>
+        <text class="t2" x="164" y="72">Centro 12 · almacén 1202</text>
+        <text class="t2" x="164" y="86">sigue sin duplicarse</text>
+
+        <rect class="box-a" x="434" y="32" width="220" height="64" rx="6"/>
+        <text class="t1" x="448" y="56">Área 12_12PO</text>
+        <rect class="pill pill-a" x="592" y="40" width="50" height="15" rx="7.5"/>
+        <text class="pt pt-a" x="617" y="51" text-anchor="middle">NUEVA</text>
+        <text class="t2" x="448" y="72">sobre el almacén 12PO</text>
+        <text class="t2" x="448" y="86">distinto del 1202</text>
+
+        <path class="edge-a" d="M370,64 H428" marker-end="url(#a4a)"/>
+        <text class="el-a" x="399" y="56" text-anchor="middle">se crea</text>
+        <path class="edge-a" d="M544,96 V120 H260 V140" marker-end="url(#a4a)"/>
+        <text class="el-a" x="400" y="116" text-anchor="middle">se carga contra el área</text>
+
+        <!-- L2 · previsión y planificación -->
+        <rect class="box-a" x="150" y="146" width="220" height="64" rx="6"/>
+        <text class="t1" x="164" y="170">Previsión y pedidos</text>
+        <text class="t2" x="164" y="186">contra el área 12_12PO</text>
+        <text class="t2" x="164" y="200">separados de los del 1202</text>
+
+        <rect class="box-a" x="434" y="146" width="220" height="64" rx="6"/>
+        <text class="t1" x="448" y="170">GPP · solped de traslado</text>
+        <text class="t2" x="448" y="186">del almacén 1202 al 12PO</text>
+        <text class="t2" x="448" y="200">visible para logística</text>
+
+        <rect class="box" x="718" y="146" width="220" height="64" rx="6"/>
+        <text class="t1" x="732" y="170">Órdenes y fabricación</text>
+        <text class="t2" x="732" y="186">contra la demanda del 1202</text>
+        <text class="t2" x="732" y="200">sin cambios</text>
+
+        <path class="edge-a" d="M370,178 H428" marker-end="url(#a4a)"/>
+        <text class="el-a" x="399" y="170" text-anchor="middle">previsión</text>
+        <path class="edge-a" d="M654,178 H712" marker-end="url(#a4a)"/>
+        <text class="el-a" x="683" y="170" text-anchor="middle">necesidad</text>
+
+        <!-- L3 · traslado -->
+        <rect class="box-x" x="150" y="260" width="220" height="64" rx="6"/>
+        <text class="t1-x" x="164" y="284">Excel de necesidades</text>
+        <line class="strike" x1="162" y1="280" x2="296" y2="280"/>
+        <text class="t2-x" x="164" y="300">lo sustituye la solped</text>
+        <text class="t2-x" x="164" y="314">de traslado del sistema</text>
+
+        <rect class="box-x" x="434" y="260" width="220" height="64" rx="6"/>
+        <text class="t1-x" x="448" y="284">Camión a mano</text>
+        <line class="strike" x1="446" y1="280" x2="540" y2="280"/>
+        <text class="t2-x" x="448" y="300">lo genera el pedido</text>
+        <text class="t2-x" x="448" y="314">de traslado</text>
+
+        <rect class="box-a" x="1002" y="260" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="284">Traslado en un paso</text>
+        <rect class="pill pill-a" x="1164" y="268" width="46" height="15" rx="7.5"/>
+        <text class="pt pt-a" x="1187" y="279" text-anchor="middle">AUTO</text>
+        <text class="t2" x="1016" y="300">la solped pasa a pedido,</text>
+        <text class="t2" x="1016" y="314">transporte y picking en PDA</text>
+
+        <path class="edge-a" d="M544,210 V231 H1112 V254" marker-end="url(#a4a)"/>
+        <text class="el-a" x="828" y="227" text-anchor="middle">la solped se convierte en pedido</text>
+
+        <!-- L4 · aprovisionamiento 12PO -->
+        <rect class="box-a" x="1002" y="374" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="398">Entrada en el 12PO</text>
+        <rect class="pill pill-a" x="1164" y="382" width="46" height="15" rx="7.5"/>
+        <text class="pt pt-a" x="1187" y="393" text-anchor="middle">AUTO</text>
+        <text class="t2" x="1016" y="414">entrada de mercancías</text>
+        <text class="t2" x="1016" y="428">queda como stock disponible</text>
+
+        <path class="edge-a" d="M1112,324 V368" marker-end="url(#a4a)"/>
+
+        <!-- L5 · pedidos y salidas -->
+        <rect class="box-a" x="150" y="488" width="220" height="64" rx="6"/>
+        <text class="t1" x="164" y="512">Pedidos del 12PO</text>
+        <text class="t2" x="164" y="528">entran contra el área 12_12PO</text>
+        <text class="t2" x="164" y="542">último escalón</text>
+
+        <rect class="box-a" x="1002" y="488" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="512">Salidas desde el 12PO</text>
+        <text class="t2" x="1016" y="528">sobre el stock ya disponible</text>
+
+        <path class="edge-a" d="M370,520 H996" marker-end="url(#a4a)"/>
+        <text class="el-a" x="683" y="512" text-anchor="middle">consumen el stock disponible</text>
+        <path class="edge-a" d="M1112,438 V482" marker-end="url(#a4a)"/>
+        <text class="el-a" x="1120" y="464">stock disponible</text>
+      </svg>
+    </div>
+    <figcaption>
+      Las dos cajas tachadas son el Excel y el camión montado a mano. El área <code>12_12PO</code> hace
+      que la demanda del <code>12PO</code> exista por separado desde el principio: se convierte en solped
+      de traslado sobre el <code>1202</code>, de ahí en pedido, transporte y traslado en un mismo paso, y
+      la entrada en el <code>12PO</code> deja el stock disponible sobre el que salen los pedidos.
+    </figcaption>
+  </figure>
+
+  <section>
+    <h2>Paso a paso</h2>
+    <p class="sub">La misma secuencia, en los dos escenarios.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Paso</th><th>Hoy</th><th>Objetivo</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="step">Material</td>
+            <td class="now">No se duplica: el <code>12PO</code> es un almacén más del centro <code>12</code></td>
+            <td class="next">Igual, sigue sin duplicarse</td>
+          </tr>
+          <tr>
+            <td class="step">Planificación del 12PO</td>
+            <td class="now">No tiene: su demanda va dentro de la del almacén <code>1202</code></td>
+            <td class="next">Área de planificación <code>12_12PO</code>, sobre un almacén distinto del <code>1202</code></td>
+          </tr>
+          <tr>
+            <td class="step">Previsión</td>
+            <td class="now">Sobre <code>70908810</code> en el almacén <code>1202</code></td>
+            <td class="next">Contra el área <code>12_12PO</code> y su almacén</td>
+          </tr>
+          <tr>
+            <td class="step">Pedidos</td>
+            <td class="now">Entran contra el almacén <code>12PO</code></td>
+            <td class="next">Entran contra el área <code>12_12PO</code>, que es la que genera la necesidad</td>
+          </tr>
+          <tr>
+            <td class="step">Necesidades</td>
+            <td class="now">Se llevan en un Excel<span class="tag m">Manual</span></td>
+            <td class="next">Solped de traslado al almacén <code>1202</code>, visible en el sistema<span class="tag a">Auto</span></td>
+          </tr>
+          <tr>
+            <td class="step">Camión</td>
+            <td class="now">Se genera a mano a partir del Excel<span class="tag m">Manual</span></td>
+            <td class="next">Lo genera el propio pedido de traslado<span class="tag a">Auto</span></td>
+          </tr>
+          <tr>
+            <td class="step">Traslado</td>
+            <td class="now">Movimiento del <code>1202</code> al <code>12PO</code> a mano<span class="tag m">Manual</span></td>
+            <td class="next">La solped se convierte en pedido de traslado y se generan el transporte y el traslado <b>en el mismo paso</b>, con picking desde la PDA<span class="tag a">Auto</span></td>
+          </tr>
+          <tr>
+            <td class="step">Entrada en destino</td>
+            <td class="now">No hay entrada de mercancías: el stock sólo cambia de almacén</td>
+            <td class="next">Entrada de mercancías en el <code>12PO</code>, que deja stock disponible<span class="tag a">Auto</span></td>
+          </tr>
+          <tr>
+            <td class="step">Salidas</td>
+            <td class="now">A mano, a medida que entran los pedidos<span class="tag m">Manual</span></td>
+            <td class="next">Sobre el stock ya disponible en el <code>12PO</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Puntos a cerrar</h2>
+    <p class="sub">Lo que el dibujo deja abierto y conviene decidir antes de crear la primera área.</p>
+    <ol class="open">
+      <li><b>Qué almacén soporta el área</b> El ejemplo es el propio <code>12PO</code>; falta confirmar si se usa ese almacén o uno nuevo, siempre distinto del <code>1202</code>.</li>
+      <li><b>Alcance por material</b> Si el área <code>12_12PO</code> se crea sólo para los materiales que se mueven al <code>12PO</code> o para todo el catálogo.</li>
+      <li><b>Reparto de la previsión</b> Cómo se separa la demanda histórica del <code>1202</code> respecto de la del <code>12PO</code> la primera vez que se carga contra el área.</li>
+      <li><b>Plazo de traslado</b> Qué tiempo de tránsito se parametriza entre el <code>1202</code> y el <code>12PO</code> para que la solped salga con la antelación suficiente.</li>
+      <li><b>Arranque</b> Qué se hace con el stock que haya en el <code>12PO</code> y con los pedidos ya abiertos contra ese almacén el día del cambio.</li>
+      <li><b>Lote y caducidad</b> Cómo viaja el lote en el picking con PDA y con qué fecha entra en el <code>12PO</code>.</li>
+    </ol>
+  </section>
+  </section>
+
   <footer>
-    Los dos flujos están dibujados a partir de la descripción del proceso de planificación, venta y
-    expedición entre Perseida y Perseida Francia. <code>70908810</code> se usa como ejemplo;
-    el patrón es el mismo para el resto de materiales.
+    Los cuatro flujos están dibujados a partir de la descripción de los dos procesos: el traslado
+    entre Perseida y Perseida Francia y la planificación entre almacenes del centro <code>12</code>.
+    <code>70908810</code> se usa como ejemplo; el patrón es el mismo para el resto de materiales.
   </footer>
 
 </div>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  function mostrar(id){
+    tabs.forEach(function(t){
+      var activa = t.id === id;
+      t.setAttribute('aria-selected', activa ? 'true' : 'false');
+      t.tabIndex = activa ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !activa;
+    });
+    try { localStorage.setItem('flujos-pestana', id); } catch (e) {}
+  }
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){ mostrar(t.id); });
+  });
+  document.querySelector('.tabs').addEventListener('keydown', function(e){
+    var i = tabs.indexOf(document.activeElement);
+    if (i < 0 || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    e.preventDefault();
+    var siguiente = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+    siguiente.focus();
+    mostrar(siguiente.id);
+  });
+  try {
+    var guardada = localStorage.getItem('flujos-pestana');
+    if (guardada && document.getElementById(guardada)) mostrar(guardada);
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
