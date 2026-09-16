@@ -77,22 +77,35 @@ Copia manual del material (`70908810FR`) en el **centro 12**, almacén `HUFR`. L
 de Francia se carga sobre `70908810` en el almacén `1202`, las necesidades llegan a GPP como
 `70908810` mezcladas con las del centro 12, se fabrica y se da de alta en el `1201`. Logística
 lleva en un Excel lo que hay que mandar a Francia, hace el movimiento **311** del `1202` al
-`HUFR` y crea a mano el pedido de venta y el de compra entre Perseida y Perseida FR. El pedido del
-cliente final entra sobre `70908810FR` contra `HUFR` y la salida también es manual.
+`HUFR` y crea a mano el pedido de venta y el de compra entre Perseida y Perseida FR, **sin
+factura**. El stock sigue siendo del centro 12, así que no hay entrada de mercancías en ninguna
+parte. El pedido del cliente final entra sobre `70908810FR` contra `HUFR` y la salida también es
+manual.
 
 ### Flujo objetivo
 
 Un único material `70908810` dado de alta en el **centro de Francia** (`12FR`). La previsión
-se carga en ese centro, separada de la del centro 12; la demanda llega al centro 12 como
-**necesidad de traslado** visible para logística (se elimina el Excel). El traslado se resuelve con
-**picking desde la PDA** y entrada de mercancías en el `12FR`, igual que los camiones de traslado
-actuales, y el pedido del cliente final va contra el centro `12FR`.
+se carga en ese centro, separada de la del centro 12; la demanda llega a GPP como **solped de
+traslado** (no como pedido), visible para logística, y sustituye al Excel. La conversión de la
+solped en **pedido de traslado**, la generación del **transporte** y el **traslado** con picking
+desde la PDA se dan **en un mismo paso**. No se factura: se produce una **conversión de
+impuestos**. La mercancía entra en el `12FR` como **entrada de mercancías** dentro del
+aprovisionamiento, y el pedido del cliente final queda **un escalón por debajo**, compensando el
+stock ya disponible en el `12FR`.
 
 ### Cómo leer los diagramas
 
-Los dos diagramas comparten carriles (datos maestros, previsión y planificación, fabricación y
-stock, comercial ES–FR, cliente final) y columnas, para poder compararlos fila a fila. Ámbar
-discontinuo = paso manual, verde = paso automático, caja tachada = lo que desaparece, azul
-discontinuo = pendiente de definir. El apartado **Puntos a cerrar** recoge lo que la descripción
-del proceso deja abierto (entre otros, el paso del almacén `1201` al `1202` y cómo queda la
-facturación entre empresas).
+Los dos diagramas comparten carriles y columnas, para poder compararlos fila a fila:
+
+| Carril | Actual | Objetivo |
+|---|---|---|
+| Datos maestros | copia `70908810FR` | material único |
+| Previsión y planificación | necesidad mezclada en GPP | solped de traslado |
+| Fabricación y traslado | movimiento `311` a mano | traslado en un paso |
+| Pedidos ES–FR | Excel + pedidos espejo | conversión de impuestos |
+| Aprovisionamiento | sin entrada de mercancías | entrada en el `12FR` |
+| Cliente final (último escalón) | espera stock en `HUFR` | compensa stock del `12FR` |
+
+Ámbar discontinuo = paso manual, verde = paso automático, caja tachada = lo que desaparece. El
+apartado **Puntos a cerrar** recoge lo que la descripción del proceso deja abierto (entre otros, el
+paso del almacén `1201` al `1202` y qué operación soporta la conversión de impuestos).

@@ -166,10 +166,10 @@
     <p class="lead">
       Hoy Francia vive como una copia del material (<span class="mono">70908810FR</span>) en un almacén
       del centro 12, y todo lo que hay entre la fabricación y el cliente final se mueve a mano: el traslado,
-      el seguimiento en Excel y los pedidos entre Perseida y Perseida Francia. El objetivo es un único
-      material dado de alta en el centro de Francia (<span class="mono">12FR</span>), con la demanda de
-      Francia separada, la necesidad de traslado visible en el sistema y el movimiento resuelto con el
-      picking desde la PDA.
+      el seguimiento en Excel y los dos pedidos espejo entre Perseida y Perseida Francia. El objetivo es un
+      único material dado de alta en el centro de Francia (<span class="mono">12FR</span>), con la demanda
+      de Francia separada, una solped de traslado que recorre el sistema y el movimiento resuelto en un solo
+      paso con el picking desde la PDA.
     </p>
     <div class="chips">
       <span class="chip">Material de ejemplo <b>70908810</b></span>
@@ -181,7 +181,7 @@
 
   <section>
     <h2>Qué cambia</h2>
-    <p class="sub">Seis diferencias entre los dos flujos. Todo lo demás (envasado, fabricación y alta en el almacén 1201) se mantiene igual.</p>
+    <p class="sub">Siete diferencias entre los dos flujos. Todo lo demás (envasado, fabricación y alta en el almacén 1201) se mantiene igual.</p>
     <div class="deltas">
 
       <div class="delta">
@@ -192,8 +192,8 @@
 
       <div class="delta">
         <h3>Centro de Francia, no almacén de Francia</h3>
-        <p class="hoy"><span class="who">Hoy</span><span>Almacén <span class="mono">HUFR</span> dentro del centro <span class="mono">12</span>.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>Centro propio <span class="mono">12FR</span>.</span></p>
+        <p class="hoy"><span class="who">Hoy</span><span>Almacén <span class="mono">HUFR</span> dentro del centro <span class="mono">12</span>: el stock nunca deja de ser del centro 12 y no hay entrada de mercancías.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Centro propio <span class="mono">12FR</span> con su entrada de mercancías: la mercancía se aprovisiona allí.</span></p>
       </div>
 
       <div class="delta">
@@ -203,21 +203,27 @@
       </div>
 
       <div class="delta">
-        <h3>La necesidad, en el sistema</h3>
+        <h3>La necesidad, como solped</h3>
         <p class="hoy"><span class="who">Hoy</span><span>Logística lleva en un Excel lo que hay que mandar a Francia.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>La demanda del <span class="mono">12FR</span> llega al centro 12 como necesidad de traslado.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>La demanda del <span class="mono">12FR</span> llega a GPP como <b>solped de traslado</b>, no como pedido.</span></p>
       </div>
 
       <div class="delta">
-        <h3>Traslado automático</h3>
+        <h3>Traslado en un solo paso</h3>
         <p class="hoy"><span class="who">Hoy</span><span>Movimiento <span class="mono">311</span> a mano del <span class="mono">1202</span> al <span class="mono">HUFR</span>, más pedido de venta y de compra manuales.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>Picking desde la PDA y entrada de mercancías en el <span class="mono">12FR</span>, igual que los camiones de traslado actuales.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>La conversión de la solped en pedido de traslado, el transporte y el traslado se dan en el mismo paso, con picking desde la PDA.</span></p>
       </div>
 
       <div class="delta">
-        <h3>El cliente final compra al centro <span class="mono">12FR</span></h3>
+        <h3>Sin factura: conversión de impuestos</h3>
+        <p class="hoy"><span class="who">Hoy</span><span>No se factura; lo que hay son dos pedidos espejo hechos a mano.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Tampoco se factura: el traslado produce una conversión de impuestos.</span></p>
+      </div>
+
+      <div class="delta">
+        <h3>El cliente final, en el último escalón</h3>
         <p class="hoy"><span class="who">Hoy</span><span>Pedido de <span class="mono">70908810FR</span> contra el almacén <span class="mono">HUFR</span> y salida manual.</span></p>
-        <p class="obj"><span class="who">Objetivo</span><span>Pedido de <span class="mono">70908810</span> contra el centro <span class="mono">12FR</span>.</span></p>
+        <p class="obj"><span class="who">Objetivo</span><span>Pedido de <span class="mono">70908810</span> contra el centro <span class="mono">12FR</span>, por debajo del aprovisionamiento: compensa el stock ya disponible.</span></p>
       </div>
 
     </div>
@@ -228,15 +234,13 @@
       <h2>Flujo actual</h2>
       <span class="stamp now">Hoy</span>
     </div>
-    <p class="sub">Siete pasos manuales encadenados entre la previsión y la entrega al cliente final.</p>
+    <p class="sub">Seis pasos manuales encadenados entre la previsión y la entrega al cliente final. Entre Perseida y Perseida Francia no se emite factura.</p>
     <div class="legend">
       <span><span class="swatch"></span> paso dentro del sistema</span>
       <span><span class="swatch m"></span> paso manual</span>
-      <span><span class="swatch a"></span> paso automático</span>
-      <span><span class="swatch x"></span> desaparece en el objetivo</span>
     </div>
     <div class="diagram">
-      <svg viewBox="0 0 1280 580" role="img" aria-label="Flujo actual: el material 70908810 se copia a mano como 70908810FR en el almacén HUFR del centro 12; la previsión se carga sobre el almacén 1202, GPP genera las órdenes y la fabricación entra en el 1201; logística lleva las necesidades en un Excel, hace el movimiento 311 manual del 1202 al HUFR y crea a mano los pedidos de venta y de compra entre Perseida y Perseida Francia; el pedido del cliente final entra sobre 70908810FR contra HUFR y la salida también se hace a mano.">
+      <svg viewBox="0 0 1280 694" role="img" aria-label="Flujo actual: el material 70908810 se copia a mano como 70908810FR en el almacén HUFR del centro 12; la previsión de Francia se carga sobre el almacén 1202, GPP recibe la necesidad como 70908810 mezclada con la del centro 12 y genera las órdenes, y la fabricación entra en el almacén 1201; logística lleva las necesidades en un Excel, hace el movimiento 311 manual del 1202 al HUFR y crea a mano el pedido de venta y el de compra entre Perseida y Perseida Francia, sin factura; el stock sigue siendo del centro 12 y no hay entrada de mercancías; el pedido del cliente final entra sobre 70908810FR contra HUFR y la salida también se hace a mano.">
         <defs>
           <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
           <marker id="a1m" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah-m"/></marker>
@@ -248,14 +252,16 @@
         <rect class="band"     x="8" y="240" width="1234" height="100" rx="8"/>
         <rect class="band-alt" x="8" y="354" width="1234" height="100" rx="8"/>
         <rect class="band"     x="8" y="468" width="1234" height="100" rx="8"/>
+        <rect class="band-alt" x="8" y="582" width="1234" height="100" rx="8"/>
 
         <text class="lane-t" x="22" y="56">DATOS</text><text class="lane-t" x="22" y="70">MAESTROS</text>
         <text class="lane-t" x="22" y="170">PREVISIÓN Y</text><text class="lane-t" x="22" y="184">PLANIFICACIÓN</text>
-        <text class="lane-t" x="22" y="284">FABRICACIÓN</text><text class="lane-t" x="22" y="298">Y STOCK</text>
-        <text class="lane-t" x="22" y="398">COMERCIAL</text><text class="lane-t" x="22" y="412">ES – FR</text>
-        <text class="lane-t" x="22" y="512">CLIENTE</text><text class="lane-t" x="22" y="526">FINAL</text>
+        <text class="lane-t" x="22" y="284">FABRICACIÓN</text><text class="lane-t" x="22" y="298">Y TRASLADO</text>
+        <text class="lane-t" x="22" y="398">PEDIDOS</text><text class="lane-t" x="22" y="412">ES – FR</text>
+        <text class="lane-t" x="22" y="512">APROVISIONAMIENTO</text><text class="lane-t" x="22" y="526">HUFR</text>
+        <text class="lane-t" x="22" y="626">CLIENTE FINAL</text><text class="lane-t" x="22" y="640">ÚLTIMO ESCALÓN</text>
 
-        <!-- L1 · maestros -->
+        <!-- L1 · datos maestros -->
         <rect class="box" x="150" y="32" width="220" height="64" rx="6"/>
         <text class="t1 mono k" x="164" y="56">70908810</text>
         <text class="t2" x="164" y="72">Centro 12 · alm. 1201 / 1202</text>
@@ -270,7 +276,6 @@
 
         <path class="edge-m" d="M370,64 H428" marker-end="url(#a1m)"/>
         <text class="el-m" x="399" y="56" text-anchor="middle">copia</text>
-
         <path class="edge-d" d="M260,96 V140" marker-end="url(#a1)"/>
 
         <!-- L2 · previsión y planificación -->
@@ -295,7 +300,7 @@
         <path class="edge" d="M828,210 V254" marker-end="url(#a1)"/>
         <text class="el" x="836" y="236">órdenes</text>
 
-        <!-- L3 · fabricación y stock -->
+        <!-- L3 · fabricación y traslado -->
         <rect class="box" x="718" y="260" width="220" height="64" rx="6"/>
         <text class="t1" x="732" y="284">Fabricación</text>
         <text class="t2" x="732" y="300">alta en el almacén 1201</text>
@@ -305,12 +310,12 @@
         <rect class="pill pill-m" x="1156" y="268" width="54" height="15" rx="7.5"/>
         <text class="pt pt-m" x="1183" y="279" text-anchor="middle">MANUAL</text>
         <text class="t2" x="1016" y="300">del almacén 1202 al HUFR</text>
-        <text class="t2" x="1016" y="314">el stock sigue en el centro 12</text>
+        <text class="t2" x="1016" y="314">movimiento a mano</text>
 
         <path class="edge" d="M938,292 H996" marker-end="url(#a1)"/>
         <text class="el" x="967" y="284" text-anchor="middle">stock</text>
 
-        <!-- L4 · comercial -->
+        <!-- L4 · pedidos ES – FR -->
         <rect class="box-m" x="150" y="374" width="220" height="64" rx="6"/>
         <text class="t1" x="164" y="398">Excel de necesidades</text>
         <text class="t2" x="164" y="414">seguimiento fuera del sistema</text>
@@ -321,54 +326,58 @@
         <rect class="pill pill-m" x="588" y="382" width="54" height="15" rx="7.5"/>
         <text class="pt pt-m" x="615" y="393" text-anchor="middle">MANUAL</text>
         <text class="t2" x="448" y="414">Perseida → Perseida FR</text>
+        <text class="t2" x="448" y="428">no se factura</text>
 
         <rect class="box-m" x="718" y="374" width="220" height="64" rx="6"/>
         <text class="t1" x="732" y="398">Pedido de compra</text>
         <rect class="pill pill-m" x="872" y="382" width="54" height="15" rx="7.5"/>
         <text class="pt pt-m" x="899" y="393" text-anchor="middle">MANUAL</text>
         <text class="t2" x="732" y="414">Perseida FR → Perseida</text>
-
-        <rect class="box" x="1002" y="374" width="220" height="64" rx="6"/>
-        <text class="t1" x="1016" y="398">Factura a Perseida FR</text>
-        <text class="t2" x="1016" y="414">operación entre empresas</text>
+        <text class="t2" x="732" y="428">pedido espejo del anterior</text>
 
         <path class="edge-m" d="M200,210 V368" marker-end="url(#a1m)"/>
         <text class="el-m" x="208" y="282">desglose</text>
         <text class="el-m" x="208" y="294">de Francia</text>
 
-        <path class="edge-m" d="M230,374 V338 H1112 V332" marker-end="url(#a1m)"/>
-        <text class="el-m" x="670" y="332" text-anchor="middle">qué trasladar</text>
+        <path class="edge-m" d="M230,374 V349 H1060 V326" marker-end="url(#a1m)"/>
+        <text class="el-m" x="640" y="345" text-anchor="middle">qué trasladar</text>
 
         <path class="edge-m" d="M370,406 H428" marker-end="url(#a1m)"/>
         <text class="el-m" x="399" y="398" text-anchor="middle">a mano</text>
         <path class="edge-m" d="M654,406 H712" marker-end="url(#a1m)"/>
         <text class="el-m" x="683" y="398" text-anchor="middle">espejo</text>
-        <path class="edge" d="M938,406 H996" marker-end="url(#a1)"/>
-        <text class="el" x="967" y="398" text-anchor="middle">factura</text>
 
-        <!-- L5 · cliente final -->
-        <rect class="box" x="150" y="488" width="220" height="64" rx="6"/>
-        <text class="t1" x="164" y="512">Pedido de cliente final</text>
-        <text class="t2" x="164" y="528">70908810FR contra HUFR</text>
-        <text class="t2" x="164" y="542">entra antes del traslado</text>
+        <!-- L5 · aprovisionamiento HUFR -->
+        <rect class="box" x="1002" y="488" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="512">Stock en el HUFR</text>
+        <text class="t2" x="1016" y="528">sin entrada de mercancías</text>
+        <text class="t2" x="1016" y="542">sigue siendo del centro 12</text>
 
-        <rect class="box-m" x="1002" y="488" width="220" height="64" rx="6"/>
-        <text class="t1" x="1016" y="512">Salida al cliente</text>
-        <rect class="pill pill-m" x="1156" y="496" width="54" height="15" rx="7.5"/>
-        <text class="pt pt-m" x="1183" y="507" text-anchor="middle">MANUAL</text>
-        <text class="t2" x="1016" y="528">desde el almacén HUFR</text>
+        <path class="edge" d="M1160,324 V482" marker-end="url(#a1)"/>
 
-        <path class="edge" d="M370,520 H996" marker-end="url(#a1)"/>
-        <text class="el" x="683" y="512" text-anchor="middle">queda a la espera de stock</text>
+        <!-- L6 · cliente final -->
+        <rect class="box" x="150" y="602" width="220" height="64" rx="6"/>
+        <text class="t1" x="164" y="626">Pedido de cliente final</text>
+        <text class="t2" x="164" y="642">70908810FR contra HUFR</text>
+        <text class="t2" x="164" y="656">entra antes del traslado</text>
 
-        <path class="edge" d="M1222,300 H1252 V520 H1228" marker-end="url(#a1)"/>
-        <text class="el" x="1266" y="410" text-anchor="middle" transform="rotate(-90 1266 410)">stock en HUFR</text>
+        <rect class="box-m" x="1002" y="602" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="626">Salida al cliente</text>
+        <rect class="pill pill-m" x="1156" y="610" width="54" height="15" rx="7.5"/>
+        <text class="pt pt-m" x="1183" y="621" text-anchor="middle">MANUAL</text>
+        <text class="t2" x="1016" y="642">desde el almacén HUFR</text>
+
+        <path class="edge" d="M370,634 H996" marker-end="url(#a1)"/>
+        <text class="el" x="683" y="626" text-anchor="middle">queda a la espera de stock</text>
+        <path class="edge" d="M1112,552 V596" marker-end="url(#a1)"/>
+        <text class="el" x="1120" y="578">stock disponible</text>
       </svg>
     </div>
     <figcaption>
       Cada paso en ámbar es trabajo de una persona: la copia del material, el Excel donde se ve lo que hay
-      que mandar, el movimiento 311, los dos pedidos entre empresas y la salida al cliente final.
-      El stock nunca sale del centro 12 — sólo cambia de almacén.
+      que mandar, el movimiento 311, los dos pedidos espejo entre empresas y la salida al cliente final.
+      El stock nunca sale del centro 12 — sólo cambia de almacén, así que no hay entrada de mercancías
+      en ninguna parte y el pedido del cliente final se limita a esperar a que llegue el camión.
     </figcaption>
   </figure>
 
@@ -382,10 +391,9 @@
       <span><span class="swatch"></span> paso dentro del sistema</span>
       <span><span class="swatch a"></span> paso automático</span>
       <span><span class="swatch x"></span> lo que desaparece</span>
-      <span><span class="swatch" style="border-top:2px dashed var(--accent)"></span> pendiente de definir</span>
     </div>
     <div class="diagram">
-      <svg viewBox="0 0 1280 580" role="img" aria-label="Flujo objetivo: el material 70908810 se da de alta en el centro 12FR y desaparece la copia 70908810FR; la previsión de Francia se carga en el centro 12FR separada de la del centro 12; GPP genera una necesidad de traslado del 12 al 12FR visible para logística, que sustituye al Excel; tras la fabricación y el alta en el almacén 1201 el traslado se resuelve con picking desde la PDA y entrada de mercancías en el 12FR; el pedido del cliente final entra sobre 70908810 contra el centro 12FR y la salida se hace desde ese centro.">
+      <svg viewBox="0 0 1280 694" role="img" aria-label="Flujo objetivo: el material 70908810 se da de alta en el centro 12FR y desaparece la copia 70908810FR; la previsión de Francia se carga en el centro 12FR separada de la del centro 12; GPP recibe una solped de traslado del centro 12 al 12FR, visible para logística, que sustituye al Excel; tras la fabricación y el alta en el almacén 1201, la solped se convierte en pedido de traslado y se generan el transporte y el traslado en un mismo paso, con picking desde la PDA; no se factura, se produce una conversión de impuestos; la mercancía entra en el centro 12FR como aprovisionamiento y queda como stock disponible; en el último escalón, el pedido del cliente final sobre 70908810 contra el centro 12FR compensa ese stock disponible y la salida se hace desde el 12FR.">
         <defs>
           <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
           <marker id="a2a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah-a"/></marker>
@@ -396,20 +404,22 @@
         <rect class="band"     x="8" y="240" width="1234" height="100" rx="8"/>
         <rect class="band-alt" x="8" y="354" width="1234" height="100" rx="8"/>
         <rect class="band"     x="8" y="468" width="1234" height="100" rx="8"/>
+        <rect class="band-alt" x="8" y="582" width="1234" height="100" rx="8"/>
 
         <text class="lane-t" x="22" y="56">DATOS</text><text class="lane-t" x="22" y="70">MAESTROS</text>
         <text class="lane-t" x="22" y="170">PREVISIÓN Y</text><text class="lane-t" x="22" y="184">PLANIFICACIÓN</text>
         <text class="lane-t" x="22" y="284">FABRICACIÓN</text><text class="lane-t" x="22" y="298">Y TRASLADO</text>
-        <text class="lane-t" x="22" y="398">COMERCIAL</text><text class="lane-t" x="22" y="412">ES – FR</text>
-        <text class="lane-t" x="22" y="512">CLIENTE</text><text class="lane-t" x="22" y="526">FINAL</text>
+        <text class="lane-t" x="22" y="398">PEDIDOS</text><text class="lane-t" x="22" y="412">ES – FR</text>
+        <text class="lane-t" x="22" y="512">APROVISIONAMIENTO</text><text class="lane-t" x="22" y="526">12FR</text>
+        <text class="lane-t" x="22" y="626">CLIENTE FINAL</text><text class="lane-t" x="22" y="640">ÚLTIMO ESCALÓN</text>
 
-        <!-- L1 · maestros -->
+        <!-- L1 · datos maestros -->
         <rect class="box-a" x="150" y="32" width="220" height="64" rx="6"/>
         <text class="t1 mono k" x="164" y="56">70908810</text>
         <rect class="pill pill-a" x="312" y="40" width="46" height="15" rx="7.5"/>
         <text class="pt pt-a" x="335" y="51" text-anchor="middle">ÚNICO</text>
         <text class="t2" x="164" y="72">alta en el centro 12 y en el 12FR</text>
-        <text class="t2" x="164" y="86">un solo código para todos</text>
+        <text class="t2" x="164" y="86">un solo código</text>
 
         <rect class="box-x" x="434" y="32" width="220" height="64" rx="6"/>
         <text class="t1-x mono" x="448" y="56">70908810FR</text>
@@ -426,10 +436,8 @@
         <text class="t2" x="164" y="200">separada de la del centro 12</text>
 
         <rect class="box-a" x="434" y="146" width="220" height="64" rx="6"/>
-        <text class="t1" x="448" y="170">GPP · necesidad</text>
-        <rect class="pill pill-a" x="574" y="154" width="68" height="15" rx="7.5"/>
-        <text class="pt pt-a" x="608" y="165" text-anchor="middle">EN SISTEMA</text>
-        <text class="t2" x="448" y="186">de traslado del 12 al 12FR</text>
+        <text class="t1" x="448" y="170">GPP · solped de traslado</text>
+        <text class="t2" x="448" y="186">del centro 12 al 12FR</text>
         <text class="t2" x="448" y="200">visible para logística</text>
 
         <rect class="box" x="718" y="146" width="220" height="64" rx="6"/>
@@ -451,67 +459,68 @@
         <text class="t2" x="732" y="314">sin cambios</text>
 
         <rect class="box-a" x="1002" y="260" width="220" height="64" rx="6"/>
-        <text class="t1" x="1016" y="284">Traslado al 12FR</text>
+        <text class="t1" x="1016" y="284">Traslado en un paso</text>
         <rect class="pill pill-a" x="1164" y="268" width="46" height="15" rx="7.5"/>
         <text class="pt pt-a" x="1187" y="279" text-anchor="middle">AUTO</text>
-        <text class="t2" x="1016" y="300">picking en PDA y camión</text>
-        <text class="t2" x="1016" y="314">entrada de mercancías en 12FR</text>
+        <text class="t2" x="1016" y="300">la solped pasa a pedido,</text>
+        <text class="t2" x="1016" y="314">transporte y picking en PDA</text>
 
         <path class="edge" d="M938,292 H996" marker-end="url(#a2)"/>
         <text class="el" x="967" y="284" text-anchor="middle">stock</text>
 
-        <!-- L4 · comercial -->
+        <path class="edge-a" d="M480,210 V349 H1040 V326" marker-end="url(#a2a)"/>
+        <text class="el-a" x="740" y="345" text-anchor="middle">la solped se convierte en pedido</text>
+
+        <!-- L4 · pedidos ES – FR -->
         <rect class="box-x" x="150" y="374" width="220" height="64" rx="6"/>
         <text class="t1-x" x="164" y="398">Excel de necesidades</text>
         <line class="strike" x1="162" y1="394" x2="296" y2="394"/>
-        <text class="t2-x" x="164" y="414">lo sustituye la necesidad</text>
+        <text class="t2-x" x="164" y="414">lo sustituye la solped</text>
         <text class="t2-x" x="164" y="428">de traslado del sistema</text>
 
-        <rect class="box-a" x="434" y="374" width="220" height="64" rx="6"/>
-        <text class="t1" x="448" y="398">Pedido de traslado</text>
-        <rect class="pill pill-a" x="596" y="382" width="46" height="15" rx="7.5"/>
-        <text class="pt pt-a" x="619" y="393" text-anchor="middle">AUTO</text>
-        <text class="t2" x="448" y="414">desde la necesidad del 12FR</text>
-        <text class="t2" x="448" y="428">sin pedido de venta ni de compra</text>
+        <rect class="box-x" x="434" y="374" width="220" height="64" rx="6"/>
+        <text class="t1-x" x="448" y="398">Pedido de venta y compra</text>
+        <line class="strike" x1="446" y1="394" x2="610" y2="394"/>
+        <text class="t2-x" x="448" y="414">los sustituye el pedido</text>
+        <text class="t2-x" x="448" y="428">de traslado, en el mismo paso</text>
 
-        <rect class="box-k" x="718" y="374" width="220" height="64" rx="6"/>
-        <text class="t1" x="732" y="398">Facturación</text>
-        <rect class="pill pill-k" x="856" y="382" width="70" height="15" rx="7.5"/>
-        <text class="pt pt-k" x="891" y="393" text-anchor="middle">POR DEFINIR</text>
-        <text class="t2" x="732" y="414">entre Perseida y Perseida FR</text>
-        <text class="t2" x="732" y="428">asociada al traslado</text>
+        <rect class="box-a" x="718" y="374" width="220" height="64" rx="6"/>
+        <text class="t1" x="732" y="398">Conversión de impuestos</text>
+        <text class="t2" x="732" y="414">no se emite factura</text>
+        <text class="t2" x="732" y="428">va con el traslado</text>
 
-        <path class="edge-a" d="M544,210 V368" marker-end="url(#a2a)"/>
-        <text class="el-a" x="552" y="282">necesidad de</text>
-        <text class="el-a" x="552" y="294">traslado</text>
-
-        <path class="edge-a" d="M600,374 V347 H1112 V332" marker-end="url(#a2a)"/>
-        <text class="el-a" x="880" y="341" text-anchor="middle">picking desde la PDA</text>
-
-        <path class="edge" d="M654,406 H712" marker-end="url(#a2)"/>
-        <text class="el" x="683" y="398" text-anchor="middle">factura</text>
-
-        <!-- L5 · cliente final -->
-        <rect class="box-a" x="150" y="488" width="220" height="64" rx="6"/>
-        <text class="t1" x="164" y="512">Pedido de cliente final</text>
-        <text class="t2" x="164" y="528">70908810 contra el centro 12FR</text>
-        <text class="t2" x="164" y="542">un solo material, sin sufijo</text>
-
+        <!-- L5 · aprovisionamiento 12FR -->
         <rect class="box-a" x="1002" y="488" width="220" height="64" rx="6"/>
-        <text class="t1" x="1016" y="512">Salida al cliente</text>
-        <text class="t2" x="1016" y="528">desde el centro 12FR</text>
+        <text class="t1" x="1016" y="512">Entrada en el 12FR</text>
+        <rect class="pill pill-a" x="1164" y="496" width="46" height="15" rx="7.5"/>
+        <text class="pt pt-a" x="1187" y="507" text-anchor="middle">AUTO</text>
+        <text class="t2" x="1016" y="528">entrada de mercancías</text>
+        <text class="t2" x="1016" y="542">queda como stock disponible</text>
 
-        <path class="edge-a" d="M370,520 H996" marker-end="url(#a2a)"/>
-        <text class="el-a" x="683" y="512" text-anchor="middle">stock disponible en el centro 12FR</text>
+        <path class="edge-a" d="M1160,324 V482" marker-end="url(#a2a)"/>
+        <text class="el-a" x="1152" y="406" text-anchor="end">mercancía en tránsito</text>
 
-        <path class="edge-a" d="M1222,300 H1252 V520 H1228" marker-end="url(#a2a)"/>
-        <text class="el-a" x="1266" y="410" text-anchor="middle" transform="rotate(-90 1266 410)">entrada en el 12FR</text>
+        <!-- L6 · cliente final -->
+        <rect class="box-a" x="150" y="602" width="220" height="64" rx="6"/>
+        <text class="t1" x="164" y="626">Pedido de cliente final</text>
+        <text class="t2" x="164" y="642">70908810 contra el centro 12FR</text>
+        <text class="t2" x="164" y="656">compensa el stock disponible</text>
+
+        <rect class="box-a" x="1002" y="602" width="220" height="64" rx="6"/>
+        <text class="t1" x="1016" y="626">Salida y entrega</text>
+        <text class="t2" x="1016" y="642">desde el centro 12FR</text>
+
+        <path class="edge-a" d="M370,634 H996" marker-end="url(#a2a)"/>
+        <text class="el-a" x="683" y="626" text-anchor="middle">consume el stock disponible en el 12FR</text>
+        <path class="edge-a" d="M1112,552 V596" marker-end="url(#a2a)"/>
+        <text class="el-a" x="1120" y="578">stock disponible</text>
       </svg>
     </div>
     <figcaption>
-      Las dos cajas tachadas son lo que se elimina: la copia del material y el Excel. Lo que las sustituye
-      es la misma necesidad de traslado recorriendo el sistema — de la previsión del centro <code>12FR</code> al
-      pedido de traslado, y de ahí al picking en la PDA y a la entrada de mercancías en el 12FR.
+      Las tres cajas tachadas son lo que se elimina: la copia del material, el Excel y los dos pedidos espejo.
+      Lo que las sustituye es una sola solped de traslado recorriendo el sistema: se convierte en pedido y
+      genera transporte y traslado en el mismo paso. La mercancía entra en el <code>12FR</code> como
+      aprovisionamiento y, un escalón por debajo, el pedido del cliente final compensa ese stock disponible.
     </figcaption>
   </figure>
 
@@ -537,12 +546,12 @@
           <tr>
             <td class="step">Necesidades</td>
             <td class="now">Llegan a GPP como <code>70908810</code>, mezcladas con las del centro 12</td>
-            <td class="next">Necesidad de traslado del centro <code>12FR</code> sobre el centro <code>12</code></td>
+            <td class="next">Llegan a GPP como <b>solped de traslado</b> del centro <code>12FR</code> sobre el centro <code>12</code></td>
           </tr>
           <tr>
             <td class="step">Visibilidad de logística</td>
             <td class="now">Excel fuera del sistema<span class="tag m">Manual</span></td>
-            <td class="next">Las necesidades de traslado se consultan en el sistema<span class="tag a">Auto</span></td>
+            <td class="next">Las solped de traslado se consultan en el sistema<span class="tag a">Auto</span></td>
           </tr>
           <tr>
             <td class="step">Envasado y fabricación</td>
@@ -552,22 +561,27 @@
           <tr>
             <td class="step">Traslado</td>
             <td class="now">Movimiento <code>311</code> del <code>1202</code> al <code>HUFR</code><span class="tag m">Manual</span></td>
-            <td class="next">Picking desde la PDA y entrada de mercancías en el <code>12FR</code>, como los camiones de traslado<span class="tag a">Auto</span></td>
+            <td class="next">La solped se convierte en pedido de traslado y se generan el transporte y el traslado <b>en el mismo paso</b>, con picking desde la PDA<span class="tag a">Auto</span></td>
           </tr>
           <tr>
             <td class="step">Pedidos entre empresas</td>
             <td class="now">Pedido de venta y pedido de compra entre Perseida y Perseida FR<span class="tag m">Manual</span></td>
-            <td class="next">Pedido de traslado generado desde la necesidad<span class="tag a">Auto</span></td>
+            <td class="next">No hacen falta: el pedido de traslado sale de la solped</td>
           </tr>
           <tr>
-            <td class="step">Facturación entre empresas</td>
-            <td class="now">Factura a Perseida FR a partir de los pedidos manuales</td>
-            <td class="next">Asociada al traslado<span class="tag q">Por definir</span></td>
+            <td class="step">Impuestos</td>
+            <td class="now">No se factura</td>
+            <td class="next">Tampoco se factura: se produce una conversión de impuestos asociada al traslado</td>
+          </tr>
+          <tr>
+            <td class="step">Entrada en destino</td>
+            <td class="now">No hay entrada de mercancías: el <code>311</code> deja el stock en <code>HUFR</code>, que sigue siendo del centro 12</td>
+            <td class="next">Entrada de mercancías en el centro <code>12FR</code>, dentro del aprovisionamiento, que deja stock disponible<span class="tag a">Auto</span></td>
           </tr>
           <tr>
             <td class="step">Pedido del cliente final</td>
             <td class="now"><code>70908810FR</code> contra el almacén <code>HUFR</code></td>
-            <td class="next"><code>70908810</code> contra el centro <code>12FR</code></td>
+            <td class="next"><code>70908810</code> contra el centro <code>12FR</code>, un escalón por debajo: compensa el stock disponible</td>
           </tr>
           <tr>
             <td class="step">Salida al cliente</td>
@@ -584,7 +598,7 @@
     <p class="sub">Lo que el dibujo deja abierto y conviene decidir antes de parametrizar el centro <code>12FR</code>.</p>
     <ol class="open">
       <li><b>Del 1201 al 1202</b> Hoy la fabricación entra en el <code>1201</code> y el movimiento 311 se hace desde el <code>1202</code>: falta confirmar el paso entre ambos almacenes y si se mantiene en el objetivo.</li>
-      <li><b>Facturación entre empresas</b> Si el pedido de traslado lleva factura intercompañía asociada o siguen haciendo falta pedido de venta y de compra.</li>
+      <li><b>Conversión de impuestos</b> Qué operación la soporta y en qué momento del traslado se produce, ya que no hay factura entre Perseida y Perseida FR.</li>
       <li><b>Convivencia y arranque</b> Qué se hace con el stock que quede en <code>HUFR</code> y con los pedidos de cliente abiertos sobre <code>70908810FR</code>.</li>
       <li><b>Reparto de la previsión</b> Cómo se separa el histórico de demanda del centro 12 respecto del <code>12FR</code> la primera vez que se cargan las previsiones por centro.</li>
       <li><b>Lote y caducidad</b> Cómo viaja el lote en el picking con PDA y con qué fecha entra en el <code>12FR</code>.</li>
