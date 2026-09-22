@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Necesidades de solicitudes de traslado</title>
+<style>
+  :root {
+    --head-bg: #2f5f8f;
+    --border: #d7dee8;
+    --grid: #eef2f7;
+    --ink: #243140;
+    --muted: #5b6b7d;
+    --blue: #2f80ed;
+    --ok: #27ae60;
+    --warn: #e0a800;
+    --bad: #d9534f;
+    --amber: #b56a07;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 14px 16px 28px; }
+
+  /* ---------- Cabecera ---------- */
+  .titlebar {
+    background: linear-gradient(180deg, #37618f, #2f5f8f);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .titlebar .v { font-size: 12px; opacity: .8; font-weight: 400; }
+  .titlebar .scope {
+    margin-left: auto;
+    font-size: 11.5px;
+    font-weight: 600;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.34);
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: .2px;
+  }
+
+  /* ---------- Panel de filtros ---------- */
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 12px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+  }
+  fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px 10px; margin: 0; }
+  legend { font-size: 11px; color: #5b6b7d; padding: 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .controls { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 11px; color: #5b6b7d; }
+  input[type="date"], input[type="text"], button {
+    font-size: 13px; padding: 6px 9px;
+    border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
+    font-family: inherit;
+  }
+  input[type="text"] { min-width: 190px; }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  button { cursor: pointer; background: #f4f7fb; }
+  button:hover { background: #e9f0f9; }
+  button.primary { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 600; padding: 7px 16px; }
+  button.primary:hover { background: #2b73d4; }
+
+  .modo { display: flex; gap: 6px; }
+  .modo label {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid #b9c6d6; border-radius: 5px; padding: 6px 12px;
+    cursor: pointer; background: #fff; font-size: 13px;
+  }
+  .modo input { accent-color: var(--head-bg); }
+  .modo label.sel { border-color: var(--head-bg); background: #eaf2fd; font-weight: 600; }
+  .modo label.off { cursor: not-allowed; color: #98a6b6; background: #f6f8fb; border-style: dashed; }
+  .modo label.off small { font-size: 10.5px; }
+
+  .legend-box { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  /* ---------- Barra de resumen ---------- */
+  .summary {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    padding: 8px 14px; font-size: 12px; color: #51637a;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .summary b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .summary .acciones { margin-left: auto; display: flex; gap: 6px; }
+  .summary .acciones button { font-size: 12px; padding: 4px 10px; }
+
+  /* ---------- Tabla nivel 1 ---------- */
+  .tablewrap {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px; overflow: auto; max-height: 70vh;
+  }
+  table.n1 { border-collapse: collapse; width: 100%; font-size: 12px; white-space: nowrap; }
+  table.n1 > thead th {
+    position: sticky; top: 0; z-index: 5;
+    background: #eef3f9; color: #41546a;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .3px;
+    padding: 7px 9px; text-align: left; border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+    user-select: none;
+  }
+  table.n1 > thead th.sortable { cursor: pointer; }
+  table.n1 > thead th.sortable:hover { background: #e4ecf6; }
+  table.n1 > thead th .arr { color: var(--head-bg); font-size: 10px; }
+  table.n1 > tbody > tr.mat > td {
+    padding: 6px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid);
+  }
+  table.n1 > tbody > tr.mat:hover > td { background: #f4f9ff; cursor: pointer; }
+  table.n1 > tbody > tr.mat.open > td { background: #eaf2fd; border-bottom-color: #c9dcf5; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.mat { font-weight: 700; }
+  td.nom { white-space: normal; min-width: 220px; }
+  td.exp { width: 30px; text-align: center; padding: 0 !important; }
+  .chev {
+    border: none; background: none; color: var(--head-bg); cursor: pointer;
+    font-size: 11px; line-height: 1; padding: 6px 8px;
+    transition: transform .12s ease; display: inline-block;
+  }
+  tr.mat.open .chev { transform: rotate(90deg); }
+  td.cnt b { font-variant-numeric: tabular-nums; }
+  tr.vacia td { padding: 26px 14px; text-align: center; color: #8a99ab; font-style: italic; }
+
+  /* ---------- Nivel 2 ---------- */
+  tr.det > td { padding: 0; background: #f7fafd; border-bottom: 2px solid #c9dcf5; }
+  .lvl2 { padding: 10px 12px 14px 40px; }
+  .lvl2-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+  .lvl2-tabs button {
+    border: 1px solid transparent; border-bottom: none; background: none;
+    border-radius: 6px 6px 0 0; padding: 6px 13px; font-size: 12px; color: var(--muted);
+    margin-bottom: -1px;
+  }
+  .lvl2-tabs button .n { font-variant-numeric: tabular-nums; opacity: .75; }
+  .lvl2-tabs button:hover { color: var(--head-bg); background: #eef3f9; }
+  .lvl2-tabs button[aria-selected="true"] {
+    background: #fff; border-color: var(--border); border-bottom: 1px solid #fff;
+    color: var(--head-bg); font-weight: 700;
+  }
+  .lvl2-body { background: #fff; border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; }
+  table.n2 { border-collapse: collapse; width: 100%; font-size: 11.5px; white-space: nowrap; }
+  table.n2 th {
+    background: #f6f9fc; color: #5b6b7d; font-size: 10.5px; text-transform: uppercase; letter-spacing: .3px;
+    padding: 6px 9px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  table.n2 td { padding: 5px 9px; border-bottom: 1px solid var(--grid); }
+  table.n2 tr:last-child td { border-bottom: none; }
+  table.n2 tbody tr:hover td { background: #f4f9ff; }
+  table.n2 tfoot td {
+    background: #f6f9fc; font-weight: 700; border-top: 1px solid var(--border);
+    border-bottom: none; color: #41546a;
+  }
+  table.n2 td.doc { font-weight: 600; color: #1f2d3d; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 10.5px; font-weight: 600; color: #fff; }
+  .badge.abierta { background: var(--blue); }
+  .badge.parcial { background: var(--warn); color: #4a3800; }
+  .badge.conv { background: var(--ok); }
+  .dest { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #e7f0fd; color: #1f5fa9; }
+
+  footer.nota { font-size: 11.5px; color: #7b8a9c; padding: 12px 2px 0; max-width: 100ch; }
+  footer.nota b { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="titlebar">
+    <span>Necesidades · Solicitudes de traslado</span>
+    <span class="v">v0.1 · diseño</span>
+    <span class="scope">Alcance actual: traslados</span>
+  </div>
+
+  <!-- ---------- Filtros ---------- -->
+  <div class="panel">
+    <fieldset>
+      <legend>Filtros</legend>
+      <div class="controls">
+        <div class="field">
+          <label for="fDesde">Fecha de solicitud · desde</label>
+          <input type="date" id="fDesde" />
+        </div>
+        <div class="field">
+          <label for="fHasta">hasta</label>
+          <input type="date" id="fHasta" />
+        </div>
+        <div class="field">
+          <label for="fMat">Material (código o nombre)</label>
+          <input type="text" id="fMat" list="lMat" placeholder="p. ej. 70908810" autocomplete="off" />
+          <datalist id="lMat"></datalist>
+        </div>
+        <div class="field">
+          <label for="fCli">Nombre de cliente</label>
+          <input type="text" id="fCli" list="lCli" placeholder="Todos los clientes" autocomplete="off" />
+          <datalist id="lCli"></datalist>
+        </div>
+        <button id="btnLimpiar">Limpiar</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tipo de necesidad</legend>
+      <div class="modo">
+        <label class="sel"><input type="radio" name="tipo" value="traslados" checked /> Traslados</label>
+        <label class="off" title="Se añadirá más adelante">
+          <input type="radio" name="tipo" value="camiones" disabled /> Camiones de carga <small>(próximamente)</small>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Estado de la solicitud</legend>
+      <div class="legend-box">
+        <span class="badge abierta">Abierta</span>
+        <span class="badge parcial">Parcial</span>
+        <span class="badge conv">Convertida</span>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="summary" id="summary">
+    <span id="resumen"></span>
+    <span class="acciones">
+      <button id="btnExp">Desplegar todo</button>
+      <button id="btnCol">Contraer todo</button>
+    </span>
+  </div>
+
+  <div class="tablewrap">
+    <table class="n1">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="sortable" data-col="mat">Material</th>
+          <th class="sortable" data-col="nom">Nombre del material</th>
+          <th class="sortable" data-col="nSol">Solicitudes</th>
+          <th class="sortable" data-col="cant">Cant. a trasladar (UD)</th>
+          <th class="sortable" data-col="pal">Palets</th>
+          <th class="sortable" data-col="fecha">1.ª fecha de solicitud</th>
+          <th class="sortable" data-col="nPed">Pedidos de venta</th>
+          <th class="sortable" data-col="pend">Cant. pendiente (UD)</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <footer class="nota">
+    <b>Diseño de pantalla con datos de ejemplo.</b> El filtro de fecha se aplica a la fecha de la
+    solicitud de traslado: un material aparece en el nivel 1 si tiene al menos una solicitud dentro del
+    rango. El filtro de cliente se aplica a los pedidos de venta y arrastra al material. Los totales del
+    nivel 1 son siempre los de las líneas filtradas que se ven al desplegar.
+  </footer>
+
+</div>
+
+<script>
+/* =====================================================================
+   NECESIDADES DE SOLICITUDES DE TRASLADO — diseño de pantalla.
+   Datos de EJEMPLO generados de forma reproducible en el navegador.
+   Para conectar con datos reales basta sustituir genDatos() por la
+   consulta correspondiente, manteniendo la forma de SOLICITUDES y
+   PEDIDOS que se describe más abajo.
+   ===================================================================== */
+
+/* ---------- Maestro de materiales (ejemplo) ---------- */
+/* udPal = unidades por palet */
+const MATERIALES = [
+  { mat:'70908810', nom:'Gel de Ducha Aloe 750 ml',           udPal:720 },
+  { mat:'70908811', nom:'Champú Hidratante 400 ml',           udPal:960 },
+  { mat:'70908815', nom:'Acondicionador Reparador 400 ml',    udPal:960 },
+  { mat:'70908820', nom:'Loción Corporal 500 ml',             udPal:840 },
+  { mat:'70908824', nom:'Jabón de Manos 300 ml',              udPal:1080 },
+  { mat:'70908830', nom:'Desodorante Spray 200 ml',           udPal:1200 },
+  { mat:'70908833', nom:'Colonia Fresca 100 ml',              udPal:1440 },
+  { mat:'70908840', nom:'Crema Facial Nutritiva 50 ml',       udPal:1800 },
+  { mat:'70908842', nom:'Mascarilla Capilar 250 ml',          udPal:1200 },
+  { mat:'70908850', nom:'Pasta Dentífrica 75 ml',             udPal:1560 },
+];
+
+/* Destinos de traslado: centro y almacén de destino */
+const DESTINOS = [
+  { centro:'12FR', alm:'1201' },
+  { centro:'12',   alm:'12PO' },
+];
+
+const CLIENTES = ['Mercadona','Carrefour','Grupo Día','Eroski','Alcampo','El Corte Inglés','Consum'];
+const ESTADOS  = [
+  { k:'abierta', t:'Abierta' },
+  { k:'parcial', t:'Parcial' },
+  { k:'conv',    t:'Convertida' },
+];
+
+/* ---------- Utilidades ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const fmtDate = d => d ? pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear() : '—';
+const isoDate = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parseDate = v => { const p = v.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); };
+const num = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- Datos de ejemplo ---------- */
+const HOY = new Date(2026, 8, 22);   // 22/09/2026
+
+function genDatos(){
+  const rnd = mulberry32(20260922);
+  const solicitudes = [], pedidos = [];
+  let nSol = 10045200, nPed = 4500000;
+
+  MATERIALES.forEach(m => {
+    /* solicitudes de traslado: 0..5 por material */
+    const n = Math.floor(rnd() * 6);
+    const d0 = Math.floor(rnd() * DESTINOS.length);
+    for (let i = 0; i < n; i++){
+      nSol += 1 + Math.floor(rnd() * 5);
+      const pal = 4 + Math.floor(rnd() * 22);
+      const est = ESTADOS[Math.floor(rnd() * ESTADOS.length)];
+      solicitudes.push({
+        sol: String(nSol),
+        pos: (i + 1) * 10,
+        mat: m.mat,
+        fecha: addDays(HOY, -6 + Math.floor(rnd() * 38)),
+        cant: pal * m.udPal,
+        pal: pal,
+        dest: DESTINOS[(d0 + i) % DESTINOS.length],
+        estado: est,
+      });
+    }
+    /* pedidos de venta con cantidad pendiente: 1..4 por material */
+    const p = 1 + Math.floor(rnd() * 4);
+    for (let i = 0; i < p; i++){
+      nPed += 1 + Math.floor(rnd() * 6);
+      const d = DESTINOS[Math.floor(rnd() * DESTINOS.length)];
+      const pal = 2 + Math.floor(rnd() * 14);
+      pedidos.push({
+        ped: String(nPed),
+        pos: (i + 1) * 10,
+        mat: m.mat,
+        cliente: CLIENTES[Math.floor(rnd() * CLIENTES.length)],
+        centro: d.centro,
+        alm: d.alm,
+        pend: pal * m.udPal,
+        fEntrega: addDays(HOY, 2 + Math.floor(rnd() * 34)),
+      });
+    }
+  });
+  return { solicitudes, pedidos };
+}
+const DATOS = genDatos();
+
+/* ---------- Estado de la pantalla ---------- */
+const abiertos = new Map();              // material -> pestaña activa ('sol' | 'ped')
+let orden = { col:'fecha', dir:1 };
+
+/* ---------- Filtros ---------- */
+function filtros(){
+  const desde = $('#fDesde').value ? parseDate($('#fDesde').value) : null;
+  const hasta = $('#fHasta').value ? parseDate($('#fHasta').value) : null;
+  return {
+    desde, hasta,
+    mat: $('#fMat').value.trim().toLowerCase(),
+    cli: $('#fCli').value.trim().toLowerCase(),
+  };
+}
+
+function agrupar(f){
+  const grupos = [];
+  MATERIALES.forEach(m => {
+    if (f.mat && !(m.mat.toLowerCase().includes(f.mat) || m.nom.toLowerCase().includes(f.mat))) return;
+
+    const sol = DATOS.solicitudes.filter(s =>
+      s.mat === m.mat &&
+      (!f.desde || s.fecha >= f.desde) &&
+      (!f.hasta || s.fecha <= f.hasta)
+    ).sort((a,b) => a.fecha - b.fecha);
+
+    const ped = DATOS.pedidos.filter(p =>
+      p.mat === m.mat && (!f.cli || p.cliente.toLowerCase().includes(f.cli))
+    ).sort((a,b) => a.fEntrega - b.fEntrega);
+
+    /* la pantalla es de necesidades de traslado: sin solicitudes en el rango, el material no sale */
+    if (!sol.length) return;
+    /* si se filtra por cliente, sólo los materiales que ese cliente tiene pedidos */
+    if (f.cli && !ped.length) return;
+
+    grupos.push({
+      mat: m.mat, nom: m.nom, sol, ped,
+      nSol: sol.length,
+      cant: sol.reduce((a,s) => a + s.cant, 0),
+      pal:  sol.reduce((a,s) => a + s.pal, 0),
+      fecha: sol.length ? sol[0].fecha : null,
+      nPed: ped.length,
+      pend: ped.reduce((a,p) => a + p.pend, 0),
+    });
+  });
+
+  const dir = orden.dir;
+  grupos.sort((a,b) => {
+    const va = a[orden.col], vb = b[orden.col];
+    if (va instanceof Date || vb instanceof Date) return ((va?+va:0) - (vb?+vb:0)) * dir;
+    if (typeof va === 'number') return (va - vb) * dir;
+    return String(va).localeCompare(String(vb), 'es') * dir;
+  });
+  return grupos;
+}
+
+/* ---------- Pintado ---------- */
+function filaDetalle(g){
+  const tab = abiertos.get(g.mat) || 'sol';
+  let cuerpo;
+
+  if (tab === 'sol'){
+    cuerpo =
+      '<table class="n2"><thead><tr>' +
+        '<th>Solicitud</th><th>Pos.</th><th>Fecha de solicitud</th>' +
+        '<th style="text-align:right">Cantidad (UD)</th><th style="text-align:right">Palets</th>' +
+        '<th>Centro destino</th><th>Almacén destino</th><th>Estado</th>' +
+      '</tr></thead><tbody>' +
+      g.sol.map(s =>
+        '<tr>' +
+          '<td class="doc">' + s.sol + '</td>' +
+          '<td>' + s.pos + '</td>' +
+          '<td>' + fmtDate(s.fecha) + '</td>' +
+          '<td class="num">' + num(s.cant) + '</td>' +
+          '<td class="num">' + s.pal + '</td>' +
+          '<td><span class="dest">' + s.dest.centro + '</span></td>' +
+          '<td><span class="dest">' + s.dest.alm + '</span></td>' +
+          '<td><span class="badge ' + s.estado.k + '">' + s.estado.t + '</span></td>' +
+        '</tr>').join('') +
+      '</tbody><tfoot><tr>' +
+        '<td colspan="3">' + g.nSol + ' solicitud' + (g.nSol === 1 ? '' : 'es') + '</td>' +
+        '<td class="num">' + num(g.cant) + '</td><td class="num">' + g.pal + '</td>' +
+        '<td colspan="3"></td>' +
+      '</tr></tfoot></table>';
+  } else {
+    cuerpo = g.ped.length ?
+      '<table class="n2"><thead><tr>' +
+        '<th>Pedido</th><th>Pos.</th><th>Cliente</th><th>Centro</th><th>Almacén</th>' +
+        '<th style="text-align:right">Cant. pendiente (UD)</th><th>Fecha de entrega</th>' +
+      '</tr></thead><tbody>' +
+      g.ped.map(p =>
+        '<tr>' +
+          '<td class="doc">' + p.ped + '</td>' +
+          '<td>' + p.pos + '</td>' +
+          '<td>' + esc(p.cliente) + '</td>' +
+          '<td><span class="dest">' + p.centro + '</span></td>' +
+          '<td><span class="dest">' + p.alm + '</span></td>' +
+          '<td class="num">' + num(p.pend) + '</td>' +
+          '<td>' + fmtDate(p.fEntrega) + '</td>' +
+        '</tr>').join('') +
+      '</tbody><tfoot><tr>' +
+        '<td colspan="5">' + g.nPed + ' pedido' + (g.nPed === 1 ? '' : 's') + '</td>' +
+        '<td class="num">' + num(g.pend) + '</td><td></td>' +
+      '</tr></tfoot></table>'
+      : '<table class="n2"><tbody><tr><td style="padding:16px;color:#8a99ab;font-style:italic">' +
+        'Este material no tiene pedidos de venta pendientes con los filtros actuales.</td></tr></tbody></table>';
+  }
+
+  return '<tr class="det"><td colspan="9"><div class="lvl2">' +
+    '<div class="lvl2-tabs" role="tablist">' +
+      '<button role="tab" data-tab="sol" data-mat="' + g.mat + '" aria-selected="' + (tab === 'sol') + '">' +
+        'Necesidades de traslado <span class="n">(' + g.nSol + ')</span></button>' +
+      '<button role="tab" data-tab="ped" data-mat="' + g.mat + '" aria-selected="' + (tab === 'ped') + '">' +
+        'Pedidos de venta <span class="n">(' + g.nPed + ')</span></button>' +
+    '</div>' +
+    '<div class="lvl2-body">' + cuerpo + '</div>' +
+  '</div></td></tr>';
+}
+
+function render(){
+  const grupos = agrupar(filtros());
+  const tb = $('#tbody');
+
+  if (!grupos.length){
+    tb.innerHTML = '<tr class="vacia"><td colspan="9">Sin necesidades de traslado para los filtros seleccionados.</td></tr>';
+  } else {
+    tb.innerHTML = grupos.map(g => {
+      const ab = abiertos.has(g.mat);
+      return '<tr class="mat' + (ab ? ' open' : '') + '" data-mat="' + g.mat + '">' +
+          '<td class="exp"><button class="chev" aria-expanded="' + ab + '" aria-label="' +
+            (ab ? 'Contraer' : 'Desplegar') + ' ' + g.mat + '">▶</button></td>' +
+          '<td class="mat">' + g.mat + '</td>' +
+          '<td class="nom">' + esc(g.nom) + '</td>' +
+          '<td class="num cnt"><b>' + g.nSol + '</b></td>' +
+          '<td class="num">' + num(g.cant) + '</td>' +
+          '<td class="num">' + g.pal + '</td>' +
+          '<td>' + fmtDate(g.fecha) + '</td>' +
+          '<td class="num cnt"><b>' + g.nPed + '</b></td>' +
+          '<td class="num">' + num(g.pend) + '</td>' +
+        '</tr>' + (ab ? filaDetalle(g) : '');
+    }).join('');
+  }
+
+  const tot = grupos.reduce((a,g) => ({
+    sol: a.sol + g.nSol, cant: a.cant + g.cant, pal: a.pal + g.pal,
+    ped: a.ped + g.nPed, pend: a.pend + g.pend,
+  }), { sol:0, cant:0, pal:0, ped:0, pend:0 });
+
+  $('#resumen').innerHTML =
+    '<b>' + grupos.length + '</b> material' + (grupos.length === 1 ? '' : 'es') + ' · ' +
+    '<b>' + tot.sol + '</b> solicitudes de traslado · <b>' + num(tot.cant) + '</b> UD ' +
+    '(<b>' + tot.pal + '</b> palets) · <b>' + tot.ped + '</b> pedidos de venta con ' +
+    '<b>' + num(tot.pend) + '</b> UD pendientes';
+
+  document.querySelectorAll('table.n1 > thead th.sortable').forEach(th => {
+    const act = th.dataset.col === orden.col;
+    th.innerHTML = th.textContent.replace(/ [▲▼]$/, '') + (act ? ' <span class="arr">' + (orden.dir > 0 ? '▲' : '▼') + '</span>' : '');
+  });
+}
+
+/* ---------- Eventos ---------- */
+$('#tbody').addEventListener('click', e => {
+  const tab = e.target.closest('.lvl2-tabs button');
+  if (tab){ abiertos.set(tab.dataset.mat, tab.dataset.tab); render(); return; }
+  const fila = e.target.closest('tr.mat');
+  if (!fila) return;
+  const m = fila.dataset.mat;
+  if (abiertos.has(m)) abiertos.delete(m); else abiertos.set(m, 'sol');
+  render();
+});
+
+document.querySelectorAll('table.n1 > thead th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const c = th.dataset.col;
+    orden = { col:c, dir: orden.col === c ? -orden.dir : 1 };
+    render();
+  });
+});
+
+['#fDesde','#fHasta','#fMat','#fCli'].forEach(sel => {
+  $(sel).addEventListener('input', render);
+  $(sel).addEventListener('change', render);
+});
+
+$('#btnLimpiar').addEventListener('click', () => {
+  $('#fDesde').value = isoDate(HOY);
+  $('#fHasta').value = isoDate(addDays(HOY, 24));
+  $('#fMat').value = '';
+  $('#fCli').value = '';
+  render();
+});
+$('#btnExp').addEventListener('click', () => {
+  agrupar(filtros()).forEach(g => { if (!abiertos.has(g.mat)) abiertos.set(g.mat, 'sol'); });
+  render();
+});
+$('#btnCol').addEventListener('click', () => { abiertos.clear(); render(); });
+
+/* ---------- Arranque ---------- */
+$('#lMat').innerHTML = MATERIALES.map(m => '<option value="' + m.mat + '">' + esc(m.nom) + '</option>').join('');
+$('#lCli').innerHTML = CLIENTES.map(c => '<option value="' + esc(c) + '"></option>').join('');
+$('#fDesde').value = isoDate(HOY);
+$('#fHasta').value = isoDate(addDays(HOY, 24));
+abiertos.set('70908810', 'sol');    // la pantalla abre con el primer material desplegado
+render();
+</script>
+</body>
+</html>

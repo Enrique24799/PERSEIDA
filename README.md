@@ -5,6 +5,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `flujos-material-multipais.html` — Flujos actual y objetivo de dos procesos de traslado, en pestañas.
+- `PANTALLA_NECESIDADES_TRASLADO.html` — Pantalla de necesidades de solicitudes de traslado.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -108,3 +109,44 @@ pedidos.
 Los cuatro diagramas comparten carriles y columnas, para poder compararlos fila a fila. Ámbar
 discontinuo = paso manual, verde = paso automático, caja tachada = lo que desaparece. Cada pestaña
 termina con una tabla **paso a paso** y con sus **puntos a cerrar**.
+
+## `PANTALLA_NECESIDADES_TRASLADO.html` — Necesidades de solicitudes de traslado
+
+Diseño de la pantalla desde la que logística ve las necesidades de traslado. El alcance actual son
+**sólo los traslados**; el filtro *Tipo de necesidad* deja ya sitio a los camiones de carga, que se
+añadirán más adelante. Datos de **ejemplo** generados de forma reproducible en el navegador.
+
+### Filtros
+
+| Filtro | Qué hace |
+|---|---|
+| **Fecha de solicitud** (desde / hasta) | Filtra las solicitudes por su fecha. Un material sale en el nivel 1 si tiene al menos una solicitud dentro del rango. |
+| **Material** | Código o nombre, por texto contenido. |
+| **Nombre de cliente** | Se aplica a los pedidos de venta y arrastra al material: si se filtra por cliente, sólo salen los materiales con pedidos de ese cliente. |
+| **Tipo de necesidad** | *Traslados* (único activo) y *Camiones de carga*, deshabilitado hasta que se amplíe la funcionalidad. |
+
+### Nivel 1 — una fila por material
+
+`Material`, `Nombre del material`, `Solicitudes` (nº), `Cant. a trasladar (UD)`, `Palets`,
+`1.ª fecha de solicitud`, `Pedidos de venta` (nº) y `Cant. pendiente (UD)`. Las columnas ordenan al
+pulsar en la cabecera y los totales son siempre los de las líneas filtradas. Al pulsar en la fila se
+despliega el nivel 2.
+
+### Nivel 2 — dos pestañas
+
+- **Necesidades de traslado:** `Solicitud`, `Pos.`, `Fecha de solicitud`, `Cantidad (UD)`, `Palets`,
+  `Centro destino`, `Almacén destino` y `Estado` (Abierta / Parcial / Convertida a pedido).
+- **Pedidos de venta:** `Pedido`, `Pos.`, `Cliente`, `Centro`, `Almacén`, `Cant. pendiente (UD)` y
+  `Fecha de entrega`.
+
+Cada pestaña cierra con una fila de totales. Cada material recuerda la pestaña que se dejó abierta.
+
+### Pendiente de confirmar
+
+- **Almacén y centro de origen** de la solicitud: en el ejemplo todas salen del `1202`, por lo que no
+  se muestra la columna. Si va a haber varios orígenes, hay que añadirla.
+- **Unidad de medida:** el ejemplo usa unidades (UD) y palets; falta confirmar cuál es la de trabajo.
+- **Estados de la solicitud:** los tres del ejemplo (Abierta, Parcial, Convertida) son una propuesta.
+
+Para conectar con datos reales basta sustituir `genDatos()` por la consulta correspondiente,
+manteniendo la forma de los arrays `solicitudes` y `pedidos`.
