@@ -120,33 +120,60 @@ añadirán más adelante. Datos de **ejemplo** generados de forma reproducible e
 
 | Filtro | Qué hace |
 |---|---|
-| **Fecha de solicitud** (desde / hasta) | Filtra las solicitudes por su fecha. Un material sale en el nivel 1 si tiene al menos una solicitud dentro del rango. |
+| **Fecha de solicitud** (desde / hasta) | Filtra las solicitudes por su fecha. |
+| **País** | Todos, España, Francia, Holanda, Bélgica o Alemania. |
+| **Almacén** | Depende del país elegido (ver tabla siguiente); con *Todos* se ofrecen todos los almacenes. |
 | **Material** | Código o nombre, por texto contenido. |
-| **Nombre de cliente** | Se aplica a los pedidos de venta y arrastra al material: si se filtra por cliente, sólo salen los materiales con pedidos de ese cliente. |
-| **Tipo de necesidad** | *Traslados* (único activo) y *Camiones de carga*, deshabilitado hasta que se amplíe la funcionalidad. |
+| **Nombre de cliente** | Se aplica a los pedidos de venta y arrastra al material. |
+| **Tipo de necesidad** | *Traslados* (único activo) y *Camiones de carga*, deshabilitado. |
+
+Un material aparece en el nivel 1 si tiene **al menos una solicitud** que cumpla fecha, país y
+almacén a la vez. Los totales del nivel 1 son los de las líneas filtradas.
+
+| País | Centro | Almacenes |
+|---|---|---|
+| España | `12` | `1201`, `HUB`, `12PO`, `12FV` |
+| Francia | `12FR` | `HUFR` |
+| Holanda | `12NL` | `HUNL` |
+| Bélgica | `12BE` | `HUBE` |
+| Alemania | `12DE` | `HUDE` |
 
 ### Nivel 1 — una fila por material
 
 `Material`, `Nombre del material`, `Solicitudes` (nº), `Cant. a trasladar (UD)`, `Palets`,
-`1.ª fecha de solicitud`, `Pedidos de venta` (nº) y `Cant. pendiente (UD)`. Las columnas ordenan al
-pulsar en la cabecera y los totales son siempre los de las líneas filtradas. Al pulsar en la fila se
-despliega el nivel 2.
+`1.ª fecha de solicitud`, y a continuación las tres columnas de suministro, cada una con su ventana
+de detalle:
+
+| Columna | Qué muestra | Ventana |
+|---|---|---|
+| **Fabricación verificada (UD)** | Suma de la cantidad del material en órdenes pendientes de fabricar | `Orden`, `Cantidad`, `Puesto`, `Inicio`, `Fin`, `¿Antes de entrega?` |
+| **Ver faltas** | ⚠ si alguna de esas órdenes tiene faltas | `Orden`, `Material`, `Nombre`, `Necesidad`, `Faltante` |
+| **Pedidos de compra** | *Sí (n)* o *No* | `Pedido`, `Pos.`, `Proveedor`, `Material`, `Nombre`, `Cantidad`, `Fecha de entrega`, `Situación` |
+
+Cierran la fila `Pedidos de venta` (nº) y `Cant. pendiente (UD)`. Las columnas ordenan al pulsar en
+la cabecera. Las tres columnas de suministro son del **material** y no dependen del país o almacén
+filtrados. `¿Antes de entrega?` compara el fin de la orden con la fecha de entrega más próxima del
+material.
 
 ### Nivel 2 — dos pestañas
 
 - **Necesidades de traslado:** `Solicitud`, `Pos.`, `Fecha de solicitud`, `Cantidad (UD)`, `Palets`,
-  `Centro destino`, `Almacén destino` y `Estado` (Abierta / Parcial / Convertida a pedido).
-- **Pedidos de venta:** `Pedido`, `Pos.`, `Cliente`, `Centro`, `Almacén`, `Cant. pendiente (UD)` y
-  `Fecha de entrega`.
+  `País`, `Centro destino`, `Almacén destino`, `Stock verificado (UD)` — el stock de verificación de
+  disponibilidad de esa solped, en verde si cubre la cantidad, ámbar si es parcial y rojo si es cero —,
+  `F. disponibilidad` y `Estado` (Abierta / Parcial / Convertida a pedido).
+- **Pedidos de venta:** `Pedido`, `Pos.`, `Cliente`, `País`, `Centro`, `Almacén`,
+  `Cant. pendiente (UD)` y `Fecha de entrega`.
 
-Cada pestaña cierra con una fila de totales. Cada material recuerda la pestaña que se dejó abierta.
+Cada pestaña cierra con una fila de totales y cada material recuerda la pestaña abierta.
 
 ### Pendiente de confirmar
 
+- **Centro de cada país:** `12FR`, `12NL`, `12BE` y `12DE` están puestos por coherencia con el flujo
+  objetivo; sólo `12` (España) y `12FR` se han confirmado. Se cambian en la constante `PAISES`.
 - **Almacén y centro de origen** de la solicitud: en el ejemplo todas salen del `1202`, por lo que no
-  se muestra la columna. Si va a haber varios orígenes, hay que añadirla.
-- **Unidad de medida:** el ejemplo usa unidades (UD) y palets; falta confirmar cuál es la de trabajo.
-- **Estados de la solicitud:** los tres del ejemplo (Abierta, Parcial, Convertida) son una propuesta.
+  hay columna de origen.
+- **Unidad de medida:** el ejemplo usa unidades (UD) y palets.
+- **Estados de la solicitud** y **situación del pedido de compra**: son una propuesta.
 
 Para conectar con datos reales basta sustituir `genDatos()` por la consulta correspondiente,
-manteniendo la forma de los arrays `solicitudes` y `pedidos`.
+manteniendo la forma de los arrays `solicitudes`, `pedidos`, `ordenes`, `faltas` y `compras`.
