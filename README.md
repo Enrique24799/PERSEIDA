@@ -4,6 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
+- `notificacion-fabricacion-reactores.html` — Notificación de fabricaciones en reactores.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -64,3 +65,34 @@ totales de volumen/peso se muestran una sola vez por camión.
 
 Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
 si procede, `runAlgo()` por la llamada al algoritmo real.
+
+## `notificacion-fabricacion-reactores.html` — Notificación de fabricaciones (reactores)
+
+Versión para **reactores** de la pantalla de notificación de las líneas de envasado. Datos de
+**ejemplo**; las notificaciones se simulan en el navegador.
+
+### Tarjeta por reactor
+
+`Reactor`, `Material`, `Orden Fab` (las órdenes de fabricación empiezan por **100**), `Complete`
+(barra de progreso en % de kilos notificados) y `Kg Notificados` (notificado / cantidad de la
+orden). No hay unidades por palet, palet actual ni total de palets. Botones **Notificar** y
+**Ver Matrículas** (no hay *Complementaria*). Al pulsar una tarjeta queda seleccionada.
+
+### Ventana *Notificación Fabricación* (botón Notificar)
+
+- **Datos Orden:** Material, Orden (desplegable con las órdenes del reactor), Tipo Material =
+  *Fabricación* y Progreso.
+- **Datos:** Lote, Cant. de la Orden, Cant. Notificada, Cant. Pendiente (kg) e Imprimir Etiqueta.
+- **Revisa los datos y confirma la notificación:** **Kilos a Notificar** (editable; por defecto la
+  cantidad pendiente, admite `1.250`, `1250` o `1250,5`), Pendiente tras notificar y Observaciones.
+- **Aceptar** (o Enter) registra la notificación, genera una matrícula y actualiza la tarjeta.
+  Si los kilos superan lo pendiente se avisa, pero se permite; con 0 o un valor no válido no se
+  puede aceptar. Esc cierra la ventana; se puede arrastrar por la cabecera.
+
+### Ventana *Matrículas* (botón Ver Matrículas)
+
+Lista las notificaciones de la orden seleccionada (Matrícula, Fecha, Kilos, Lote, Observaciones)
+con el total notificado; las hechas en la sesión aparecen resaltadas.
+
+Para conectar con datos reales basta sustituir el array `REACTORES` y, si procede, la función
+`aceptar()` por la llamada que registra la notificación.

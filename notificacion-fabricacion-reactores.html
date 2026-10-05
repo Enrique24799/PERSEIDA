@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Notificación de Fabricación — Reactores</title>
+<style>
+  :root {
+    --card-bg: #d9e6f9;
+    --lbl: #6e6e6e;
+    --val: #1e1e1e;
+    --bar-border: #24408e;
+    --bar-fill: #a9c4ee;
+    --btn-border: #99bbe8;
+    --win-frame: #4b4b4b;
+    --win-foot: #6c6c6c;
+    --fld-bg: #e9e9e9;
+    --fld-border: #bdbdbd;
+    --ok: #2e9e2e;
+    --warn: #c77700;
+    --err: #c62828;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #fff;
+    color: var(--val);
+    font-family: Tahoma, Verdana, Geneva, "Segoe UI", sans-serif;
+    font-size: 13px;
+  }
+
+  /* ---------- Tarjetas de reactor ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+    gap: 16px 22px;
+    padding: 12px 14px;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border: 1px solid var(--c);
+    border-top: 8px solid var(--c);
+    padding: 14px 12px 8px;
+    cursor: pointer;
+  }
+  .card.sel { box-shadow: 0 0 0 2px #ff7a52; }
+  .row {
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    align-items: center;
+    min-height: 40px;
+  }
+  .lbl { color: var(--lbl); font-weight: bold; }
+  .val { font-family: Verdana, Tahoma, sans-serif; font-weight: bold; font-size: 12.5px; }
+
+  .bar {
+    position: relative;
+    height: 21px;
+    background: #fff;
+    border: 1px solid var(--bar-border);
+  }
+  .bar .fill { height: 100%; background: var(--bar-fill); transition: width .4s; }
+  .bar .pct {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    background: #5a5a5a; color: #fff;
+    font-size: 9px; line-height: 12px; padding: 0 5px; border-radius: 2px;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 10px;
+  }
+  .xbtn {
+    display: inline-flex; align-items: center; gap: 4px;
+    font: 11px Tahoma, Verdana, sans-serif; color: #15283f;
+    padding: 2px 7px;
+    border: 1px solid var(--btn-border); border-radius: 2px;
+    background: linear-gradient(#ffffff, #dde8f6);
+    cursor: pointer;
+  }
+  .xbtn:hover { background: linear-gradient(#ffffff, #c8dbf3); border-color: #6b9bd8; }
+  .xbtn:active { background: linear-gradient(#c8dbf3, #e6eef9); }
+  .xbtn.big { font-size: 15px; font-weight: bold; padding: 2px 9px; }
+  .xbtn svg { flex: none; }
+
+  /* ---------- Ventanas emergentes ---------- */
+  .mask { position: fixed; inset: 0; z-index: 50; background: rgba(110, 110, 110, .45); }
+  .mask[hidden], .win[hidden] { display: none; }
+  .win {
+    position: fixed; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(650px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    display: flex; flex-direction: column;
+    background: var(--win-frame);
+    border: 1px solid #3a3a3a; border-radius: 4px;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, .35);
+    padding: 0 4px;
+  }
+  .win-head {
+    display: flex; align-items: center; justify-content: space-between;
+    color: #fff; font-weight: bold; font-size: 12px;
+    padding: 7px 4px 7px 6px;
+    cursor: move; user-select: none; touch-action: none;
+  }
+  .win-x {
+    background: none; border: 0; color: #ddd; cursor: pointer;
+    font-size: 18px; line-height: 1; padding: 0 2px;
+  }
+  .win-x:hover { color: #fff; }
+  .win-body { background: #f7f7f7; padding: 8px 10px 4px; overflow: auto; }
+  .win-foot {
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    background: var(--win-foot);
+    margin: 0 -4px; padding: 7px 8px;
+    border-radius: 0 0 3px 3px;
+  }
+  .win-foot .info { margin-right: auto; color: #fff; font-size: 12px; }
+  .wbtn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: 12px Tahoma, Verdana, sans-serif; color: #222;
+    padding: 4px 14px;
+    border: 1px solid #9a9a9a; border-radius: 2px;
+    background: linear-gradient(#f4f4f4, #dcdcdc);
+    cursor: pointer;
+  }
+  .wbtn:hover:not(:disabled) { background: linear-gradient(#ffffff, #e6e6e6); }
+  .wbtn:disabled { opacity: .55; cursor: not-allowed; }
+
+  .fs {
+    border: 1px solid #b7b7b7; border-radius: 4px;
+    margin: 4px 0 10px; padding: 6px 10px 10px;
+    background: #fff;
+  }
+  .fs legend { font-weight: bold; font-size: 12px; color: #333; padding: 0 4px; }
+  .fs label { font-size: 11px; color: #333; }
+
+  .fld {
+    width: 100%; height: 26px;
+    font: 14px Tahoma, Verdana, sans-serif; color: #222;
+    background: var(--fld-bg);
+    border: 1px solid var(--fld-border);
+    padding: 2px 6px;
+  }
+  .fld[readonly] { outline: none; }
+  select.fld {
+    appearance: none; -webkit-appearance: none;
+    padding-right: 24px; cursor: pointer;
+    background: var(--fld-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='24'%3E%3Crect x='.5' y='.5' width='17' height='23' fill='%23dadada' stroke='%23b0b0b0'/%3E%3Cpath d='M5 10l4 4 4-4z' fill='%23555'/%3E%3C/svg%3E") no-repeat right center;
+  }
+  .fld.edit { background: #fff; border-color: #8fb2e0; }
+  .fld.edit:focus { outline: none; border-color: #3d7cd6; box-shadow: 0 0 0 2px rgba(61, 124, 214, .25); }
+
+  .unit { position: relative; }
+  .unit .fld { padding-right: 30px; text-align: right; }
+  .unit span {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    color: #777; font-size: 11px; pointer-events: none;
+  }
+  .unit.big .fld { height: 46px; font-size: 26px; padding-right: 40px; }
+  .unit.big span { font-size: 15px; }
+
+  .g-mat { display: grid; grid-template-columns: 52px 1fr; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .g-ord { display: grid; grid-template-columns: 52px 1.1fr auto 1fr auto .7fr; gap: 6px 8px; align-items: center; }
+  .g-dat { display: grid; grid-template-columns: 100px 1fr 112px 1fr; gap: 8px 12px; align-items: center; }
+  .g-kg  { display: grid; grid-template-columns: 100px 1.15fr auto 1fr; gap: 8px 12px; align-items: center; }
+  .g-obs { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: center; margin-top: 10px; }
+
+  .msg { min-height: 16px; margin-top: 6px; font-size: 11px; }
+  .msg.err  { color: var(--err); }
+  .msg.warn { color: var(--warn); }
+
+  .tgl { position: relative; display: inline-block; width: 30px; height: 14px; }
+  .tgl input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+  .tgl span { position: absolute; inset: 0; background: #d0d0d0; border-radius: 8px; transition: .15s; }
+  .tgl span::after {
+    content: ""; position: absolute; left: 1px; top: 1px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); transition: .15s;
+  }
+  .tgl input:checked + span { background: #5b8fd6; }
+  .tgl input:checked + span::after { left: 17px; }
+  .tgl input:focus-visible + span { outline: 2px solid #5b8fd6; outline-offset: 2px; }
+
+  /* Rejilla de matrículas */
+  .gridwrap { max-height: 260px; overflow: auto; border: 1px solid #c5c5c5; }
+  .xgrid { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+  .xgrid th {
+    position: sticky; top: 0;
+    background: linear-gradient(#f9f9f9, #e3e3e3);
+    border-bottom: 1px solid #c5c5c5; border-right: 1px solid #d5d5d5;
+    padding: 5px 6px; text-align: left; font-weight: normal; color: #333; white-space: nowrap;
+  }
+  .xgrid td { padding: 5px 6px; border-bottom: 1px solid #ededed; border-right: 1px solid #f3f3f3; white-space: nowrap; }
+  .xgrid tr:nth-child(even) td { background: #fafafa; }
+  .xgrid tr.nueva td { background: #e5f3df; }
+  .xgrid .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .xgrid .vacio { text-align: center; color: #888; padding: 18px; white-space: normal; }
+
+  /* Aviso */
+  .toast {
+    position: fixed; right: 16px; bottom: 16px; z-index: 60;
+    max-width: calc(100vw - 32px);
+    background: #fff; border: 1px solid var(--btn-border); border-left: 5px solid var(--ok);
+    padding: 10px 14px; font-size: 12px; line-height: 1.5;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+    opacity: 0; transform: translateY(10px); pointer-events: none;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: none; }
+
+  @media (max-width: 560px) {
+    .g-ord, .g-dat, .g-kg, .g-obs { grid-template-columns: 110px 1fr; }
+    .g-mat { grid-template-columns: 110px 1fr; }
+    .row { grid-template-columns: 108px 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid" id="grid"></div>
+
+<!-- ============ Ventanas emergentes ============ -->
+<div class="mask" id="mask" hidden>
+
+  <!-- Notificación de fabricación -->
+  <div class="win" id="winNotif" role="dialog" aria-modal="true" aria-labelledby="nTitle" hidden>
+    <div class="win-head">
+      <span id="nTitle">Notificación Fabricación</span>
+      <button class="win-x" data-close aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="win-body">
+      <fieldset class="fs">
+        <legend>Datos Orden.</legend>
+        <div class="g-mat">
+          <label for="nMaterial">Material:</label>
+          <input class="fld" id="nMaterial" readonly />
+        </div>
+        <div class="g-ord">
+          <label for="nOrden">Orden:</label>
+          <select class="fld" id="nOrden"></select>
+          <label for="nTipo">Tipo Material:</label>
+          <input class="fld" id="nTipo" value="Fabricación" readonly />
+          <label for="nProg">Progreso:</label>
+          <input class="fld" id="nProg" readonly />
+        </div>
+      </fieldset>
+
+      <fieldset class="fs">
+        <legend>Datos</legend>
+        <div class="g-dat">
+          <label for="nLote">Lote:</label>
+          <input class="fld" id="nLote" readonly />
+          <label for="nCant">Cant. de la Orden:</label>
+          <div class="unit"><input class="fld" id="nCant" readonly /><span>kg</span></div>
+
+          <label for="nNotif">Cant. Notificada:</label>
+          <div class="unit"><input class="fld" id="nNotif" readonly /><span>kg</span></div>
+          <label for="nPend">Cant. Pendiente:</label>
+          <div class="unit"><input class="fld" id="nPend" readonly /><span>kg</span></div>
+
+          <label for="nPrint">Imprimir Etiqueta:</label>
+          <div><label class="tgl"><input type="checkbox" id="nPrint" /><span></span></label></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fs">
+        <legend>Revisa los datos y confirma la notificación.</legend>
+        <div class="g-kg">
+          <label for="nKilos">Kilos a Notificar:</label>
+          <div class="unit big"><input class="fld edit" id="nKilos" inputmode="decimal" autocomplete="off" /><span>kg</span></div>
+          <label for="nResto">Pendiente tras notificar:</label>
+          <div class="unit"><input class="fld" id="nResto" readonly /><span>kg</span></div>
+        </div>
+        <div class="msg" id="nMsg" role="status"></div>
+        <div class="g-obs" style="margin-top:4px">
+          <label for="nObs">Observaciones (Opcional):</label>
+          <input class="fld edit" id="nObs" maxlength="120" autocomplete="off" />
+        </div>
+      </fieldset>
+    </div>
+    <div class="win-foot">
+      <button class="wbtn" id="btnAceptar">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="#fff" stroke="#6a9a6a"/><path d="M4 8.5l2.6 2.6L12 5.5" fill="none" stroke="#2e9e2e" stroke-width="2"/></svg>
+        Aceptar
+      </button>
+    </div>
+  </div>
+
+  <!-- Ver matrículas -->
+  <div class="win" id="winMatr" role="dialog" aria-modal="true" aria-labelledby="mTitle" hidden>
+    <div class="win-head">
+      <span id="mTitle">Matrículas</span>
+      <button class="win-x" data-close aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="win-body">
+      <fieldset class="fs">
+        <legend>Datos Orden.</legend>
+        <div class="g-mat">
+          <label for="mMaterial">Material:</label>
+          <input class="fld" id="mMaterial" readonly />
+        </div>
+        <div class="g-ord">
+          <label for="mOrden">Orden:</label>
+          <select class="fld" id="mOrden"></select>
+          <label for="mLote">Lote:</label>
+          <input class="fld" id="mLote" readonly />
+          <label for="mProg">Progreso:</label>
+          <input class="fld" id="mProg" readonly />
+        </div>
+      </fieldset>
+      <fieldset class="fs">
+        <legend>Notificaciones de la orden</legend>
+        <div class="gridwrap">
+          <table class="xgrid">
+            <thead>
+              <tr><th>Matrícula</th><th>Fecha notificación</th><th class="num">Kilos</th><th>Lote</th><th>Observaciones</th></tr>
+            </thead>
+            <tbody id="mBody"></tbody>
+          </table>
+        </div>
+      </fieldset>
+    </div>
+    <div class="win-foot">
+      <span class="info" id="mTotal"></span>
+      <button class="wbtn" data-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =====================================================================
+   NOTIFICACIÓN DE FABRICACIÓN — REACTORES
+   Datos de EJEMPLO. Para conectar con datos reales basta sustituir el
+   array REACTORES (y, si procede, aceptar() por la llamada que registra
+   la notificación en el sistema).
+   Las órdenes de fabricación empiezan por 100; las cantidades van en kg.
+   ===================================================================== */
+const REACTORES = [
+  { id: 'R1', color: '#ff0000', ordenes: [
+    { orden: '10085239', material: 'GRANEL MYLABEL ACOND REPARA/PROTEGE',  lote: '26.273.006', cantidad: 15000, notificada: 3750 },
+    { orden: '10085312', material: 'GRANEL MYLABEL ACOND NUTRICION',       lote: '26.273.041', cantidad:  8000, notificada: 0 } ] },
+  { id: 'R2', color: '#0000ff', ordenes: [
+    { orden: '10085288', material: 'GRANEL ACOF NAVIDAD 2026 GEL FAMILIAR', lote: '26.274.112', cantidad: 22000, notificada: 1980 } ] },
+  { id: 'R3', color: '#008000', ordenes: [
+    { orden: '10085071', material: 'GRANEL CIEN GEL BAÑO ARGAN',           lote: '26.271.587', cantidad: 19000, notificada: 8360 } ] },
+  { id: 'R4', color: '#00ffff', ordenes: [
+    { orden: '10085459', material: 'GRANEL CIEN CHAMPU DETOX',             lote: '26.275.020', cantidad: 12000, notificada: 4440 },
+    { orden: '10085477', material: 'GRANEL CIEN CHAMPU ANTICASPA',         lote: '26.275.064', cantidad: 10000, notificada: 0 } ] },
+  { id: 'R5', color: '#ff8000', ordenes: [
+    { orden: '10085074', material: 'GRANEL CIEN GEL BAÑO AVENA',           lote: '26.271.598', cantidad: 18000, notificada: 16380 } ] },
+  { id: 'R6', color: '#6495ed', ordenes: [
+    { orden: '10084691', material: 'GRANEL ACOF. NESIRA GEL ALOE + VIT. E', lote: '26.268.930', cantidad:  9500, notificada: 2375 } ] },
+];
+
+/* ---------- Utilidades ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const round3 = n => Math.round(n * 1000) / 1000;
+
+/* Formato español con separador de miles siempre (1.296) y hasta 3 decimales. */
+function fmtKg(n) {
+  const neg = n < 0;
+  let [i, d] = Math.abs(round3(n)).toFixed(3).split('.');
+  i = i.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  d = d.replace(/0+$/, '');
+  return (neg ? '-' : '') + i + (d ? ',' + d : '');
+}
+/* Acepta "1.250", "1250", "1250,5", "1.250,5" y "1250.5". */
+function parseKg(s) {
+  s = String(s).trim().replace(/\s|kg/gi, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return /^\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
+}
+const pct  = o => o.cantidad ? Math.floor(o.notificada / o.cantidad * 100) : 0;
+const pend = o => Math.max(0, round3(o.cantidad - o.notificada));
+const pad2 = n => String(n).padStart(2, '0');
+const fmtFecha = d => `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+let seqMatr = 412300;
+const nextMatr = () => '38437002' + String(++seqMatr).padStart(10, '0');
+
+/* Notificaciones previas de ejemplo: reparten lo ya notificado en descargas de ~2.500 kg. */
+REACTORES.forEach((r, ri) => r.ordenes.forEach(o => {
+  o.notifs = [];
+  const n = Math.ceil(o.notificada / 2500);
+  let resto = o.notificada;
+  let t = Date.now() - (n * 90 + ri * 13) * 60000;
+  for (let k = 0; k < n; k++, t += 90 * 60000) {
+    const kg = k === n - 1 ? resto : Math.round(o.notificada / n / 10) * 10;
+    resto -= kg;
+    o.notifs.push({ matricula: nextMatr(), fecha: new Date(t), kilos: kg, lote: o.lote, obs: '' });
+  }
+}));
+
+/* ---------- Iconos ---------- */
+const ICO_NOTIF = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1.5" width="11" height="11" fill="#fff" stroke="#3b6aa8"/><path d="M1 5h11M1 8.5h11M4.7 1.5v11M8.3 1.5v11" stroke="#7fa2d1"/><path d="M8.5 11.2h3.6V9.2L16 12.4l-3.9 3.2v-2H8.5z" fill="#2e9e2e"/></svg>';
+const ICO_BINOC = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><g fill="#3a5f9a"><rect x="2" y="2.5" width="4" height="6" rx="1"/><rect x="10" y="2.5" width="4" height="6" rx="1"/><rect x="5.5" y="5" width="5" height="2.6"/><circle cx="4" cy="11" r="3.4"/><circle cx="12" cy="11" r="3.4"/></g><circle cx="4" cy="11" r="1.6" fill="#9cc0ef"/><circle cx="12" cy="11" r="1.6" fill="#9cc0ef"/></svg>';
+
+/* ---------- Tarjetas ---------- */
+const grid = $('#grid');
+let selId = REACTORES[0].id;
+
+function render() {
+  grid.innerHTML = REACTORES.map(r => {
+    const o = r.ordenes[0];
+    const p = pct(o);
+    return `<div class="card${r.id === selId ? ' sel' : ''}" data-r="${r.id}" style="--c:${r.color}">
+      <div class="row"><span class="lbl">Reactor:</span><span class="val">${esc(r.id)}</span></div>
+      <div class="row"><span class="lbl">Material:</span><span class="val">${esc(o.material)}</span></div>
+      <div class="row"><span class="lbl">Orden Fab:</span><span class="val">${esc(o.orden)}</span></div>
+      <div class="row"><span class="lbl">Complete:</span>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}">
+          <div class="fill" style="width:${Math.min(p, 100)}%"></div><span class="pct">${p}%</span>
+        </div></div>
+      <div class="row"><span class="lbl">Kg Notificados:</span><span class="val">${fmtKg(o.notificada)}/${fmtKg(o.cantidad)}</span></div>
+      <div class="actions">
+        <button class="xbtn big" data-act="notif">${ICO_NOTIF} Notificar</button>
+        <button class="xbtn" data-act="matr">${ICO_BINOC} Ver Matrículas</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+grid.addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  selId = card.dataset.r;
+  grid.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c === card));
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const r = REACTORES.find(x => x.id === selId);
+  if (btn.dataset.act === 'notif') openNotif(r, btn);
+  else openMatr(r, btn);
+});
+
+/* ---------- Gestión de ventanas (modal, arrastrable, Esc para cerrar) ---------- */
+let winAbierta = null, focoPrevio = null;
+
+function openWin(w, origen) {
+  focoPrevio = origen || document.activeElement;
+  $('#mask').hidden = false;
+  document.querySelectorAll('.win').forEach(x => { x.hidden = x !== w; });
+  w.style.left = w.style.top = w.style.transform = '';
+  winAbierta = w;
+}
+function closeWin() {
+  $('#mask').hidden = true;
+  winAbierta = null;
+  const btn = focoPrevio && focoPrevio.dataset && focoPrevio.dataset.act;
+  const card = grid.querySelector(`.card[data-r="${selId}"]`);
+  const destino = btn && card ? card.querySelector(`[data-act="${btn}"]`) : focoPrevio;
+  if (destino && destino.focus) destino.focus();
+}
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeWin));
+document.addEventListener('keydown', e => { if (winAbierta && e.key === 'Escape') closeWin(); });
+
+document.querySelectorAll('.win-head').forEach(h => h.addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  const w = h.parentElement, rc = w.getBoundingClientRect();
+  const dx = e.clientX - rc.left, dy = e.clientY - rc.top;
+  w.style.transform = 'none';
+  w.style.left = rc.left + 'px';
+  w.style.top = rc.top + 'px';
+  h.setPointerCapture(e.pointerId);
+  const move = ev => {
+    w.style.left = Math.min(Math.max(0, ev.clientX - dx), innerWidth - 80) + 'px';
+    w.style.top = Math.min(Math.max(0, ev.clientY - dy), innerHeight - 40) + 'px';
+  };
+  const up = () => { h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); };
+  h.addEventListener('pointermove', move);
+  h.addEventListener('pointerup', up);
+}));
+
+/* ---------- Ventana: Notificación Fabricación ---------- */
+let ctxN = null;   // { r, o }
+
+function openNotif(r, origen) {
+  ctxN = { r };
+  $('#nTitle').textContent = `Notificación Fabricación — Reactor ${r.id}`;
+  $('#nOrden').innerHTML = r.ordenes.map((o, i) => `<option value="${i}">${esc(o.orden)}</option>`).join('');
+  $('#nPrint').checked = false;
+  $('#nObs').value = '';
+  cargarOrdenNotif(0);
+  openWin($('#winNotif'), origen);
+  const k = $('#nKilos');
+  k.focus(); k.select();
+}
+function cargarOrdenNotif(i) {
+  const o = ctxN.r.ordenes[i];
+  ctxN.o = o;
+  $('#nMaterial').value = o.material;
+  $('#nProg').value = pct(o) + '%';
+  $('#nLote').value = o.lote;
+  $('#nCant').value = fmtKg(o.cantidad);
+  $('#nNotif').value = fmtKg(o.notificada);
+  $('#nPend').value = fmtKg(pend(o));
+  $('#nKilos').value = pend(o) ? fmtKg(pend(o)) : '';
+  validar();
+}
+$('#nOrden').addEventListener('change', e => {
+  cargarOrdenNotif(+e.target.value);
+  $('#nKilos').focus(); $('#nKilos').select();
+});
+
+function validar() {
+  const txt = $('#nKilos').value, kg = parseKg(txt), p = pend(ctxN.o), msg = $('#nMsg');
+  let ok = true;
+  if (isNaN(kg) || kg <= 0) {
+    ok = false;
+    msg.className = 'msg err';
+    msg.textContent = txt.trim() ? 'Introduce una cantidad de kilos válida (mayor que 0).' : 'Introduce los kilos a notificar.';
+    $('#nResto').value = fmtKg(p);
+  } else {
+    $('#nResto').value = fmtKg(Math.max(0, p - kg));
+    if (kg > p) {
+      msg.className = 'msg warn';
+      msg.textContent = `Atención: supera la cantidad pendiente en ${fmtKg(kg - p)} kg.`;
+    } else {
+      msg.className = 'msg';
+      msg.textContent = '';
+    }
+  }
+  $('#btnAceptar').disabled = !ok;
+  return ok ? round3(kg) : null;
+}
+$('#nKilos').addEventListener('input', validar);
+$('#nKilos').addEventListener('blur', () => {
+  const kg = parseKg($('#nKilos').value);
+  if (!isNaN(kg) && kg > 0) $('#nKilos').value = fmtKg(kg);
+});
+/* preventDefault: si no, el Enter llega al botón "Notificar" que recibe el foco al cerrar y reabre la ventana. */
+$('#nKilos').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); aceptar(); } });
+$('#btnAceptar').addEventListener('click', aceptar);
+
+function aceptar() {
+  const kg = validar();
+  if (kg == null) return;
+  const { r, o } = ctxN;
+  const imprimir = $('#nPrint').checked;
+  const m = { matricula: nextMatr(), fecha: new Date(), kilos: kg, lote: o.lote, obs: $('#nObs').value.trim(), nueva: true };
+  o.notifs.push(m);
+  o.notificada = round3(o.notificada + kg);
+  render();
+  closeWin();
+  toast(`<b>Notificación realizada</b><br>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${fmtKg(kg)} kg` +
+        `<br>Matrícula ${m.matricula}${imprimir ? '<br>Etiqueta enviada a impresora.' : ''}`);
+}
+
+/* ---------- Ventana: Ver Matrículas ---------- */
+let ctxM = null;   // { r }
+
+function openMatr(r, origen) {
+  ctxM = { r };
+  $('#mTitle').textContent = `Matrículas — Reactor ${r.id}`;
+  $('#mOrden').innerHTML = r.ordenes.map((o, i) => `<option value="${i}">${esc(o.orden)}</option>`).join('');
+  cargarOrdenMatr(0);
+  openWin($('#winMatr'), origen);
+  $('#mOrden').focus();
+}
+function cargarOrdenMatr(i) {
+  const o = ctxM.r.ordenes[i];
+  $('#mMaterial').value = o.material;
+  $('#mLote').value = o.lote;
+  $('#mProg').value = pct(o) + '%';
+  $('#mBody').innerHTML = o.notifs.length
+    ? o.notifs.slice().reverse().map(m => `<tr class="${m.nueva ? 'nueva' : ''}">
+        <td>${m.matricula}</td><td>${fmtFecha(m.fecha)}</td><td class="num">${fmtKg(m.kilos)}</td>
+        <td>${esc(m.lote)}</td><td>${esc(m.obs)}</td></tr>`).join('')
+    : '<tr><td class="vacio" colspan="5">Sin notificaciones para esta orden.</td></tr>';
+  $('#mTotal').textContent = `${o.notifs.length} matrícula(s) · Notificado ${fmtKg(o.notificada)} de ${fmtKg(o.cantidad)} kg`;
+}
+$('#mOrden').addEventListener('change', e => cargarOrdenMatr(+e.target.value));
+
+/* ---------- Aviso ---------- */
+let toastTimer;
+function toast(html) {
+  const t = $('#toast');
+  t.innerHTML = html;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+}
+
+render();
+</script>
+</body>
+</html>
