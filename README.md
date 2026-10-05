@@ -87,7 +87,10 @@ orden). No hay unidades por palet, palet actual ni total de palets. Botones **No
 - **Revisa los datos y confirma la notificación:** **Kilos a Notificar** (editable; por defecto la
   cantidad pendiente, admite `1.250`, `1250` o `1250,5`), Pendiente tras notificar y Observaciones.
 - **Aceptar** (o Enter) registra la notificación, genera una matrícula, actualiza la tarjeta y,
-  si *Imprimir Etiqueta* está activado, muestra la etiqueta y abre el diálogo de impresión.
+  si *Imprimir Etiqueta* está activado, abre la etiqueta en una **pestaña nueva** del navegador y
+  lanza en ella el diálogo de impresión (la pestaña tiene también botones *Imprimir* y *Cerrar
+  pestaña*). Si el navegador bloquea la pestaña, la notificación se registra igualmente y se avisa
+  para permitir las ventanas emergentes y reimprimir.
   Si los kilos superan lo pendiente se avisa, pero se permite; con 0 o un valor no válido no se
   puede aceptar. Esc cierra la ventana; se puede arrastrar por la cabecera.
 
@@ -95,12 +98,12 @@ orden). No hay unidades por palet, palet actual ni total de palets. Botones **No
 
 Lista las notificaciones de la orden seleccionada (Matrícula, Fecha, Kilos, Lote, Observaciones)
 con el total notificado; las hechas en la sesión aparecen resaltadas. El botón de impresora de
-cada fila **reimprime** su etiqueta.
+cada fila **reimprime** su etiqueta (en una pestaña nueva).
 
 ### Etiqueta de notificación
 
 Mismo diseño que la etiqueta de palet de envasado, adaptada a fabricación. Tamaño 148 × 105 mm
-(A6 apaisado; se cambia en `.etq` y `@page`). Al imprimir solo sale la etiqueta.
+(A6 apaisado; se cambia en `.etq` y `@page`, dentro de `<template id="tplEstiloEtiqueta">`).
 
 | Envasado | Fabricación (reactores) |
 |----------|-------------------------|

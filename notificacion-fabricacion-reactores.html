@@ -209,11 +209,43 @@
   }
   .ibtn:hover { border-color: #6b9bd8; background: linear-gradient(#ffffff, #d3e2f5); }
 
-  /* ---------- Etiqueta (vista previa + impresión) ---------- */
-  .win.wide { width: min(640px, calc(100vw - 16px)); }
-  .win-body.etq-prev { background: #d2d2d2; padding: 12px; }
-  .etq-fit { margin: 0 auto; box-shadow: 0 1px 6px rgba(0, 0, 0, .3); }
-  .etq-fit .etq { transform-origin: top left; }
+  /* Aviso */
+  .toast {
+    position: fixed; right: 16px; bottom: 16px; z-index: 60;
+    max-width: calc(100vw - 32px);
+    background: #fff; border: 1px solid var(--btn-border); border-left: 5px solid var(--ok);
+    padding: 10px 14px; font-size: 12px; line-height: 1.5;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+    opacity: 0; transform: translateY(10px); pointer-events: none;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: none; }
+  .toast.warn { border-left-color: var(--warn); }
+
+  @media (max-width: 560px) {
+    .g-ord, .g-dat, .g-kg, .g-obs { grid-template-columns: 110px 1fr; }
+    .g-mat { grid-template-columns: 110px 1fr; }
+    .row { grid-template-columns: 108px 1fr; }
+  }
+</style>
+
+<!-- Estilos de la pestaña de la etiqueta (se copian a la pestaña nueva al imprimir). -->
+<template id="tplEstiloEtiqueta">
+<style>
+  body { margin: 0; background: #d2d2d2; font-family: Tahoma, Verdana, Geneva, "Segoe UI", sans-serif; }
+  .barra {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px; background: #4b4b4b; color: #fff; font-size: 12px;
+  }
+  .barra span { margin-right: auto; }
+  .barra button {
+    font: 12px Tahoma, Verdana, sans-serif; color: #222; cursor: pointer;
+    padding: 4px 14px; border: 1px solid #9a9a9a; border-radius: 2px;
+    background: linear-gradient(#f4f4f4, #dcdcdc);
+  }
+  .barra button:hover { background: linear-gradient(#ffffff, #e6e6e6); }
+  .hoja { display: flex; justify-content: center; padding: 18px; }
+  .hoja .etq { box-shadow: 0 1px 6px rgba(0, 0, 0, .3); }
 
   .etq {
     width: 148mm; height: 105mm;           /* tamaño de la etiqueta (A6 apaisado) */
@@ -255,33 +287,15 @@
   }
   .etq-tab td { font-size: 7.5pt; vertical-align: top; line-height: 1.15; padding: 1mm .5mm 0; overflow-wrap: anywhere; }
 
-  #printArea { display: none; }
   @page { size: 148mm 105mm; margin: 0; }
   @media print {
-    html, body { margin: 0 !important; background: #fff !important; }
-    body > :not(#printArea) { display: none !important; }
-    #printArea { display: block !important; }
-    #printArea .etq { height: 104.5mm; break-inside: avoid; }
-  }
-
-  /* Aviso */
-  .toast {
-    position: fixed; right: 16px; bottom: 16px; z-index: 60;
-    max-width: calc(100vw - 32px);
-    background: #fff; border: 1px solid var(--btn-border); border-left: 5px solid var(--ok);
-    padding: 10px 14px; font-size: 12px; line-height: 1.5;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
-    opacity: 0; transform: translateY(10px); pointer-events: none;
-    transition: opacity .2s, transform .2s;
-  }
-  .toast.show { opacity: 1; transform: none; }
-
-  @media (max-width: 560px) {
-    .g-ord, .g-dat, .g-kg, .g-obs { grid-template-columns: 110px 1fr; }
-    .g-mat { grid-template-columns: 110px 1fr; }
-    .row { grid-template-columns: 108px 1fr; }
+    body { background: #fff; }
+    .barra { display: none; }
+    .hoja { display: block; padding: 0; }
+    .hoja .etq { box-shadow: none; height: 104.5mm; break-inside: avoid; }
   }
 </style>
+</template>
 </head>
 <body>
 
@@ -394,25 +408,9 @@
     </div>
   </div>
 
-  <!-- Etiqueta de la notificación -->
-  <div class="win wide" id="winEtq" role="dialog" aria-modal="true" aria-labelledby="eTitle" hidden>
-    <div class="win-head">
-      <span id="eTitle">Etiqueta</span>
-      <button class="win-x" data-close aria-label="Cerrar">&times;</button>
-    </div>
-    <div class="win-body etq-prev" id="ePrev"></div>
-    <div class="win-foot">
-      <span class="info" id="eInfo"></span>
-      <button class="wbtn" id="btnImprimir"></button>
-      <button class="wbtn" data-close>Cerrar</button>
-    </div>
-  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-<!-- Solo visible al imprimir: la etiqueta a tamaño real -->
-<div id="printArea"></div>
 
 <script>
 /* =====================================================================
@@ -607,20 +605,13 @@ grid.addEventListener('click', e => {
 let winAbierta = null, focoPrevio = null;
 
 function openWin(w, origen) {
-  if (!winAbierta) focoPrevio = origen || document.activeElement;   // al pasar de una ventana a otra se conserva
+  focoPrevio = origen || document.activeElement;
   $('#mask').hidden = false;
   document.querySelectorAll('.win').forEach(x => { x.hidden = x !== w; });
   w.style.left = w.style.top = w.style.transform = '';
   winAbierta = w;
 }
 function closeWin() {
-  /* La etiqueta abierta desde "Ver Matrículas" vuelve a esa ventana al cerrarse. */
-  if (winAbierta === $('#winEtq') && ctxE && ctxE.volver) {
-    const volver = ctxE.volver;
-    ctxE = null;
-    volver();
-    return;
-  }
   $('#mask').hidden = true;
   winAbierta = null;
   const btn = focoPrevio && focoPrevio.dataset && focoPrevio.dataset.act;
@@ -719,40 +710,42 @@ function aceptar() {
   o.notifs.push(m);
   o.notificada = round3(o.notificada + kg);
   render();
-  if (imprimir) mostrarEtiqueta(r, o, m, { imprimir: true });
-  else closeWin();
+  const abierta = imprimir && abrirEtiqueta(r, o, m);   // síncrono: dentro del clic, para que el navegador no la bloquee
+  closeWin();
   toast(`<b>Notificación realizada</b><br>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${fmtKg(kg)} kg` +
-        `<br>Matrícula ${m.matricula}${imprimir ? '<br>Etiqueta enviada a imprimir.' : ''}`);
+        `<br>Matrícula ${m.matricula}` +
+        (!imprimir ? '' : abierta ? '<br>Etiqueta abierta en una pestaña nueva para imprimir.' : AVISO_BLOQUEADA), !imprimir || abierta);
 }
 
-/* ---------- Ventana: Etiqueta ---------- */
-let ctxE = null;   // { r, o, m, volver }
+/* ---------- Etiqueta en pestaña nueva ---------- */
+const AVISO_BLOQUEADA = '<br><b>El navegador ha bloqueado la pestaña de la etiqueta.</b> Permite las ventanas emergentes ' +
+                        'para esta página y reimprímela desde «Ver Matrículas».';
 
-function mostrarEtiqueta(r, o, m, opts = {}) {
-  ctxE = { r, o, m, volver: opts.volver || null };
-  const html = etiquetaHTML(r, o, m);
-  $('#eTitle').textContent = `Etiqueta — Matrícula ${m.matricula}`;
-  $('#eInfo').textContent = `Reactor ${r.id} · Orden ${o.orden} · ${fmtKg(m.kilos)} kg`;
-  $('#ePrev').innerHTML = `<div class="etq-fit">${html}</div>`;
-  $('#printArea').innerHTML = html;
-  openWin($('#winEtq'));
-  ajustarPrev();
-  $('#btnImprimir').focus();
-  if (opts.imprimir) setTimeout(() => window.print(), 250);   // deja pintar la vista previa antes del diálogo
+/* Abre la etiqueta en una pestaña nueva y lanza el diálogo de impresión. Devuelve false si se bloquea. */
+function abrirEtiqueta(r, o, m) {
+  const w = window.open('', '_blank');
+  if (!w) return false;
+  w.document.open();
+  w.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Etiqueta ${m.matricula} — ${esc(r.id)} · ${esc(o.orden)}</title>
+${$('#tplEstiloEtiqueta').innerHTML}
+</head>
+<body>
+<div class="barra">
+  <span>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${fmtKg(m.kilos)} kg · Matrícula ${m.matricula}</span>
+  <button onclick="print()">Imprimir</button>
+  <button onclick="close()">Cerrar pestaña</button>
+</div>
+<div class="hoja">${etiquetaHTML(r, o, m)}</div>
+<script>setTimeout(print, 200);<\/script>
+</body>
+</html>`);
+  w.document.close();
+  return true;
 }
-/* Escala la vista previa para que la etiqueta (148 mm) quepa en ventanas estrechas. */
-function ajustarPrev() {
-  const prev = $('#ePrev'), fit = prev.firstElementChild, etq = fit && fit.firstElementChild;
-  if (!etq || $('#winEtq').hidden) return;
-  etq.style.transform = '';
-  const s = Math.min(1, (prev.clientWidth - 24) / etq.offsetWidth);
-  etq.style.transform = `scale(${s})`;
-  fit.style.width = etq.offsetWidth * s + 'px';
-  fit.style.height = etq.offsetHeight * s + 'px';
-}
-addEventListener('resize', ajustarPrev);
-$('#btnImprimir').innerHTML = `${ICO_PRINT} Imprimir`;
-$('#btnImprimir').addEventListener('click', () => window.print());
 
 /* ---------- Ventana: Ver Matrículas ---------- */
 let ctxM = null;   // { r }
@@ -786,20 +779,18 @@ $('#mBody').addEventListener('click', e => {
   const b = e.target.closest('[data-reimp]');
   if (!b) return;
   const { r, i } = ctxM, o = r.ordenes[i];
-  mostrarEtiqueta(r, o, o.notifs[+b.dataset.reimp], {
-    imprimir: true,
-    volver: () => { openWin($('#winMatr')); cargarOrdenMatr(i); $('#mOrden').focus(); },
-  });
+  if (!abrirEtiqueta(r, o, o.notifs[+b.dataset.reimp])) toast(AVISO_BLOQUEADA.slice(4), false);
 });
 
 /* ---------- Aviso ---------- */
 let toastTimer;
-function toast(html) {
+function toast(html, ok = true) {
   const t = $('#toast');
   t.innerHTML = html;
+  t.classList.toggle('warn', !ok);
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ok ? 4500 : 9000);
 }
 
 render();
