@@ -202,6 +202,67 @@
   .xgrid tr.nueva td { background: #e5f3df; }
   .xgrid .num { text-align: right; font-variant-numeric: tabular-nums; }
   .xgrid .vacio { text-align: center; color: #888; padding: 18px; white-space: normal; }
+  .xgrid .acc { text-align: center; width: 1%; }
+  .ibtn {
+    display: inline-flex; align-items: center; padding: 1px 4px; cursor: pointer;
+    border: 1px solid #b9c9de; border-radius: 2px; background: linear-gradient(#ffffff, #e8eef6);
+  }
+  .ibtn:hover { border-color: #6b9bd8; background: linear-gradient(#ffffff, #d3e2f5); }
+
+  /* ---------- Etiqueta (vista previa + impresión) ---------- */
+  .win.wide { width: min(640px, calc(100vw - 16px)); }
+  .win-body.etq-prev { background: #d2d2d2; padding: 12px; }
+  .etq-fit { margin: 0 auto; box-shadow: 0 1px 6px rgba(0, 0, 0, .3); }
+  .etq-fit .etq { transform-origin: top left; }
+
+  .etq {
+    width: 148mm; height: 105mm;           /* tamaño de la etiqueta (A6 apaisado) */
+    padding: 6mm 7mm 4mm;
+    background: #fff; color: #000; overflow: hidden;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .etq-top { display: grid; grid-template-columns: 53mm 42mm; column-gap: 12mm; }
+  .etq-bc svg { display: block; width: 53mm; height: 66mm; }
+  .etq-bc-txt { font-size: 7pt; margin-top: .6mm; }
+  .etq-info { display: flex; flex-direction: column; }
+  .etq-logo {
+    align-self: center; width: 28mm; height: 7.6mm;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #15130f; color: #f4f1ea;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .etq-logo .l1 {
+    font-family: Didot, "Bodoni 72", "Bodoni MT", "Playfair Display", "Times New Roman", serif;
+    font-size: 11pt; line-height: 1; letter-spacing: .14em; margin-right: -.14em;
+  }
+  .etq-logo .l2 { font-size: 2.6pt; letter-spacing: .32em; margin: .5mm -.32em 0 0; }
+  .etq-kv { display: grid; grid-template-columns: 22mm 1fr; align-items: baseline; margin-top: 3.6mm; }
+  .etq-kv:first-of-type { margin-top: 4mm; }
+  .etq-kv span, .etq-box .kv span { font-size: 5.5pt; }
+  .etq-kv b, .etq-box b { font-size: 8.5pt; }
+  .etq-box {
+    display: grid; row-gap: 3.4mm;
+    margin-top: 4.5mm; padding: 2.6mm 2mm 3mm;
+    border: .3mm solid #000;
+  }
+  .etq-box .c { text-align: center; font-weight: bold; font-size: 8pt; white-space: nowrap; }
+  .etq-box .kv { display: grid; grid-template-columns: 15mm 1fr; align-items: baseline; }
+  .etq-hu, .etq-n { text-align: center; font-weight: bold; font-size: 8pt; margin-top: 5mm; }
+  .etq-tab { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 6mm; text-align: center; }
+  .etq-tab th {
+    font-family: Calibri, Carlito, Arial, sans-serif; font-size: 8.5pt; font-weight: bold;
+    vertical-align: bottom; line-height: 1.1; padding: 0 .5mm 2.5mm;
+  }
+  .etq-tab td { font-size: 7.5pt; vertical-align: top; line-height: 1.15; padding: 1mm .5mm 0; overflow-wrap: anywhere; }
+
+  #printArea { display: none; }
+  @page { size: 148mm 105mm; margin: 0; }
+  @media print {
+    html, body { margin: 0 !important; background: #fff !important; }
+    body > :not(#printArea) { display: none !important; }
+    #printArea { display: block !important; }
+    #printArea .etq { height: 104.5mm; break-inside: avoid; }
+  }
 
   /* Aviso */
   .toast {
@@ -320,7 +381,7 @@
         <div class="gridwrap">
           <table class="xgrid">
             <thead>
-              <tr><th>Matrícula</th><th>Fecha notificación</th><th class="num">Kilos</th><th>Lote</th><th>Observaciones</th></tr>
+              <tr><th>Matrícula</th><th>Fecha notificación</th><th class="num">Kilos</th><th>Lote</th><th>Observaciones</th><th class="acc">Etiqueta</th></tr>
             </thead>
             <tbody id="mBody"></tbody>
           </table>
@@ -332,9 +393,26 @@
       <button class="wbtn" data-close>Cerrar</button>
     </div>
   </div>
+
+  <!-- Etiqueta de la notificación -->
+  <div class="win wide" id="winEtq" role="dialog" aria-modal="true" aria-labelledby="eTitle" hidden>
+    <div class="win-head">
+      <span id="eTitle">Etiqueta</span>
+      <button class="win-x" data-close aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="win-body etq-prev" id="ePrev"></div>
+    <div class="win-foot">
+      <span class="info" id="eInfo"></span>
+      <button class="wbtn" id="btnImprimir"></button>
+      <button class="wbtn" data-close>Cerrar</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Solo visible al imprimir: la etiqueta a tamaño real -->
+<div id="printArea"></div>
 
 <script>
 /* =====================================================================
@@ -342,23 +420,28 @@
    Datos de EJEMPLO. Para conectar con datos reales basta sustituir el
    array REACTORES (y, si procede, aceptar() por la llamada que registra
    la notificación en el sistema).
-   Las órdenes de fabricación empiezan por 100; las cantidades van en kg.
+   Las órdenes de fabricación empiezan por 100 y los códigos de material
+   de fabricación por 29; las cantidades van en kg.
+   Por orden: codMaterial, cod (vacío en la etiqueta de ejemplo), caducidad
+   (dd/mm/aaaa) y estado de calidad que se imprime en la etiqueta.
    ===================================================================== */
+const EMPRESA = 'PERSEIDA BELLEZA S.L.';
+
 const REACTORES = [
   { id: 'R1', color: '#ff0000', ordenes: [
-    { orden: '10085239', material: 'GRANEL MYLABEL ACOND REPARA/PROTEGE',  lote: '26.273.006', cantidad: 15000, notificada: 3750 },
-    { orden: '10085312', material: 'GRANEL MYLABEL ACOND NUTRICION',       lote: '26.273.041', cantidad:  8000, notificada: 0 } ] },
+    { orden: '10085239', codMaterial: '29909518', material: 'GRANEL MYLABEL ACOND REPARA/PROTEGE',   lote: '26273006', caducidad: '30/09/2029', estado: 'APROBADO', cantidad: 15000, notificada: 3750 },
+    { orden: '10085312', codMaterial: '29909526', material: 'GRANEL MYLABEL ACOND NUTRICION',        lote: '26273041', caducidad: '30/09/2029', estado: 'APROBADO', cantidad:  8000, notificada: 0 } ] },
   { id: 'R2', color: '#0000ff', ordenes: [
-    { orden: '10085288', material: 'GRANEL ACOF NAVIDAD 2026 GEL FAMILIAR', lote: '26.274.112', cantidad: 22000, notificada: 1980 } ] },
+    { orden: '10085288', codMaterial: '29912047', material: 'GRANEL ACOF NAVIDAD 2026 GEL FAMILIAR', lote: '26274112', caducidad: '01/10/2029', estado: 'APROBADO', cantidad: 22000, notificada: 1980 } ] },
   { id: 'R3', color: '#008000', ordenes: [
-    { orden: '10085071', material: 'GRANEL CIEN GEL BAÑO ARGAN',           lote: '26.271.587', cantidad: 19000, notificada: 8360 } ] },
+    { orden: '10085071', codMaterial: '29905113', material: 'GRANEL CIEN GEL BAÑO ARGAN',            lote: '26271587', caducidad: '28/09/2029', estado: 'APROBADO', cantidad: 19000, notificada: 8360 } ] },
   { id: 'R4', color: '#00ffff', ordenes: [
-    { orden: '10085459', material: 'GRANEL CIEN CHAMPU DETOX',             lote: '26.275.020', cantidad: 12000, notificada: 4440 },
-    { orden: '10085477', material: 'GRANEL CIEN CHAMPU ANTICASPA',         lote: '26.275.064', cantidad: 10000, notificada: 0 } ] },
+    { orden: '10085459', codMaterial: '29907782', material: 'GRANEL CIEN CHAMPU DETOX',              lote: '26275020', caducidad: '02/10/2029', estado: 'APROBADO', cantidad: 12000, notificada: 4440 },
+    { orden: '10085477', codMaterial: '29907790', material: 'GRANEL CIEN CHAMPU ANTICASPA',          lote: '26275064', caducidad: '02/10/2029', estado: 'APROBADO', cantidad: 10000, notificada: 0 } ] },
   { id: 'R5', color: '#ff8000', ordenes: [
-    { orden: '10085074', material: 'GRANEL CIEN GEL BAÑO AVENA',           lote: '26.271.598', cantidad: 18000, notificada: 16380 } ] },
+    { orden: '10085074', codMaterial: '29905121', material: 'GRANEL CIEN GEL BAÑO AVENA',            lote: '26271598', caducidad: '28/09/2029', estado: 'APROBADO', cantidad: 18000, notificada: 16380 } ] },
   { id: 'R6', color: '#6495ed', ordenes: [
-    { orden: '10084691', material: 'GRANEL ACOF. NESIRA GEL ALOE + VIT. E', lote: '26.268.930', cantidad:  9500, notificada: 2375 } ] },
+    { orden: '10084691', codMaterial: '29903356', material: 'GRANEL ACOF. NESIRA GEL ALOE + VIT. E', lote: '26268930', caducidad: '25/09/2029', estado: 'APROBADO', cantidad:  9500, notificada: 2375 } ] },
 ];
 
 /* ---------- Utilidades ---------- */
@@ -385,10 +468,14 @@ function parseKg(s) {
 const pct  = o => o.cantidad ? Math.floor(o.notificada / o.cantidad * 100) : 0;
 const pend = o => Math.max(0, round3(o.cantidad - o.notificada));
 const pad2 = n => String(n).padStart(2, '0');
-const fmtFecha = d => `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+const fmtDia = d => `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+const fmtFecha = d => `${fmtDia(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+/* En pantalla el lote se ve con puntos (26.273.006), como en la pantalla de envasado; en la etiqueta va sin ellos. */
+const fmtLote = l => String(l).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-let seqMatr = 412300;
-const nextMatr = () => '38437002' + String(++seqMatr).padStart(10, '0');
+/* Matrícula = nº de 10 dígitos (código de barras); en la etiqueta también rellenado a 20 con ceros. */
+let seqMatr = 1000434400;
+const nextMatr = () => String(++seqMatr);
 
 /* Notificaciones previas de ejemplo: reparten lo ya notificado en descargas de ~2.500 kg. */
 REACTORES.forEach((r, ri) => r.ordenes.forEach(o => {
@@ -399,13 +486,85 @@ REACTORES.forEach((r, ri) => r.ordenes.forEach(o => {
   for (let k = 0; k < n; k++, t += 90 * 60000) {
     const kg = k === n - 1 ? resto : Math.round(o.notificada / n / 10) * 10;
     resto -= kg;
-    o.notifs.push({ matricula: nextMatr(), fecha: new Date(t), kilos: kg, lote: o.lote, obs: '' });
+    o.notifs.push({ matricula: nextMatr(), fecha: new Date(t), kilos: kg, lote: o.lote, obs: '', n: k + 1 });
   }
 }));
 
+/* ---------- Código de barras Code 128 (subconjunto C si son dígitos pares, si no B) ---------- */
+const C128 = [
+  '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
+  '221312','231212','112232','122132','122231','113222','123122','123221','223211','221132',
+  '221231','213212','223112','312131','311222','321122','321221','312212','322112','322211',
+  '212123','212321','232121','111323','131123','131321','112313','132113','132311','211313',
+  '231113','231311','112133','112331','132131','113123','113321','133121','313121','211331',
+  '231131','213113','213311','213131','311123','311321','331121','312113','312311','332111',
+  '314111','221411','431111','111224','111422','121124','121421','141122','141221','112214',
+  '112412','122114','122411','142112','142211','241211','221114','413111','241112','134111',
+  '111242','121142','121241','114212','124112','124211','411212','421112','421211','212141',
+  '214121','412121','111143','111341','131141','114113','114311','411113','411311','113141',
+  '114131','311141','411131','211412','211214','211232','2331112'
+];
+function code128(txt) {
+  let codes;
+  if (/^(\d\d)+$/.test(txt)) {
+    codes = [105];
+    for (let i = 0; i < txt.length; i += 2) codes.push(+txt.substr(i, 2));
+  } else {
+    codes = [104];
+    for (const ch of txt) {
+      const c = ch.charCodeAt(0);
+      if (c < 32 || c > 127) throw new Error('Carácter no válido para Code 128: ' + ch);
+      codes.push(c - 32);
+    }
+  }
+  const check = codes.reduce((s, c, i) => s + c * (i || 1), 0) % 103;
+  return codes.concat(check, 106).map(c => C128[c]).join('');
+}
+/* SVG estirable: el ancho y alto los fija el CSS de la etiqueta. */
+function barcodeSVG(txt) {
+  const anchos = code128(txt);
+  let x = 0, barras = '';
+  for (let i = 0; i < anchos.length; i++) {
+    const w = +anchos[i];
+    if (i % 2 === 0) barras += `<rect x="${x}" y="0" width="${w}" height="1"/>`;
+    x += w;
+  }
+  return `<svg viewBox="0 0 ${x} 1" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="Código de barras ${txt}">${barras}</svg>`;
+}
+
+/* ---------- Etiqueta (mismo diseño que la de envasado, con datos de fabricación) ---------- */
+function etiquetaHTML(r, o, m) {
+  const exp = o.caducidad.slice(3, 5) + '/' + o.caducidad.slice(8, 10);
+  return `<div class="etq">
+    <div class="etq-top">
+      <div class="etq-bc">${barcodeSVG(m.matricula)}<div class="etq-bc-txt">${m.matricula}</div></div>
+      <div class="etq-info">
+        <div class="etq-logo"><span class="l1">PERSEIDA</span><span class="l2">PRIVATE LABEL BEAUTY</span></div>
+        <div class="etq-kv"><span>Reactor:</span><b>${esc(r.id)}</b></div>
+        <div class="etq-kv"><span>Fecha Alta:</span><b>${fmtDia(m.fecha)}</b></div>
+        <div class="etq-box">
+          <div class="c">${esc(o.estado)}</div>
+          <div class="kv"><span>LOTE:</span><b>${esc(m.lote)}</b></div>
+          <div class="c">${esc(EMPRESA)}</div>
+          <div class="kv"><span>EXP:</span><b>${exp}</b></div>
+        </div>
+        <div class="etq-hu">${m.matricula.padStart(20, '0')}</div>
+        <div class="etq-n">Notificación nº ${m.n}</div>
+      </div>
+    </div>
+    <table class="etq-tab">
+      <colgroup><col style="width:18mm"><col style="width:13mm"><col style="width:21mm"><col style="width:9mm"><col style="width:39mm"><col style="width:15mm"><col style="width:19mm"></colgroup>
+      <thead><tr><th>Orden<br>Fabricación</th><th>Lote</th><th>Cod. Material</th><th>Cod.</th><th>Nombre Material</th><th>Cantidad</th><th>Fecha<br>Caducidad</th></tr></thead>
+      <tbody><tr><td>${esc(o.orden)}</td><td>${esc(m.lote)}</td><td>${esc(o.codMaterial)}</td><td>${esc(o.cod || '')}</td>
+        <td>${esc(o.material)}</td><td>${fmtKg(m.kilos)} kg</td><td>${esc(o.caducidad)}</td></tr></tbody>
+    </table>
+  </div>`;
+}
+
 /* ---------- Iconos ---------- */
 const ICO_NOTIF = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1.5" width="11" height="11" fill="#fff" stroke="#3b6aa8"/><path d="M1 5h11M1 8.5h11M4.7 1.5v11M8.3 1.5v11" stroke="#7fa2d1"/><path d="M8.5 11.2h3.6V9.2L16 12.4l-3.9 3.2v-2H8.5z" fill="#2e9e2e"/></svg>';
-const ICO_BINOC = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><g fill="#3a5f9a"><rect x="2" y="2.5" width="4" height="6" rx="1"/><rect x="10" y="2.5" width="4" height="6" rx="1"/><rect x="5.5" y="5" width="5" height="2.6"/><circle cx="4" cy="11" r="3.4"/><circle cx="12" cy="11" r="3.4"/></g><circle cx="4" cy="11" r="1.6" fill="#9cc0ef"/><circle cx="12" cy="11" r="1.6" fill="#9cc0ef"/></svg>';
+const ICO_PRINT = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="1.5" width="8" height="4" fill="#fff" stroke="#555"/><rect x="1.5" y="5.5" width="13" height="6" rx="1" fill="#8a8a8a" stroke="#555"/><rect x="4" y="9.5" width="8" height="5" fill="#fff" stroke="#555"/><path d="M5.5 11.5h5M5.5 13h5" stroke="#999"/></svg>';
+const ICO_BINOC ='<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><g fill="#3a5f9a"><rect x="2" y="2.5" width="4" height="6" rx="1"/><rect x="10" y="2.5" width="4" height="6" rx="1"/><rect x="5.5" y="5" width="5" height="2.6"/><circle cx="4" cy="11" r="3.4"/><circle cx="12" cy="11" r="3.4"/></g><circle cx="4" cy="11" r="1.6" fill="#9cc0ef"/><circle cx="12" cy="11" r="1.6" fill="#9cc0ef"/></svg>';
 
 /* ---------- Tarjetas ---------- */
 const grid = $('#grid');
@@ -448,13 +607,20 @@ grid.addEventListener('click', e => {
 let winAbierta = null, focoPrevio = null;
 
 function openWin(w, origen) {
-  focoPrevio = origen || document.activeElement;
+  if (!winAbierta) focoPrevio = origen || document.activeElement;   // al pasar de una ventana a otra se conserva
   $('#mask').hidden = false;
   document.querySelectorAll('.win').forEach(x => { x.hidden = x !== w; });
   w.style.left = w.style.top = w.style.transform = '';
   winAbierta = w;
 }
 function closeWin() {
+  /* La etiqueta abierta desde "Ver Matrículas" vuelve a esa ventana al cerrarse. */
+  if (winAbierta === $('#winEtq') && ctxE && ctxE.volver) {
+    const volver = ctxE.volver;
+    ctxE = null;
+    volver();
+    return;
+  }
   $('#mask').hidden = true;
   winAbierta = null;
   const btn = focoPrevio && focoPrevio.dataset && focoPrevio.dataset.act;
@@ -489,7 +655,7 @@ function openNotif(r, origen) {
   ctxN = { r };
   $('#nTitle').textContent = `Notificación Fabricación — Reactor ${r.id}`;
   $('#nOrden').innerHTML = r.ordenes.map((o, i) => `<option value="${i}">${esc(o.orden)}</option>`).join('');
-  $('#nPrint').checked = false;
+  $('#nPrint').checked = true;
   $('#nObs').value = '';
   cargarOrdenNotif(0);
   openWin($('#winNotif'), origen);
@@ -501,7 +667,7 @@ function cargarOrdenNotif(i) {
   ctxN.o = o;
   $('#nMaterial').value = o.material;
   $('#nProg').value = pct(o) + '%';
-  $('#nLote').value = o.lote;
+  $('#nLote').value = fmtLote(o.lote);
   $('#nCant').value = fmtKg(o.cantidad);
   $('#nNotif').value = fmtKg(o.notificada);
   $('#nPend').value = fmtKg(pend(o));
@@ -548,14 +714,45 @@ function aceptar() {
   if (kg == null) return;
   const { r, o } = ctxN;
   const imprimir = $('#nPrint').checked;
-  const m = { matricula: nextMatr(), fecha: new Date(), kilos: kg, lote: o.lote, obs: $('#nObs').value.trim(), nueva: true };
+  const m = { matricula: nextMatr(), fecha: new Date(), kilos: kg, lote: o.lote, obs: $('#nObs').value.trim(),
+              n: o.notifs.length + 1, nueva: true };
   o.notifs.push(m);
   o.notificada = round3(o.notificada + kg);
   render();
-  closeWin();
+  if (imprimir) mostrarEtiqueta(r, o, m, { imprimir: true });
+  else closeWin();
   toast(`<b>Notificación realizada</b><br>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${fmtKg(kg)} kg` +
-        `<br>Matrícula ${m.matricula}${imprimir ? '<br>Etiqueta enviada a impresora.' : ''}`);
+        `<br>Matrícula ${m.matricula}${imprimir ? '<br>Etiqueta enviada a imprimir.' : ''}`);
 }
+
+/* ---------- Ventana: Etiqueta ---------- */
+let ctxE = null;   // { r, o, m, volver }
+
+function mostrarEtiqueta(r, o, m, opts = {}) {
+  ctxE = { r, o, m, volver: opts.volver || null };
+  const html = etiquetaHTML(r, o, m);
+  $('#eTitle').textContent = `Etiqueta — Matrícula ${m.matricula}`;
+  $('#eInfo').textContent = `Reactor ${r.id} · Orden ${o.orden} · ${fmtKg(m.kilos)} kg`;
+  $('#ePrev').innerHTML = `<div class="etq-fit">${html}</div>`;
+  $('#printArea').innerHTML = html;
+  openWin($('#winEtq'));
+  ajustarPrev();
+  $('#btnImprimir').focus();
+  if (opts.imprimir) setTimeout(() => window.print(), 250);   // deja pintar la vista previa antes del diálogo
+}
+/* Escala la vista previa para que la etiqueta (148 mm) quepa en ventanas estrechas. */
+function ajustarPrev() {
+  const prev = $('#ePrev'), fit = prev.firstElementChild, etq = fit && fit.firstElementChild;
+  if (!etq || $('#winEtq').hidden) return;
+  etq.style.transform = '';
+  const s = Math.min(1, (prev.clientWidth - 24) / etq.offsetWidth);
+  etq.style.transform = `scale(${s})`;
+  fit.style.width = etq.offsetWidth * s + 'px';
+  fit.style.height = etq.offsetHeight * s + 'px';
+}
+addEventListener('resize', ajustarPrev);
+$('#btnImprimir').innerHTML = `${ICO_PRINT} Imprimir`;
+$('#btnImprimir').addEventListener('click', () => window.print());
 
 /* ---------- Ventana: Ver Matrículas ---------- */
 let ctxM = null;   // { r }
@@ -570,17 +767,30 @@ function openMatr(r, origen) {
 }
 function cargarOrdenMatr(i) {
   const o = ctxM.r.ordenes[i];
+  ctxM.i = i;
+  $('#mOrden').value = String(i);
   $('#mMaterial').value = o.material;
-  $('#mLote').value = o.lote;
+  $('#mLote').value = fmtLote(o.lote);
   $('#mProg').value = pct(o) + '%';
   $('#mBody').innerHTML = o.notifs.length
-    ? o.notifs.slice().reverse().map(m => `<tr class="${m.nueva ? 'nueva' : ''}">
+    ? o.notifs.map((m, k) => `<tr class="${m.nueva ? 'nueva' : ''}">
         <td>${m.matricula}</td><td>${fmtFecha(m.fecha)}</td><td class="num">${fmtKg(m.kilos)}</td>
-        <td>${esc(m.lote)}</td><td>${esc(m.obs)}</td></tr>`).join('')
-    : '<tr><td class="vacio" colspan="5">Sin notificaciones para esta orden.</td></tr>';
+        <td>${fmtLote(m.lote)}</td><td>${esc(m.obs)}</td>
+        <td class="acc"><button class="ibtn" data-reimp="${k}" title="Reimprimir etiqueta" aria-label="Reimprimir etiqueta de la matrícula ${m.matricula}">${ICO_PRINT}</button></td>
+      </tr>`).reverse().join('')
+    : '<tr><td class="vacio" colspan="6">Sin notificaciones para esta orden.</td></tr>';
   $('#mTotal').textContent = `${o.notifs.length} matrícula(s) · Notificado ${fmtKg(o.notificada)} de ${fmtKg(o.cantidad)} kg`;
 }
 $('#mOrden').addEventListener('change', e => cargarOrdenMatr(+e.target.value));
+$('#mBody').addEventListener('click', e => {
+  const b = e.target.closest('[data-reimp]');
+  if (!b) return;
+  const { r, i } = ctxM, o = r.ordenes[i];
+  mostrarEtiqueta(r, o, o.notifs[+b.dataset.reimp], {
+    imprimir: true,
+    volver: () => { openWin($('#winMatr')); cargarOrdenMatr(i); $('#mOrden').focus(); },
+  });
+});
 
 /* ---------- Aviso ---------- */
 let toastTimer;

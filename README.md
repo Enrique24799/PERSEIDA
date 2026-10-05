@@ -82,17 +82,38 @@ orden). No hay unidades por palet, palet actual ni total de palets. Botones **No
 
 - **Datos Orden:** Material, Orden (desplegable con las órdenes del reactor), Tipo Material =
   *Fabricación* y Progreso.
-- **Datos:** Lote, Cant. de la Orden, Cant. Notificada, Cant. Pendiente (kg) e Imprimir Etiqueta.
+- **Datos:** Lote, Cant. de la Orden, Cant. Notificada, Cant. Pendiente (kg) e Imprimir Etiqueta
+  (activado por defecto).
 - **Revisa los datos y confirma la notificación:** **Kilos a Notificar** (editable; por defecto la
   cantidad pendiente, admite `1.250`, `1250` o `1250,5`), Pendiente tras notificar y Observaciones.
-- **Aceptar** (o Enter) registra la notificación, genera una matrícula y actualiza la tarjeta.
+- **Aceptar** (o Enter) registra la notificación, genera una matrícula, actualiza la tarjeta y,
+  si *Imprimir Etiqueta* está activado, muestra la etiqueta y abre el diálogo de impresión.
   Si los kilos superan lo pendiente se avisa, pero se permite; con 0 o un valor no válido no se
   puede aceptar. Esc cierra la ventana; se puede arrastrar por la cabecera.
 
 ### Ventana *Matrículas* (botón Ver Matrículas)
 
 Lista las notificaciones de la orden seleccionada (Matrícula, Fecha, Kilos, Lote, Observaciones)
-con el total notificado; las hechas en la sesión aparecen resaltadas.
+con el total notificado; las hechas en la sesión aparecen resaltadas. El botón de impresora de
+cada fila **reimprime** su etiqueta.
 
-Para conectar con datos reales basta sustituir el array `REACTORES` y, si procede, la función
-`aceptar()` por la llamada que registra la notificación.
+### Etiqueta de notificación
+
+Mismo diseño que la etiqueta de palet de envasado, adaptada a fabricación. Tamaño 148 × 105 mm
+(A6 apaisado; se cambia en `.etq` y `@page`). Al imprimir solo sale la etiqueta.
+
+| Envasado | Fabricación (reactores) |
+|----------|-------------------------|
+| Código de barras + nº de matrícula | Igual: **Code 128** de la matrícula (10 dígitos, `1000…`), generado en la propia página |
+| Linea Envasado: L1 | **Reactor:** R1 |
+| Fecha Alta | Fecha de la notificación |
+| Recuadro APROBADO / LOTE / PERSEIDA BELLEZA S.L. / EXP | Igual (estado de calidad de la orden, lote, empresa, caducidad MM/AA) |
+| Matrícula con ceros a 20 dígitos | Igual |
+| 1 de 12 (palet) | **Notificación nº N** de la orden |
+| Orden Envasado (200…) | **Orden Fabricación** (100…) |
+| Cod. Material (70…) | Cod. Material de fabricación (**29…**) |
+| Cantidad (unidades) | **Kilos notificados** |
+
+Para conectar con datos reales basta sustituir el array `REACTORES` (incluye `codMaterial`,
+`caducidad` y `estado` de cada orden para la etiqueta) y, si procede, la función `aceptar()` por
+la llamada que registra la notificación.
