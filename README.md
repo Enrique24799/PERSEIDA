@@ -69,54 +69,66 @@ si procede, `runAlgo()` por la llamada al algoritmo real.
 ## `notificacion-fabricacion-reactores.html` — Notificación de fabricaciones (reactores)
 
 Versión para **reactores** de la pantalla de notificación de las líneas de envasado. Datos de
-**ejemplo**; las notificaciones se simulan en el navegador.
+**ejemplo**; la llamada a SAP se simula en el navegador.
+
+Cada orden se notifica **de una sola vez** (una única notificación), repartida en líneas: cada
+línea es una **unidad de almacenamiento** con sus kilos y su ubicación, y SAP devuelve una
+**matrícula por línea**.
 
 ### Tarjeta por reactor
 
-`Reactor`, `Material`, `Orden Fab` (las órdenes de fabricación empiezan por **100**), `Complete`
-(barra de progreso en % de kilos notificados) y `Kg Notificados` (notificado / cantidad de la
-orden). No hay unidades por palet, palet actual ni total de palets. Botones **Notificar** y
-**Ver Matrículas** (no hay *Complementaria*). Al pulsar una tarjeta queda seleccionada.
+`Reactor`, `Material`, `Orden Fab` (las órdenes de fabricación empiezan por **100**),
+`Cod. Material` (los de fabricación empiezan por **29**) y `Kg Orden` (kilos totales de la orden).
+Sin barra de progreso ni kilos notificados. Botones **Notificar** y **Ver Matrículas**.
+
+La tarjeta muestra la primera orden del reactor sin notificar; al notificarla pasa a la siguiente.
+Si ya están todas notificadas, muestra la última con la marca **NOTIFICADA** y el botón Notificar
+desactivado (en los datos de ejemplo, R5).
 
 ### Ventana *Notificación Fabricación* (botón Notificar)
 
-- **Datos Orden:** Material, Orden (desplegable con las órdenes del reactor), Tipo Material =
-  *Fabricación* y Progreso.
-- **Datos:** Lote, Cant. de la Orden, Cant. Notificada, Cant. Pendiente (kg) e Imprimir Etiqueta
-  (activado por defecto).
-- **Revisa los datos y confirma la notificación:** **Kilos a Notificar** (editable; por defecto la
-  cantidad pendiente, admite `1.250`, `1250` o `1250,5`), Pendiente tras notificar y Observaciones.
-- **Aceptar** (o Enter) registra la notificación, genera una matrícula, actualiza la tarjeta y,
-  si *Imprimir Etiqueta* está activado, abre la etiqueta en una **pestaña nueva** del navegador y
-  lanza en ella el diálogo de impresión (la pestaña tiene también botones *Imprimir* y *Cerrar
-  pestaña*). Si el navegador bloquea la pestaña, la notificación se registra igualmente y se avisa
-  para permitir las ventanas emergentes y reimprimir.
-  Si los kilos superan lo pendiente se avisa, pero se permite; con 0 o un valor no válido no se
-  puede aceptar. Esc cierra la ventana; se puede arrastrar por la cabecera.
+- **Datos Orden:** Material, Orden (desplegable con las órdenes del reactor; las ya notificadas
+  aparecen desactivadas) y Tipo Material = *Fabricación*.
+- **Datos:** Lote, Cant. de la Orden e Imprimir Etiqueta (activado por defecto).
+- **Revisa los datos y confirma la notificación:** **Kilos a Notificar** (por defecto, la cantidad
+  de la orden; avisa si difiere de ella, sin bloquear) y Observaciones (opcional).
+- **Distribución en unidades de almacenamiento:** rejilla de líneas con **Kilos**, **Ubicación**
+  (desplegable; por ahora Tanque 1 a Tanque 6, en `UBICACIONES`) y **Matrícula (SAP)**.
+  *Añadir línea* propone los kilos que faltan; cada línea se puede quitar. Con una sola línea,
+  sus kilos siguen al total. Se indica lo distribuido frente al total.
+- **Aceptar** (o Enter) solo se activa si todas las líneas tienen kilos y ubicación y la suma
+  coincide con los kilos a notificar. Envía la notificación a SAP (`sapNotificar()`), que devuelve
+  las matrículas creadas: aparecen en la columna *Matrícula (SAP)* y en un aviso, la tarjeta se
+  actualiza y la ventana queda en solo lectura con *Imprimir etiquetas* y *Cerrar*.
+- Si *Imprimir Etiqueta* está activado, al pulsar Aceptar se abre una **pestaña nueva** que muestra
+  las etiquetas (una por matrícula) en cuanto SAP responde y lanza el diálogo de impresión. Si el
+  navegador bloquea la pestaña, la notificación se registra igualmente y se avisa para reimprimir.
 
 ### Ventana *Matrículas* (botón Ver Matrículas)
 
-Lista las notificaciones de la orden seleccionada (Matrícula, Fecha, Kilos, Lote, Observaciones)
-con el total notificado; las hechas en la sesión aparecen resaltadas. El botón de impresora de
-cada fila **reimprime** su etiqueta (en una pestaña nueva).
+Matrículas creadas en SAP para la orden seleccionada (por defecto, la última notificada):
+Matrícula, **Ubicación**, Kilos, Fecha de notificación, Lote y Observaciones. Cada fila puede
+**reimprimir** su etiqueta y *Imprimir todas* imprime todas las de la orden (en una pestaña nueva).
 
-### Etiqueta de notificación
+### Etiqueta (una por matrícula)
 
 Mismo diseño que la etiqueta de palet de envasado, adaptada a fabricación. Tamaño 148 × 105 mm
-(A6 apaisado; se cambia en `.etq` y `@page`, dentro de `<template id="tplEstiloEtiqueta">`).
+(A6 apaisado; se cambia en `.etq` y `@page`, dentro de `<template id="tplEstiloEtiqueta">`). Al
+imprimir varias, cada etiqueta sale en su página.
 
 | Envasado | Fabricación (reactores) |
 |----------|-------------------------|
 | Código de barras + nº de matrícula | Igual: **Code 128** de la matrícula (10 dígitos, `1000…`), generado en la propia página |
 | Linea Envasado: L1 | **Reactor:** R1 |
 | Fecha Alta | Fecha de la notificación |
+| — | **Ubicación:** TANQUE N |
 | Recuadro APROBADO / LOTE / PERSEIDA BELLEZA S.L. / EXP | Igual (estado de calidad de la orden, lote, empresa, caducidad MM/AA) |
 | Matrícula con ceros a 20 dígitos | Igual |
-| 1 de 12 (palet) | **Notificación nº N** de la orden |
+| 1 de 12 (palet) | **1 de N** (unidad de almacenamiento dentro de la notificación) |
 | Orden Envasado (200…) | **Orden Fabricación** (100…) |
 | Cod. Material (70…) | Cod. Material de fabricación (**29…**) |
-| Cantidad (unidades) | **Kilos notificados** |
+| Cantidad (unidades) | **Kilos** de esa unidad de almacenamiento |
 
 Para conectar con datos reales basta sustituir el array `REACTORES` (incluye `codMaterial`,
-`caducidad` y `estado` de cada orden para la etiqueta) y, si procede, la función `aceptar()` por
-la llamada que registra la notificación.
+`caducidad` y `estado` de cada orden), la lista `UBICACIONES` y la función `sapNotificar()` por la
+llamada real a SAP, que debe devolver una matrícula por línea en el mismo orden.

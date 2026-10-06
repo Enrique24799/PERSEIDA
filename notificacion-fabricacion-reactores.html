@@ -9,8 +9,6 @@
     --card-bg: #d9e6f9;
     --lbl: #6e6e6e;
     --val: #1e1e1e;
-    --bar-border: #24408e;
-    --bar-fill: #a9c4ee;
     --btn-border: #99bbe8;
     --win-frame: #4b4b4b;
     --win-foot: #6c6c6c;
@@ -55,18 +53,10 @@
   .lbl { color: var(--lbl); font-weight: bold; }
   .val { font-family: Verdana, Tahoma, sans-serif; font-weight: bold; font-size: 12.5px; }
 
-  .bar {
-    position: relative;
-    height: 21px;
-    background: #fff;
-    border: 1px solid var(--bar-border);
-  }
-  .bar .fill { height: 100%; background: var(--bar-fill); transition: width .4s; }
-  .bar .pct {
-    position: absolute; left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
-    background: #5a5a5a; color: #fff;
-    font-size: 9px; line-height: 12px; padding: 0 5px; border-radius: 2px;
+  .badge {
+    display: inline-block; margin-left: 10px; padding: 1px 7px; vertical-align: 1px;
+    background: var(--ok); color: #fff; border-radius: 2px;
+    font: bold 10px Tahoma, Verdana, sans-serif; letter-spacing: .3px;
   }
 
   .actions {
@@ -84,8 +74,9 @@
     background: linear-gradient(#ffffff, #dde8f6);
     cursor: pointer;
   }
-  .xbtn:hover { background: linear-gradient(#ffffff, #c8dbf3); border-color: #6b9bd8; }
-  .xbtn:active { background: linear-gradient(#c8dbf3, #e6eef9); }
+  .xbtn:hover:not(:disabled) { background: linear-gradient(#ffffff, #c8dbf3); border-color: #6b9bd8; }
+  .xbtn:active:not(:disabled) { background: linear-gradient(#c8dbf3, #e6eef9); }
+  .xbtn:disabled { opacity: .5; cursor: not-allowed; }
   .xbtn.big { font-size: 15px; font-weight: bold; padding: 2px 9px; }
   .xbtn svg { flex: none; }
 
@@ -114,6 +105,7 @@
     font-size: 18px; line-height: 1; padding: 0 2px;
   }
   .win-x:hover { color: #fff; }
+  #winNotif { width: min(680px, calc(100vw - 16px)); }
   .win-body { background: #f7f7f7; padding: 8px 10px 4px; overflow: auto; }
   .win-foot {
     display: flex; align-items: center; justify-content: flex-end; gap: 10px;
@@ -132,11 +124,19 @@
   }
   .wbtn:hover:not(:disabled) { background: linear-gradient(#ffffff, #e6e6e6); }
   .wbtn:disabled { opacity: .55; cursor: not-allowed; }
+  .wbtn[hidden] { display: none; }
+  .spin {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid #777; border-top-color: transparent;
+    animation: giro .8s linear infinite;
+  }
+  @keyframes giro { to { transform: rotate(360deg); } }
 
   .fs {
     border: 1px solid #b7b7b7; border-radius: 4px;
     margin: 4px 0 10px; padding: 6px 10px 10px;
     background: #fff;
+    min-width: 0;            /* si no, el fieldset se ensancha con la rejilla en pantallas estrechas */
   }
   .fs legend { font-weight: bold; font-size: 12px; color: #333; padding: 0 4px; }
   .fs label { font-size: 11px; color: #333; }
@@ -156,6 +156,7 @@
   }
   .fld.edit { background: #fff; border-color: #8fb2e0; }
   .fld.edit:focus { outline: none; border-color: #3d7cd6; box-shadow: 0 0 0 2px rgba(61, 124, 214, .25); }
+  .fld:disabled { background-color: var(--fld-bg); border-color: var(--fld-border); color: #222; -webkit-text-fill-color: #222; opacity: 1; cursor: default; }
 
   .unit { position: relative; }
   .unit .fld { padding-right: 30px; text-align: right; }
@@ -167,14 +168,16 @@
   .unit.big span { font-size: 15px; }
 
   .g-mat { display: grid; grid-template-columns: 52px 1fr; gap: 6px; align-items: center; margin-bottom: 8px; }
-  .g-ord { display: grid; grid-template-columns: 52px 1.1fr auto 1fr auto .7fr; gap: 6px 8px; align-items: center; }
+  .g-ord { display: grid; grid-template-columns: 52px 1.1fr auto 1fr auto .9fr; gap: 6px 8px; align-items: center; }
+  .g-ord.c4 { grid-template-columns: 52px 1fr auto 1fr; }
   .g-dat { display: grid; grid-template-columns: 100px 1fr 112px 1fr; gap: 8px 12px; align-items: center; }
-  .g-kg  { display: grid; grid-template-columns: 100px 1.15fr auto 1fr; gap: 8px 12px; align-items: center; }
+  .g-kg  { display: grid; grid-template-columns: 100px minmax(0, 250px); gap: 8px 12px; align-items: center; }
   .g-obs { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: center; margin-top: 10px; }
 
   .msg { min-height: 16px; margin-top: 6px; font-size: 11px; }
   .msg.err  { color: var(--err); }
   .msg.warn { color: var(--warn); }
+  .msg.info { color: #5b6b7d; }
 
   .tgl { position: relative; display: inline-block; width: 30px; height: 14px; }
   .tgl input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
@@ -187,6 +190,8 @@
   .tgl input:checked + span { background: #5b8fd6; }
   .tgl input:checked + span::after { left: 17px; }
   .tgl input:focus-visible + span { outline: 2px solid #5b8fd6; outline-offset: 2px; }
+  .tgl input:disabled { cursor: default; }
+  .tgl input:disabled + span { opacity: .6; }
 
   /* Rejilla de matrículas */
   .gridwrap { max-height: 260px; overflow: auto; border: 1px solid #c5c5c5; }
@@ -209,6 +214,28 @@
   }
   .ibtn:hover { border-color: #6b9bd8; background: linear-gradient(#ffffff, #d3e2f5); }
 
+  /* Distribución en unidades de almacenamiento */
+  .dist-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 6px; }
+  .dist-bar .tot { margin-left: auto; font-size: 12px; color: #333; }
+  .dist-bar .tot b.ok { color: var(--ok); }
+  .dist-bar .tot b.bad { color: var(--err); }
+  .gridwrap.dist { max-height: 210px; }
+  .dgrid { min-width: 470px; }
+  .dgrid td { padding: 3px 6px; vertical-align: middle; }
+  .dgrid .n { text-align: center; color: #666; }
+  .dgrid .x { text-align: center; }
+  .dgrid .fld { height: 26px; font-size: 13px; }
+  .dgrid td.mt { color: #999; font-variant-numeric: tabular-nums; }
+  .dgrid td.mt.ok { color: #1d5e1d; font-weight: bold; background: #e5f3df; }
+  .delbtn {
+    width: 22px; height: 22px; padding: 0; cursor: pointer;
+    font-size: 15px; line-height: 1; color: #a33;
+    border: 1px solid #d3b3b3; border-radius: 2px; background: linear-gradient(#ffffff, #f4e4e4);
+  }
+  .delbtn:disabled { opacity: .35; cursor: default; }
+  .banner { margin-top: 8px; padding: 6px 10px; font-size: 12px; background: #e5f3df; border: 1px solid #9fcf8f; color: #1d5e1d; }
+  .banner[hidden] { display: none; }
+
   /* Aviso */
   .toast {
     position: fixed; right: 16px; bottom: 16px; z-index: 60;
@@ -223,7 +250,7 @@
   .toast.warn { border-left-color: var(--warn); }
 
   @media (max-width: 560px) {
-    .g-ord, .g-dat, .g-kg, .g-obs { grid-template-columns: 110px 1fr; }
+    .g-ord, .g-ord.c4, .g-dat, .g-kg, .g-obs { grid-template-columns: 110px 1fr; }
     .g-mat { grid-template-columns: 110px 1fr; }
     .row { grid-template-columns: 108px 1fr; }
   }
@@ -244,7 +271,7 @@
     background: linear-gradient(#f4f4f4, #dcdcdc);
   }
   .barra button:hover { background: linear-gradient(#ffffff, #e6e6e6); }
-  .hoja { display: flex; justify-content: center; padding: 18px; }
+  .hoja { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 18px; }
   .hoja .etq { box-shadow: 0 1px 6px rgba(0, 0, 0, .3); }
 
   .etq {
@@ -268,19 +295,19 @@
     font-size: 11pt; line-height: 1; letter-spacing: .14em; margin-right: -.14em;
   }
   .etq-logo .l2 { font-size: 2.6pt; letter-spacing: .32em; margin: .5mm -.32em 0 0; }
-  .etq-kv { display: grid; grid-template-columns: 22mm 1fr; align-items: baseline; margin-top: 3.6mm; }
-  .etq-kv:first-of-type { margin-top: 4mm; }
+  .etq-kv { display: grid; grid-template-columns: 22mm 1fr; align-items: baseline; margin-top: 2.8mm; }
+  .etq-kv:first-of-type { margin-top: 3.4mm; }
   .etq-kv span, .etq-box .kv span { font-size: 5.5pt; }
   .etq-kv b, .etq-box b { font-size: 8.5pt; }
   .etq-box {
     display: grid; row-gap: 3.4mm;
-    margin-top: 4.5mm; padding: 2.6mm 2mm 3mm;
+    margin-top: 3.6mm; padding: 2.6mm 2mm 3mm;
     border: .3mm solid #000;
   }
   .etq-box .c { text-align: center; font-weight: bold; font-size: 8pt; white-space: nowrap; }
   .etq-box .kv { display: grid; grid-template-columns: 15mm 1fr; align-items: baseline; }
-  .etq-hu, .etq-n { text-align: center; font-weight: bold; font-size: 8pt; margin-top: 5mm; }
-  .etq-tab { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 6mm; text-align: center; }
+  .etq-hu, .etq-n { text-align: center; font-weight: bold; font-size: 8pt; margin-top: 3.8mm; }
+  .etq-tab { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 5mm; text-align: center; }
   .etq-tab th {
     font-family: Calibri, Carlito, Arial, sans-serif; font-size: 8.5pt; font-weight: bold;
     vertical-align: bottom; line-height: 1.1; padding: 0 .5mm 2.5mm;
@@ -292,7 +319,8 @@
     body { background: #fff; }
     .barra { display: none; }
     .hoja { display: block; padding: 0; }
-    .hoja .etq { box-shadow: none; height: 104.5mm; break-inside: avoid; }
+    .hoja .etq { box-shadow: none; height: 104.5mm; break-inside: avoid; break-after: page; }
+    .hoja .etq:last-child { break-after: auto; }
   }
 </style>
 </template>
@@ -317,13 +345,11 @@
           <label for="nMaterial">Material:</label>
           <input class="fld" id="nMaterial" readonly />
         </div>
-        <div class="g-ord">
+        <div class="g-ord c4">
           <label for="nOrden">Orden:</label>
           <select class="fld" id="nOrden"></select>
           <label for="nTipo">Tipo Material:</label>
           <input class="fld" id="nTipo" value="Fabricación" readonly />
-          <label for="nProg">Progreso:</label>
-          <input class="fld" id="nProg" readonly />
         </div>
       </fieldset>
 
@@ -335,11 +361,6 @@
           <label for="nCant">Cant. de la Orden:</label>
           <div class="unit"><input class="fld" id="nCant" readonly /><span>kg</span></div>
 
-          <label for="nNotif">Cant. Notificada:</label>
-          <div class="unit"><input class="fld" id="nNotif" readonly /><span>kg</span></div>
-          <label for="nPend">Cant. Pendiente:</label>
-          <div class="unit"><input class="fld" id="nPend" readonly /><span>kg</span></div>
-
           <label for="nPrint">Imprimir Etiqueta:</label>
           <div><label class="tgl"><input type="checkbox" id="nPrint" /><span></span></label></div>
         </div>
@@ -350,8 +371,6 @@
         <div class="g-kg">
           <label for="nKilos">Kilos a Notificar:</label>
           <div class="unit big"><input class="fld edit" id="nKilos" inputmode="decimal" autocomplete="off" /><span>kg</span></div>
-          <label for="nResto">Pendiente tras notificar:</label>
-          <div class="unit"><input class="fld" id="nResto" readonly /><span>kg</span></div>
         </div>
         <div class="msg" id="nMsg" role="status"></div>
         <div class="g-obs" style="margin-top:4px">
@@ -359,12 +378,31 @@
           <input class="fld edit" id="nObs" maxlength="120" autocomplete="off" />
         </div>
       </fieldset>
+
+      <fieldset class="fs">
+        <legend>Distribución en unidades de almacenamiento</legend>
+        <div class="dist-bar">
+          <button class="xbtn" id="btnLinea" type="button">
+            <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 1.5h3v5h5v3h-5v5h-3v-5h-5v-3h5z" fill="#2e9e2e"/></svg>
+            Añadir línea
+          </button>
+          <span class="tot" id="dTotal" role="status"></span>
+        </div>
+        <div class="gridwrap dist">
+          <table class="xgrid dgrid">
+            <colgroup><col style="width:34px"><col style="width:30%"><col style="width:32%"><col><col style="width:38px"></colgroup>
+            <thead><tr><th class="n">Nº</th><th>Kilos</th><th>Ubicación</th><th>Matrícula (SAP)</th><th></th></tr></thead>
+            <tbody id="dBody"></tbody>
+          </table>
+        </div>
+        <div class="msg" id="dMsg" role="status"></div>
+        <div class="banner" id="dOk" role="status" hidden></div>
+      </fieldset>
     </div>
     <div class="win-foot">
-      <button class="wbtn" id="btnAceptar">
-        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="#fff" stroke="#6a9a6a"/><path d="M4 8.5l2.6 2.6L12 5.5" fill="none" stroke="#2e9e2e" stroke-width="2"/></svg>
-        Aceptar
-      </button>
+      <button class="wbtn" id="btnAceptar"></button>
+      <button class="wbtn" id="btnEtqN" hidden></button>
+      <button class="wbtn" id="btnCerrarN" data-close hidden>Cerrar</button>
     </div>
   </div>
 
@@ -386,16 +424,16 @@
           <select class="fld" id="mOrden"></select>
           <label for="mLote">Lote:</label>
           <input class="fld" id="mLote" readonly />
-          <label for="mProg">Progreso:</label>
-          <input class="fld" id="mProg" readonly />
+          <label for="mCod">Cod. Material:</label>
+          <input class="fld" id="mCod" readonly />
         </div>
       </fieldset>
       <fieldset class="fs">
-        <legend>Notificaciones de la orden</legend>
+        <legend>Matrículas creadas en SAP</legend>
         <div class="gridwrap">
           <table class="xgrid">
             <thead>
-              <tr><th>Matrícula</th><th>Fecha notificación</th><th class="num">Kilos</th><th>Lote</th><th>Observaciones</th><th class="acc">Etiqueta</th></tr>
+              <tr><th>Matrícula</th><th>Ubicación</th><th class="num">Kilos</th><th>Fecha notificación</th><th>Lote</th><th>Observaciones</th><th class="acc">Etiqueta</th></tr>
             </thead>
             <tbody id="mBody"></tbody>
           </table>
@@ -404,6 +442,7 @@
     </div>
     <div class="win-foot">
       <span class="info" id="mTotal"></span>
+      <button class="wbtn" id="btnEtqM"></button>
       <button class="wbtn" data-close>Cerrar</button>
     </div>
   </div>
@@ -416,36 +455,41 @@
 /* =====================================================================
    NOTIFICACIÓN DE FABRICACIÓN — REACTORES
    Datos de EJEMPLO. Para conectar con datos reales basta sustituir el
-   array REACTORES (y, si procede, aceptar() por la llamada que registra
-   la notificación en el sistema).
-   Las órdenes de fabricación empiezan por 100 y los códigos de material
-   de fabricación por 29; las cantidades van en kg.
-   Por orden: codMaterial, cod (vacío en la etiqueta de ejemplo), caducidad
-   (dd/mm/aaaa) y estado de calidad que se imprime en la etiqueta.
+   array REACTORES, la lista UBICACIONES y sapNotificar() por la llamada
+   real a SAP (que devuelve las matrículas creadas).
+   - Cada orden se notifica de una sola vez (una única notificación),
+     repartida en líneas = unidades de almacenamiento (kilos + ubicación).
+     SAP devuelve una matrícula por línea.
+   - Órdenes de fabricación 100…, códigos de material de fabricación 29…;
+     cantidades en kg.
+   - Por orden: codMaterial, cod (vacío en la etiqueta de ejemplo),
+     caducidad (dd/mm/aaaa) y estado de calidad que va en la etiqueta.
    ===================================================================== */
 const EMPRESA = 'PERSEIDA BELLEZA S.L.';
+const UBICACIONES = ['Tanque 1', 'Tanque 2', 'Tanque 3', 'Tanque 4', 'Tanque 5', 'Tanque 6'];   // por ahora, tanques 1 a 6
 
 const REACTORES = [
   { id: 'R1', color: '#ff0000', ordenes: [
-    { orden: '10085239', codMaterial: '29909518', material: 'GRANEL MYLABEL ACOND REPARA/PROTEGE',   lote: '26273006', caducidad: '30/09/2029', estado: 'APROBADO', cantidad: 15000, notificada: 3750 },
-    { orden: '10085312', codMaterial: '29909526', material: 'GRANEL MYLABEL ACOND NUTRICION',        lote: '26273041', caducidad: '30/09/2029', estado: 'APROBADO', cantidad:  8000, notificada: 0 } ] },
+    { orden: '10085239', codMaterial: '29909518', material: 'GRANEL MYLABEL ACOND REPARA/PROTEGE',   lote: '26273006', caducidad: '30/09/2029', estado: 'APROBADO', cantidad: 15000 },
+    { orden: '10085312', codMaterial: '29909526', material: 'GRANEL MYLABEL ACOND NUTRICION',        lote: '26273041', caducidad: '30/09/2029', estado: 'APROBADO', cantidad:  8000 } ] },
   { id: 'R2', color: '#0000ff', ordenes: [
-    { orden: '10085288', codMaterial: '29912047', material: 'GRANEL ACOF NAVIDAD 2026 GEL FAMILIAR', lote: '26274112', caducidad: '01/10/2029', estado: 'APROBADO', cantidad: 22000, notificada: 1980 } ] },
+    { orden: '10085288', codMaterial: '29912047', material: 'GRANEL ACOF NAVIDAD 2026 GEL FAMILIAR', lote: '26274112', caducidad: '01/10/2029', estado: 'APROBADO', cantidad: 22000 } ] },
   { id: 'R3', color: '#008000', ordenes: [
-    { orden: '10085071', codMaterial: '29905113', material: 'GRANEL CIEN GEL BAÑO ARGAN',            lote: '26271587', caducidad: '28/09/2029', estado: 'APROBADO', cantidad: 19000, notificada: 8360 } ] },
+    { orden: '10085071', codMaterial: '29905113', material: 'GRANEL CIEN GEL BAÑO ARGAN',            lote: '26271587', caducidad: '28/09/2029', estado: 'APROBADO', cantidad: 19000 } ] },
   { id: 'R4', color: '#00ffff', ordenes: [
-    { orden: '10085459', codMaterial: '29907782', material: 'GRANEL CIEN CHAMPU DETOX',              lote: '26275020', caducidad: '02/10/2029', estado: 'APROBADO', cantidad: 12000, notificada: 4440 },
-    { orden: '10085477', codMaterial: '29907790', material: 'GRANEL CIEN CHAMPU ANTICASPA',          lote: '26275064', caducidad: '02/10/2029', estado: 'APROBADO', cantidad: 10000, notificada: 0 } ] },
+    { orden: '10085459', codMaterial: '29907782', material: 'GRANEL CIEN CHAMPU DETOX',              lote: '26275020', caducidad: '02/10/2029', estado: 'APROBADO', cantidad: 12000 },
+    { orden: '10085477', codMaterial: '29907790', material: 'GRANEL CIEN CHAMPU ANTICASPA',          lote: '26275064', caducidad: '02/10/2029', estado: 'APROBADO', cantidad: 10000 } ] },
   { id: 'R5', color: '#ff8000', ordenes: [
-    { orden: '10085074', codMaterial: '29905121', material: 'GRANEL CIEN GEL BAÑO AVENA',            lote: '26271598', caducidad: '28/09/2029', estado: 'APROBADO', cantidad: 18000, notificada: 16380 } ] },
+    { orden: '10085074', codMaterial: '29905121', material: 'GRANEL CIEN GEL BAÑO AVENA',            lote: '26271598', caducidad: '28/09/2029', estado: 'APROBADO', cantidad: 18000 } ] },
   { id: 'R6', color: '#6495ed', ordenes: [
-    { orden: '10084691', codMaterial: '29903356', material: 'GRANEL ACOF. NESIRA GEL ALOE + VIT. E', lote: '26268930', caducidad: '25/09/2029', estado: 'APROBADO', cantidad:  9500, notificada: 2375 } ] },
+    { orden: '10084691', codMaterial: '29903356', material: 'GRANEL ACOF. NESIRA GEL ALOE + VIT. E', lote: '26268930', caducidad: '25/09/2029', estado: 'APROBADO', cantidad:  9500 } ] },
 ];
 
 /* ---------- Utilidades ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const round3 = n => Math.round(n * 1000) / 1000;
+const iguales = (a, b) => Math.abs(a - b) < 0.0005;
 
 /* Formato español con separador de miles siempre (1.296) y hasta 3 decimales. */
 function fmtKg(n) {
@@ -463,30 +507,33 @@ function parseKg(s) {
   else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
   return /^\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
 }
-const pct  = o => o.cantidad ? Math.floor(o.notificada / o.cantidad * 100) : 0;
-const pend = o => Math.max(0, round3(o.cantidad - o.notificada));
 const pad2 = n => String(n).padStart(2, '0');
 const fmtDia = d => `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
 const fmtFecha = d => `${fmtDia(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 /* En pantalla el lote se ve con puntos (26.273.006), como en la pantalla de envasado; en la etiqueta va sin ellos. */
 const fmtLote = l => String(l).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
+/* La orden que muestra la tarjeta: la primera sin notificar (o la última, si ya están todas notificadas). */
+const ordenActual = r => r.ordenes.find(o => !o.notif) || r.ordenes[r.ordenes.length - 1];
+
+/* ---------- SAP (simulado) ---------- */
 /* Matrícula = nº de 10 dígitos (código de barras); en la etiqueta también rellenado a 20 con ceros. */
 let seqMatr = 1000434400;
 const nextMatr = () => String(++seqMatr);
 
-/* Notificaciones previas de ejemplo: reparten lo ya notificado en descargas de ~2.500 kg. */
-REACTORES.forEach((r, ri) => r.ordenes.forEach(o => {
-  o.notifs = [];
-  const n = Math.ceil(o.notificada / 2500);
-  let resto = o.notificada;
-  let t = Date.now() - (n * 90 + ri * 13) * 60000;
-  for (let k = 0; k < n; k++, t += 90 * 60000) {
-    const kg = k === n - 1 ? resto : Math.round(o.notificada / n / 10) * 10;
-    resto -= kg;
-    o.notifs.push({ matricula: nextMatr(), fecha: new Date(t), kilos: kg, lote: o.lote, obs: '', n: k + 1 });
-  }
-}));
+/* Sustituir por la llamada real: recibe la notificación con sus líneas y devuelve
+   { matriculas: [...] } con una matrícula por línea, en el mismo orden. */
+function sapNotificar(peticion) {
+  return new Promise(res => setTimeout(() => res({ matriculas: peticion.lineas.map(() => nextMatr()) }), 900));
+}
+
+/* Ejemplo: la orden de R5 ya está notificada en dos unidades de almacenamiento. */
+(() => {
+  const o = REACTORES.find(r => r.id === 'R5').ordenes[0];
+  o.notif = { fecha: new Date(Date.now() - 3 * 3600e3), kilos: 18000, obs: '', lineas: [
+    { matricula: nextMatr(), kilos: 9000, ubic: 'Tanque 3' },
+    { matricula: nextMatr(), kilos: 9000, ubic: 'Tanque 4' } ] };
+})();
 
 /* ---------- Código de barras Code 128 (subconjunto C si son dígitos pares, si no B) ---------- */
 const C128 = [
@@ -530,31 +577,33 @@ function barcodeSVG(txt) {
   return `<svg viewBox="0 0 ${x} 1" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="Código de barras ${txt}">${barras}</svg>`;
 }
 
-/* ---------- Etiqueta (mismo diseño que la de envasado, con datos de fabricación) ---------- */
-function etiquetaHTML(r, o, m) {
+/* ---------- Etiqueta: una por matrícula (unidad de almacenamiento) ---------- */
+function etiquetaHTML(r, o, k) {
+  const nf = o.notif, l = nf.lineas[k];
   const exp = o.caducidad.slice(3, 5) + '/' + o.caducidad.slice(8, 10);
   return `<div class="etq">
     <div class="etq-top">
-      <div class="etq-bc">${barcodeSVG(m.matricula)}<div class="etq-bc-txt">${m.matricula}</div></div>
+      <div class="etq-bc">${barcodeSVG(l.matricula)}<div class="etq-bc-txt">${l.matricula}</div></div>
       <div class="etq-info">
         <div class="etq-logo"><span class="l1">PERSEIDA</span><span class="l2">PRIVATE LABEL BEAUTY</span></div>
         <div class="etq-kv"><span>Reactor:</span><b>${esc(r.id)}</b></div>
-        <div class="etq-kv"><span>Fecha Alta:</span><b>${fmtDia(m.fecha)}</b></div>
+        <div class="etq-kv"><span>Fecha Alta:</span><b>${fmtDia(nf.fecha)}</b></div>
+        <div class="etq-kv"><span>Ubicación:</span><b>${esc(l.ubic.toUpperCase())}</b></div>
         <div class="etq-box">
           <div class="c">${esc(o.estado)}</div>
-          <div class="kv"><span>LOTE:</span><b>${esc(m.lote)}</b></div>
+          <div class="kv"><span>LOTE:</span><b>${esc(o.lote)}</b></div>
           <div class="c">${esc(EMPRESA)}</div>
           <div class="kv"><span>EXP:</span><b>${exp}</b></div>
         </div>
-        <div class="etq-hu">${m.matricula.padStart(20, '0')}</div>
-        <div class="etq-n">Notificación nº ${m.n}</div>
+        <div class="etq-hu">${l.matricula.padStart(20, '0')}</div>
+        <div class="etq-n">${k + 1} de ${nf.lineas.length}</div>
       </div>
     </div>
     <table class="etq-tab">
       <colgroup><col style="width:18mm"><col style="width:13mm"><col style="width:21mm"><col style="width:9mm"><col style="width:39mm"><col style="width:15mm"><col style="width:19mm"></colgroup>
       <thead><tr><th>Orden<br>Fabricación</th><th>Lote</th><th>Cod. Material</th><th>Cod.</th><th>Nombre Material</th><th>Cantidad</th><th>Fecha<br>Caducidad</th></tr></thead>
-      <tbody><tr><td>${esc(o.orden)}</td><td>${esc(m.lote)}</td><td>${esc(o.codMaterial)}</td><td>${esc(o.cod || '')}</td>
-        <td>${esc(o.material)}</td><td>${fmtKg(m.kilos)} kg</td><td>${esc(o.caducidad)}</td></tr></tbody>
+      <tbody><tr><td>${esc(o.orden)}</td><td>${esc(o.lote)}</td><td>${esc(o.codMaterial)}</td><td>${esc(o.cod || '')}</td>
+        <td>${esc(o.material)}</td><td>${fmtKg(l.kilos)} kg</td><td>${esc(o.caducidad)}</td></tr></tbody>
     </table>
   </div>`;
 }
@@ -562,7 +611,10 @@ function etiquetaHTML(r, o, m) {
 /* ---------- Iconos ---------- */
 const ICO_NOTIF = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1.5" width="11" height="11" fill="#fff" stroke="#3b6aa8"/><path d="M1 5h11M1 8.5h11M4.7 1.5v11M8.3 1.5v11" stroke="#7fa2d1"/><path d="M8.5 11.2h3.6V9.2L16 12.4l-3.9 3.2v-2H8.5z" fill="#2e9e2e"/></svg>';
 const ICO_PRINT = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="1.5" width="8" height="4" fill="#fff" stroke="#555"/><rect x="1.5" y="5.5" width="13" height="6" rx="1" fill="#8a8a8a" stroke="#555"/><rect x="4" y="9.5" width="8" height="5" fill="#fff" stroke="#555"/><path d="M5.5 11.5h5M5.5 13h5" stroke="#999"/></svg>';
-const ICO_BINOC ='<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><g fill="#3a5f9a"><rect x="2" y="2.5" width="4" height="6" rx="1"/><rect x="10" y="2.5" width="4" height="6" rx="1"/><rect x="5.5" y="5" width="5" height="2.6"/><circle cx="4" cy="11" r="3.4"/><circle cx="12" cy="11" r="3.4"/></g><circle cx="4" cy="11" r="1.6" fill="#9cc0ef"/><circle cx="12" cy="11" r="1.6" fill="#9cc0ef"/></svg>';
+const ICO_BINOC = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><g fill="#3a5f9a"><rect x="2" y="2.5" width="4" height="6" rx="1"/><rect x="10" y="2.5" width="4" height="6" rx="1"/><rect x="5.5" y="5" width="5" height="2.6"/><circle cx="4" cy="11" r="3.4"/><circle cx="12" cy="11" r="3.4"/></g><circle cx="4" cy="11" r="1.6" fill="#9cc0ef"/><circle cx="12" cy="11" r="1.6" fill="#9cc0ef"/></svg>';
+const ICO_OK    = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="#fff" stroke="#6a9a6a"/><path d="M4 8.5l2.6 2.6L12 5.5" fill="none" stroke="#2e9e2e" stroke-width="2"/></svg>';
+$('#btnEtqN').innerHTML = `${ICO_PRINT} Imprimir etiquetas`;
+$('#btnEtqM').innerHTML = `${ICO_PRINT} Imprimir todas`;
 
 /* ---------- Tarjetas ---------- */
 const grid = $('#grid');
@@ -570,19 +622,15 @@ let selId = REACTORES[0].id;
 
 function render() {
   grid.innerHTML = REACTORES.map(r => {
-    const o = r.ordenes[0];
-    const p = pct(o);
+    const o = ordenActual(r);
     return `<div class="card${r.id === selId ? ' sel' : ''}" data-r="${r.id}" style="--c:${r.color}">
       <div class="row"><span class="lbl">Reactor:</span><span class="val">${esc(r.id)}</span></div>
       <div class="row"><span class="lbl">Material:</span><span class="val">${esc(o.material)}</span></div>
       <div class="row"><span class="lbl">Orden Fab:</span><span class="val">${esc(o.orden)}</span></div>
-      <div class="row"><span class="lbl">Complete:</span>
-        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}">
-          <div class="fill" style="width:${Math.min(p, 100)}%"></div><span class="pct">${p}%</span>
-        </div></div>
-      <div class="row"><span class="lbl">Kg Notificados:</span><span class="val">${fmtKg(o.notificada)}/${fmtKg(o.cantidad)}</span></div>
+      <div class="row"><span class="lbl">Cod. Material:</span><span class="val">${esc(o.codMaterial)}</span></div>
+      <div class="row"><span class="lbl">Kg Orden:</span><span class="val">${fmtKg(o.cantidad)}${o.notif ? '<span class="badge">NOTIFICADA</span>' : ''}</span></div>
       <div class="actions">
-        <button class="xbtn big" data-act="notif">${ICO_NOTIF} Notificar</button>
+        <button class="xbtn big" data-act="notif"${o.notif ? ' disabled title="Orden ya notificada"' : ''}>${ICO_NOTIF} Notificar</button>
         <button class="xbtn" data-act="matr">${ICO_BINOC} Ver Matrículas</button>
       </div>
     </div>`;
@@ -595,7 +643,7 @@ grid.addEventListener('click', e => {
   selId = card.dataset.r;
   grid.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', c === card));
   const btn = e.target.closest('button[data-act]');
-  if (!btn) return;
+  if (!btn || btn.disabled) return;
   const r = REACTORES.find(x => x.id === selId);
   if (btn.dataset.act === 'notif') openNotif(r, btn);
   else openMatr(r, btn);
@@ -612,11 +660,13 @@ function openWin(w, origen) {
   winAbierta = w;
 }
 function closeWin() {
+  if (winAbierta === $('#winNotif') && ctxN && ctxN.estado === 'enviando') return;   // esperando a SAP
   $('#mask').hidden = true;
   winAbierta = null;
-  const btn = focoPrevio && focoPrevio.dataset && focoPrevio.dataset.act;
+  const act = focoPrevio && focoPrevio.dataset && focoPrevio.dataset.act;
   const card = grid.querySelector(`.card[data-r="${selId}"]`);
-  const destino = btn && card ? card.querySelector(`[data-act="${btn}"]`) : focoPrevio;
+  let destino = act && card ? card.querySelector(`[data-act="${act}"]`) : focoPrevio;
+  if (destino && destino.disabled && card) destino = card.querySelector('[data-act="matr"]');
   if (destino && destino.focus) destino.focus();
 }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeWin));
@@ -640,15 +690,17 @@ document.querySelectorAll('.win-head').forEach(h => h.addEventListener('pointerd
 }));
 
 /* ---------- Ventana: Notificación Fabricación ---------- */
-let ctxN = null;   // { r, o }
+/* ctxN = { r, o, estado: 'edicion' | 'enviando' | 'hecho', lineas: [{ txt, ubic, matricula? }] } */
+let ctxN = null;
 
 function openNotif(r, origen) {
-  ctxN = { r };
+  ctxN = { r, estado: 'edicion' };
   $('#nTitle').textContent = `Notificación Fabricación — Reactor ${r.id}`;
-  $('#nOrden').innerHTML = r.ordenes.map((o, i) => `<option value="${i}">${esc(o.orden)}</option>`).join('');
+  $('#nOrden').innerHTML = r.ordenes.map((o, i) =>
+    `<option value="${i}"${o.notif ? ' disabled' : ''}>${esc(o.orden)}${o.notif ? ' (notificada)' : ''}</option>`).join('');
   $('#nPrint').checked = true;
   $('#nObs').value = '';
-  cargarOrdenNotif(0);
+  cargarOrdenNotif(r.ordenes.indexOf(ordenActual(r)));
   openWin($('#winNotif'), origen);
   const k = $('#nKilos');
   k.focus(); k.select();
@@ -656,130 +708,272 @@ function openNotif(r, origen) {
 function cargarOrdenNotif(i) {
   const o = ctxN.r.ordenes[i];
   ctxN.o = o;
+  $('#nOrden').value = String(i);
   $('#nMaterial').value = o.material;
-  $('#nProg').value = pct(o) + '%';
   $('#nLote').value = fmtLote(o.lote);
   $('#nCant').value = fmtKg(o.cantidad);
-  $('#nNotif').value = fmtKg(o.notificada);
-  $('#nPend').value = fmtKg(pend(o));
-  $('#nKilos').value = pend(o) ? fmtKg(pend(o)) : '';
-  validar();
+  $('#nKilos').value = fmtKg(o.cantidad);          // se notifica todo de golpe: por defecto, la cantidad de la orden
+  ctxN.lineas = [{ txt: fmtKg(o.cantidad), ubic: '' }];
+  setEstadoN('edicion');
 }
 $('#nOrden').addEventListener('change', e => {
   cargarOrdenNotif(+e.target.value);
   $('#nKilos').focus(); $('#nKilos').select();
 });
 
+function setEstadoN(estado) {
+  ctxN.estado = estado;
+  const edicion = estado === 'edicion';
+  ['#nOrden', '#nKilos', '#nObs', '#nPrint', '#btnLinea'].forEach(s => { $(s).disabled = !edicion; });
+  renderLineas();
+  const ac = $('#btnAceptar');
+  ac.hidden = estado === 'hecho';
+  ac.innerHTML = estado === 'enviando' ? '<span class="spin"></span> Enviando a SAP…' : `${ICO_OK} Aceptar`;
+  $('#btnEtqN').hidden = $('#btnCerrarN').hidden = estado !== 'hecho';
+  $('#dOk').hidden = estado !== 'hecho';
+  if (edicion) validar();
+  else ac.disabled = true;
+}
+
+function renderLineas() {
+  const bloq = ctxN.estado !== 'edicion', ls = ctxN.lineas;
+  $('#dBody').innerHTML = ls.map((l, i) => `<tr>
+    <td class="n">${i + 1}</td>
+    <td><div class="unit"><input class="fld edit" data-k="${i}" value="${esc(l.txt)}" inputmode="decimal" autocomplete="off"
+         aria-label="Kilos de la línea ${i + 1}"${bloq ? ' disabled' : ''} /><span>kg</span></div></td>
+    <td><select class="fld edit" data-u="${i}" aria-label="Ubicación de la línea ${i + 1}"${bloq ? ' disabled' : ''}>
+         <option value="">— Seleccionar —</option>${UBICACIONES.map(u => `<option${u === l.ubic ? ' selected' : ''}>${esc(u)}</option>`).join('')}
+       </select></td>
+    <td class="mt${l.matricula ? ' ok' : ''}">${l.matricula || '—'}</td>
+    <td class="x"><button class="delbtn" type="button" data-del="${i}" title="Quitar línea" aria-label="Quitar línea ${i + 1}"${bloq || ls.length === 1 ? ' disabled' : ''}>&times;</button></td>
+  </tr>`).join('');
+}
+
+/* Valida total + líneas. Devuelve { kilos, lineas } si se puede notificar, o null. */
 function validar() {
-  const txt = $('#nKilos').value, kg = parseKg(txt), p = pend(ctxN.o), msg = $('#nMsg');
+  const o = ctxN.o, txt = $('#nKilos').value, kg = parseKg(txt), msg = $('#nMsg');
   let ok = true;
   if (isNaN(kg) || kg <= 0) {
     ok = false;
     msg.className = 'msg err';
     msg.textContent = txt.trim() ? 'Introduce una cantidad de kilos válida (mayor que 0).' : 'Introduce los kilos a notificar.';
-    $('#nResto').value = fmtKg(p);
+  } else if (!iguales(kg, o.cantidad)) {
+    msg.className = 'msg warn';
+    msg.textContent = `Atención: difiere de la cantidad de la orden en ${kg > o.cantidad ? '+' : '-'}${fmtKg(Math.abs(kg - o.cantidad))} kg.`;
   } else {
-    $('#nResto').value = fmtKg(Math.max(0, p - kg));
-    if (kg > p) {
-      msg.className = 'msg warn';
-      msg.textContent = `Atención: supera la cantidad pendiente en ${fmtKg(kg - p)} kg.`;
-    } else {
-      msg.className = 'msg';
-      msg.textContent = '';
-    }
+    msg.className = 'msg';
+    msg.textContent = '';
   }
-  $('#btnAceptar').disabled = !ok;
-  return ok ? round3(kg) : null;
+
+  const ls = ctxN.lineas.map(l => ({ txt: l.txt.trim(), kilos: parseKg(l.txt), ubic: l.ubic }));
+  const suma = round3(ls.reduce((s, l) => s + (l.kilos || 0), 0));
+  const cuadra = ok && iguales(suma, kg);
+  let problema = '', grave = false;
+  const iMal = ls.findIndex(l => l.txt && !(l.kilos > 0));
+  const iVacio = ls.findIndex(l => !l.txt);
+  const iUbic = ls.findIndex(l => !l.ubic);
+  if (iMal >= 0) { problema = `Línea ${iMal + 1}: los kilos no son válidos.`; grave = true; }
+  else if (iVacio >= 0) problema = `Línea ${iVacio + 1}: indica los kilos de la unidad de almacenamiento.`;
+  else if (ok && suma > kg && !cuadra) { problema = `Se han distribuido ${fmtKg(suma - kg)} kg de más.`; grave = true; }
+  else if (ok && !cuadra) problema = `Faltan ${fmtKg(kg - suma)} kg por distribuir.`;
+  else if (iUbic >= 0) problema = `Línea ${iUbic + 1}: selecciona la ubicación.`;
+  $('#dMsg').className = 'msg ' + (grave ? 'err' : 'info');
+  $('#dMsg').textContent = problema;
+  $('#dTotal').innerHTML = `Distribuido: <b class="${cuadra ? 'ok' : 'bad'}">${fmtKg(suma)}</b> de ${ok ? fmtKg(kg) : '—'} kg${cuadra ? ' ✔' : ''}`;
+
+  ok = ok && !problema;
+  $('#btnAceptar').disabled = !ok || ctxN.estado !== 'edicion';
+  return ok ? { kilos: round3(kg), lineas: ls.map(l => ({ kilos: round3(l.kilos), ubic: l.ubic })) } : null;
 }
-$('#nKilos').addEventListener('input', validar);
+
+/* Total: con una sola línea, la línea sigue al total. */
+$('#nKilos').addEventListener('input', () => {
+  if (ctxN.lineas.length === 1) {
+    const kg = parseKg($('#nKilos').value);
+    ctxN.lineas[0].txt = kg > 0 ? fmtKg(kg) : '';
+    $('#dBody input[data-k="0"]').value = ctxN.lineas[0].txt;
+  }
+  validar();
+});
 $('#nKilos').addEventListener('blur', () => {
   const kg = parseKg($('#nKilos').value);
-  if (!isNaN(kg) && kg > 0) $('#nKilos').value = fmtKg(kg);
+  if (kg > 0) $('#nKilos').value = fmtKg(kg);
 });
 /* preventDefault: si no, el Enter llega al botón "Notificar" que recibe el foco al cerrar y reabre la ventana. */
 $('#nKilos').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); aceptar(); } });
-$('#btnAceptar').addEventListener('click', aceptar);
 
-function aceptar() {
-  const kg = validar();
-  if (kg == null) return;
+/* Líneas de distribución */
+$('#btnLinea').addEventListener('click', () => {
+  const total = parseKg($('#nKilos').value);
+  const resto = round3((total || 0) - ctxN.lineas.reduce((s, l) => s + (parseKg(l.txt) || 0), 0));
+  ctxN.lineas.push({ txt: resto > 0 ? fmtKg(resto) : '', ubic: '' });
+  renderLineas();
+  validar();
+  const inp = $(`#dBody input[data-k="${ctxN.lineas.length - 1}"]`);
+  inp.focus(); inp.select();
+});
+$('#dBody').addEventListener('input', e => {
+  const k = e.target.dataset.k;
+  if (k === undefined) return;
+  ctxN.lineas[+k].txt = e.target.value;
+  validar();
+});
+$('#dBody').addEventListener('change', e => {
+  const u = e.target.dataset.u;
+  if (u === undefined) return;
+  ctxN.lineas[+u].ubic = e.target.value;
+  validar();
+});
+$('#dBody').addEventListener('focusout', e => {
+  const k = e.target.dataset.k;
+  if (k === undefined) return;
+  const kg = parseKg(e.target.value);
+  if (kg > 0) e.target.value = ctxN.lineas[+k].txt = fmtKg(kg);
+});
+$('#dBody').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]');
+  if (!b || b.disabled) return;
+  ctxN.lineas.splice(+b.dataset.del, 1);
+  renderLineas();
+  validar();
+  $('#btnLinea').focus();
+});
+$('#dBody').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('input')) { e.preventDefault(); aceptar(); }
+});
+
+$('#btnAceptar').addEventListener('click', aceptar);
+$('#btnEtqN').addEventListener('click', () => {
+  if (!abrirEtiquetas(ctxN.r, ctxN.o)) toast(AVISO_BLOQUEADA.slice(4), false);
+});
+
+async function aceptar() {
+  if (!ctxN || ctxN.estado !== 'edicion') return;
+  const v = validar();
+  if (!v) return;
   const { r, o } = ctxN;
-  const imprimir = $('#nPrint').checked;
-  const m = { matricula: nextMatr(), fecha: new Date(), kilos: kg, lote: o.lote, obs: $('#nObs').value.trim(),
-              n: o.notifs.length + 1, nueva: true };
-  o.notifs.push(m);
-  o.notificada = round3(o.notificada + kg);
+  const obs = $('#nObs').value.trim();
+  /* La pestaña de etiquetas se abre ya, dentro del clic (si no, el navegador la bloquea),
+     y se rellena cuando SAP devuelve las matrículas. undefined = no se imprime; null = bloqueada. */
+  const tab = $('#nPrint').checked ? prepararPestana(o) : undefined;
+  setEstadoN('enviando');
+  let res;
+  try {
+    res = await sapNotificar({ orden: o.orden, codMaterial: o.codMaterial, lote: o.lote, kilos: v.kilos, observaciones: obs,
+                               lineas: v.lineas.map(l => ({ kilos: l.kilos, ubicacion: l.ubic })) });
+  } catch (err) {
+    if (tab && !tab.closed) tab.close();
+    setEstadoN('edicion');
+    $('#dMsg').className = 'msg err';
+    $('#dMsg').textContent = `SAP ha devuelto un error: ${err && err.message || err}. La notificación no se ha registrado.`;
+    return;
+  }
+
+  o.notif = { fecha: new Date(), kilos: v.kilos, obs, nueva: true,
+              lineas: v.lineas.map((l, k) => ({ matricula: res.matriculas[k], kilos: l.kilos, ubic: l.ubic })) };
+  ctxN.lineas = o.notif.lineas.map(l => ({ txt: fmtKg(l.kilos), ubic: l.ubic, matricula: l.matricula }));
+  setEstadoN('hecho');
+  const n = o.notif.lineas.length;
+  $('#dOk').innerHTML = `✔ Notificación registrada en SAP. ${n === 1 ? 'Matrícula creada' : `${n} matrículas creadas`}: ` +
+                        o.notif.lineas.map(l => `<b>${l.matricula}</b> (${esc(l.ubic)})`).join(', ') + '.';
   render();
-  const abierta = imprimir && abrirEtiqueta(r, o, m);   // síncrono: dentro del clic, para que el navegador no la bloquee
-  closeWin();
-  toast(`<b>Notificación realizada</b><br>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${fmtKg(kg)} kg` +
-        `<br>Matrícula ${m.matricula}` +
-        (!imprimir ? '' : abierta ? '<br>Etiqueta abierta en una pestaña nueva para imprimir.' : AVISO_BLOQUEADA), !imprimir || abierta);
+
+  const tabOk = tab === undefined || (tab && !tab.closed);
+  if (tab && !tab.closed) escribirEtiquetas(tab, r, o);
+  toast(`<b>Notificación registrada en SAP</b><br>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${fmtKg(v.kilos)} kg` +
+        `<br>${n === 1 ? 'Matrícula' : 'Matrículas'}: ${o.notif.lineas.map(l => l.matricula).join(', ')}` +
+        (tab === undefined ? '' : tabOk ? '<br>Etiquetas abiertas en una pestaña nueva para imprimir.' : AVISO_BLOQUEADA), tabOk);
 }
 
-/* ---------- Etiqueta en pestaña nueva ---------- */
-const AVISO_BLOQUEADA = '<br><b>El navegador ha bloqueado la pestaña de la etiqueta.</b> Permite las ventanas emergentes ' +
-                        'para esta página y reimprímela desde «Ver Matrículas».';
+/* ---------- Etiquetas en pestaña nueva (una página por matrícula) ---------- */
+const AVISO_BLOQUEADA = '<br><b>No se ha podido abrir la pestaña de las etiquetas</b> (el navegador la ha bloqueado o se ha cerrado). ' +
+                        'Permite las ventanas emergentes para esta página y vuelve a imprimirlas con «Imprimir etiquetas».';
 
-/* Abre la etiqueta en una pestaña nueva y lanza el diálogo de impresión. Devuelve false si se bloquea. */
-function abrirEtiqueta(r, o, m) {
-  const w = window.open('', '_blank');
-  if (!w) return false;
-  w.document.open();
-  w.document.write(`<!DOCTYPE html>
+function paginaEtiquetas(titulo, cuerpo) {
+  return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>Etiqueta ${m.matricula} — ${esc(r.id)} · ${esc(o.orden)}</title>
+<title>${titulo}</title>
 ${$('#tplEstiloEtiqueta').innerHTML}
 </head>
 <body>
-<div class="barra">
-  <span>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${fmtKg(m.kilos)} kg · Matrícula ${m.matricula}</span>
+${cuerpo}
+</body>
+</html>`;
+}
+/* Pestaña provisional mientras SAP responde. */
+function prepararPestana(o) {
+  const w = window.open('', '_blank');
+  if (!w) return null;
+  w.document.write(paginaEtiquetas(`Etiquetas · Orden ${esc(o.orden)}`,
+    `<div class="barra"><span>Enviando la notificación de la orden ${esc(o.orden)} a SAP… Las etiquetas aparecerán aquí en cuanto SAP devuelva las matrículas.</span></div>`));
+  w.document.close();
+  return w;
+}
+/* Escribe las etiquetas (todas, o solo las de los índices dados) y lanza el diálogo de impresión. */
+function escribirEtiquetas(w, r, o, idx) {
+  const ks = idx || o.notif.lineas.map((_, k) => k);
+  const kg = ks.reduce((s, k) => s + o.notif.lineas[k].kilos, 0);
+  w.document.open();
+  w.document.write(paginaEtiquetas(`Etiquetas ${esc(o.orden)} — ${esc(r.id)}`, `<div class="barra">
+  <span>Reactor ${esc(r.id)} · Orden ${esc(o.orden)} · ${ks.length} ${ks.length === 1 ? 'etiqueta' : 'etiquetas'} · ${fmtKg(kg)} kg</span>
   <button onclick="print()">Imprimir</button>
   <button onclick="close()">Cerrar pestaña</button>
 </div>
-<div class="hoja">${etiquetaHTML(r, o, m)}</div>
-<script>setTimeout(print, 200);<\/script>
-</body>
-</html>`);
+<div class="hoja">${ks.map(k => etiquetaHTML(r, o, k)).join('')}</div>
+<script>setTimeout(print, 200);<\/script>`));
   w.document.close();
+}
+function abrirEtiquetas(r, o, idx) {
+  const w = window.open('', '_blank');
+  if (!w) return false;
+  escribirEtiquetas(w, r, o, idx);
   return true;
 }
 
 /* ---------- Ventana: Ver Matrículas ---------- */
-let ctxM = null;   // { r }
+let ctxM = null;   // { r, i }
 
 function openMatr(r, origen) {
   ctxM = { r };
   $('#mTitle').textContent = `Matrículas — Reactor ${r.id}`;
-  $('#mOrden').innerHTML = r.ordenes.map((o, i) => `<option value="${i}">${esc(o.orden)}</option>`).join('');
-  cargarOrdenMatr(0);
+  $('#mOrden').innerHTML = r.ordenes.map((o, i) =>
+    `<option value="${i}">${esc(o.orden)}${o.notif ? '' : ' (sin notificar)'}</option>`).join('');
+  /* Por defecto, la última orden notificada del reactor; si no hay ninguna, la actual. */
+  let i = -1;
+  r.ordenes.forEach((o, k) => { if (o.notif && (i < 0 || o.notif.fecha > r.ordenes[i].notif.fecha)) i = k; });
+  cargarOrdenMatr(i >= 0 ? i : r.ordenes.indexOf(ordenActual(r)));
   openWin($('#winMatr'), origen);
   $('#mOrden').focus();
 }
 function cargarOrdenMatr(i) {
-  const o = ctxM.r.ordenes[i];
+  const o = ctxM.r.ordenes[i], nf = o.notif;
   ctxM.i = i;
   $('#mOrden').value = String(i);
   $('#mMaterial').value = o.material;
   $('#mLote').value = fmtLote(o.lote);
-  $('#mProg').value = pct(o) + '%';
-  $('#mBody').innerHTML = o.notifs.length
-    ? o.notifs.map((m, k) => `<tr class="${m.nueva ? 'nueva' : ''}">
-        <td>${m.matricula}</td><td>${fmtFecha(m.fecha)}</td><td class="num">${fmtKg(m.kilos)}</td>
-        <td>${fmtLote(m.lote)}</td><td>${esc(m.obs)}</td>
-        <td class="acc"><button class="ibtn" data-reimp="${k}" title="Reimprimir etiqueta" aria-label="Reimprimir etiqueta de la matrícula ${m.matricula}">${ICO_PRINT}</button></td>
-      </tr>`).reverse().join('')
-    : '<tr><td class="vacio" colspan="6">Sin notificaciones para esta orden.</td></tr>';
-  $('#mTotal').textContent = `${o.notifs.length} matrícula(s) · Notificado ${fmtKg(o.notificada)} de ${fmtKg(o.cantidad)} kg`;
+  $('#mCod').value = o.codMaterial;
+  $('#mBody').innerHTML = nf
+    ? nf.lineas.map((l, k) => `<tr class="${nf.nueva ? 'nueva' : ''}">
+        <td>${l.matricula}</td><td>${esc(l.ubic)}</td><td class="num">${fmtKg(l.kilos)}</td>
+        <td>${fmtFecha(nf.fecha)}</td><td>${fmtLote(o.lote)}</td><td>${esc(nf.obs)}</td>
+        <td class="acc"><button class="ibtn" data-reimp="${k}" title="Reimprimir etiqueta" aria-label="Reimprimir etiqueta de la matrícula ${l.matricula}">${ICO_PRINT}</button></td>
+      </tr>`).join('')
+    : '<tr><td class="vacio" colspan="7">Orden sin notificar: todavía no tiene matrículas.</td></tr>';
+  $('#mTotal').textContent = nf ? `${nf.lineas.length} matrícula(s) · Total notificado ${fmtKg(nf.kilos)} kg` : '';
+  $('#btnEtqM').disabled = !nf;
 }
 $('#mOrden').addEventListener('change', e => cargarOrdenMatr(+e.target.value));
 $('#mBody').addEventListener('click', e => {
   const b = e.target.closest('[data-reimp]');
   if (!b) return;
-  const { r, i } = ctxM, o = r.ordenes[i];
-  if (!abrirEtiqueta(r, o, o.notifs[+b.dataset.reimp])) toast(AVISO_BLOQUEADA.slice(4), false);
+  const { r, i } = ctxM;
+  if (!abrirEtiquetas(r, r.ordenes[i], [+b.dataset.reimp])) toast(AVISO_BLOQUEADA.slice(4), false);
+});
+$('#btnEtqM').addEventListener('click', () => {
+  const { r, i } = ctxM;
+  if (!abrirEtiquetas(r, r.ordenes[i])) toast(AVISO_BLOQUEADA.slice(4), false);
 });
 
 /* ---------- Aviso ---------- */
@@ -790,7 +984,7 @@ function toast(html, ok = true) {
   t.classList.toggle('warn', !ok);
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), ok ? 4500 : 9000);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ok ? 5000 : 9000);
 }
 
 render();
