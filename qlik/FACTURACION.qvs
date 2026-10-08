@@ -1,0 +1,366 @@
+SET vClientesExcluir = '0000267528','0000267525','0000267613','0000270091';
+
+LIB CONNECT TO 'GPP-Perseida (<usuario_conexion>)';
+
+
+MAP_FECHA_DISPO:
+Mapping LOAD
+    Num(Pedido, '0000000000') & '_' & Num(Posicion, '000000')   as Pedido_Posicion,
+    Date(Alt(Num(FechaDisponible),
+             Date#(FechaDisponible, 'YYYY-MM-DD')),
+         'DD/MM/YYYY')                                          as Fecha_Disponibilidad
+Where Not IsNull(FechaDisponible)
+  and Year(Alt(Num(FechaDisponible),
+               Date#(FechaDisponible, 'YYYY-MM-DD'))) < 9999;
+SELECT
+    Pedido,
+    Posicion,
+    FechaDisponible
+FROM dbo.VerificacionPedidos vp;
+
+
+
+
+
+//=============================================================
+// 0.bis) FACTURAS REALES (SD30 cabecera + SD31 posición)
+//=============================================================
+Cabecera_Factura:
+LOAD
+    CLC_COMPC,                                                     //sociedad
+    BILL_CAT,
+    BILL_NUM,                                                      //factura
+    BILL_TYPE,
+    CALDAY,                                                        //fecha factura
+    DOC_CLASS
+FROM [lib://QlikRepository/1.DATOS_NIVEL_1/RAW_DATA/1.ORIGEN_1/1.QVD/SD30.qvd]
+(qvd)
+where CLC_COMPC = '12';
+Posicion_Factura:
+LOAD
+    CLC_COMPC,
+    BILL_ITEM,
+    BILL_NUM,
+    DOC_CLASS,
+    DOC_NUMBER,
+    S_ORD_ITEM,
+    REFER_DOC,                                                     //Entrega
+    REFER_ITM,                                                     //Posicion Entrega
+    NET_VAL_S,                                                     //€ facturados
+    QUANT_B                                                        //uds facturadas
+FROM [lib://QlikRepository/1.DATOS_NIVEL_1/RAW_DATA/1.ORIGEN_1/1.QVD/SD31.qvd]
+(qvd)
+where CLC_COMPC = '12';
+// fecha de factura real (VBRK-FKDAT) pegada a cada posición
+Left Join (Posicion_Factura)
+LOAD
+    BILL_NUM,
+    Date(Alt(Num(CALDAY), Date#(CALDAY,'YYYYMMDD'), Date#(CALDAY,'DD/MM/YYYY')),
+         'DD/MM/YYYY')                                             as Fecha_Factura_Doc
+Resident Cabecera_Factura;
+// una fila por posición de entrega (una entrega puede tener facturas parciales)
+FACTURAS_TMP:
+NoConcatenate
+LOAD
+    REFER_DOC & '_' & REFER_ITM        as Entrega_Posicion,
+    Date(Max(Fecha_Factura_Doc),'DD/MM/YYYY') as Fecha_Factura,    // última factura de esa posición
+    Sum(QUANT_B)                       as Cantidad_Facturada_Real,
+    Sum(NET_VAL_S)                     as Importe_Facturado_Real
+Resident Posicion_Factura
+Where Len(Trim(REFER_DOC)) > 0
+Group by REFER_DOC & '_' & REFER_ITM;
+// mismo dato con la clave "rellenada", por si el formato de Entrega_Posicion
+// de DATOS_TEMP viene con ceros a la izquierda y el de SD31 no (o al revés)
+FACTURAS_JOIN:
+NoConcatenate
+LOAD * Resident FACTURAS_TMP;
+Concatenate (FACTURAS_JOIN)
+LOAD
+    Num(SubField(Entrega_Posicion,'_',1),'0000000000') & '_' &
+    Num(SubField(Entrega_Posicion,'_',2),'000000')     as Entrega_Posicion,
+    Fecha_Factura,
+    Cantidad_Facturada_Real,
+    Importe_Facturado_Real
+Resident FACTURAS_TMP
+Where Num(SubField(Entrega_Posicion,'_',1),'0000000000') & '_' &
+      Num(SubField(Entrega_Posicion,'_',2),'000000') <> Entrega_Posicion;
+Left Join (DATOS_TEMP)
+LOAD
+    Entrega_Posicion,
+    Fecha_Factura,
+    Cantidad_Facturada_Real,
+    Importe_Facturado_Real
+Resident FACTURAS_JOIN;
+
+DROP Tables FACTURAS_TMP, FACTURAS_JOIN, Posicion_Factura, Cabecera_Factura;
+
+
+
+
+
+
+
+FACTURACION:
+NoConcatenate
+LOAD
+    *,
+    //Year(Alt(Fecha_Factura, Fecha_Salida)) & '_' &
+    //Num(Month(Alt(Fecha_Factura, Fecha_Salida)),'00')        as Año_Mes_Fact, //Para coger por fecha de factura
+    Year(Fecha_Salida) & '_' &
+    Num(Month(Fecha_Salida),'00')                            as Año_Mes_Fact, //Para coger por fecha de salida
+    If(IsNull(Fecha_Factura), 1, 0)                          as Sin_Factura;   // salió pero aún no facturado
+LOAD
+    Pedido_Posicion,
+    Entrega,
+    Entrega_Posicion,
+    Clase_Entrega,
+    Fecha_Entrega_Pedido,
+    Centro_Material,
+    Cantidad_Pedido,
+    Valor_Pedido,
+    Id_Material,
+    Id_Cliente,
+    Id_Comercial,
+    Importe_Unidad,
+    Fecha_Salida,
+    Fecha_Factura,                                                             // NUEVO
+    'Expedido'                                               as Tipo_Linea,
+    Cantidad_Expedida                                        as Cantidad_Facturacion,
+    Cantidad_Expedida * Importe_Unidad                       as Importe_Facturacion,
+    Cantidad_Facturada_Real,                                                   // NUEVO (contraste)
+    Importe_Facturado_Real,                                                    // NUEVO (contraste)
+    0                                                        as Atrasado
+Resident DATOS_TEMP
+Where Not IsNull(Entrega)
+  and Cantidad_Expedida > 0
+  and Year(Fecha_Salida) > Year(Today())-3
+  and not Match(Id_Cliente, $(vClientesExcluir))
+;
+//=============================================================
+// 2) FACTURACION: PENDIENTE (al mes de entrega; vencido -> mes actual)
+//=============================================================
+Concatenate (FACTURACION)
+LOAD
+    *,
+    if(Fecha_Facturar < MonthStart(Today()),
+        Year(Today()) & '_' & Num(Month(Today()),'00'),
+        Year(Fecha_Facturar) & '_' & Num(Month(Fecha_Facturar),'00'))  as Año_Mes_Fact,
+    if(Fecha_Facturar < MonthStart(Today()), 1, 0)                     as Atrasado;   // atrasado: NO compensa
+LOAD
+    Pedido_Posicion,
+    Centro_Material,
+    Id_Material,
+    Cantidad_Pedido,
+    Valor_Pedido,
+    Fecha_Entrega_Pedido,
+    Date(ApplyMap('MAP_FECHA_DISPO', Pedido_Posicion, Null()),
+         'DD/MM/YYYY')                                                 as Fecha_Disponibilidad,
+     Date(RangeMax(ApplyMap('MAP_FECHA_DISPO', Pedido_Posicion, Null()),
+                  Fecha_Entrega_Pedido),
+         'DD/MM/YYYY')                                                 as Fecha_Facturar,
+    Id_Cliente,
+    Id_Comercial,
+    Importe_Unidad,
+    'Pendiente'                                              as Tipo_Linea,
+    RangeMax(0, Cantidad_Pedido - Alt(Sum(Cantidad_Expedida), 0))                    as Cantidad_Facturacion,
+    RangeMax(0, Cantidad_Pedido - Alt(Sum(Cantidad_Expedida), 0)) * Importe_Unidad as Importe_Facturacion
+Resident DATOS_TEMP
+Where (Status_Global = 'A' or Status_Global = 'B')
+  and (Status_Rechazo = 'A' or Status_Rechazo = 'B')
+  and Fecha_Pedido >= AddMonths(Today(), -12)
+  and not Match(Id_Cliente, $(vClientesExcluir))
+  Group by
+    Pedido_Posicion, Centro_Material, Id_Material, Id_Cliente, Id_Comercial,
+    Importe_Unidad, Cantidad_Pedido, Fecha_Entrega_Pedido, Valor_Pedido
+;
+//=============================================================
+// 3) PRECIOS PARA PREVISIÓN (medianas últimos 2 meses)
+//    Fallback por GRUPO DE ARTÍCULO (Tipo_Material)
+//=============================================================
+MAP_TIPO_MATERIAL:
+Mapping LOAD Id_Material, Tipo_Material          // Id_Material ya es Text() en Materiales
+Resident Materiales;
+// Ventas últimos 2 meses, una fila por posición (deduplicado)
+PEDIDOS_2M_TMP:
+NoConcatenate
+LOAD Distinct
+    Pedido_Posicion,
+    Id_Material,
+    Importe_Unidad
+Resident DATOS_TEMP
+Where Fecha_Pedido >= AddMonths(Today(), -2)     // aquí no hay Fecha_Creacion: uso fecha de documento
+  and Importe_Unidad > 0;
+// Mediana por material
+PRECIO_MATERIAL_TMP:
+NoConcatenate
+LOAD
+    Id_Material,
+    Median(Importe_Unidad) as Precio_Med_Material
+Resident PEDIDOS_2M_TMP
+Group by Id_Material;
+// Mediana por grupo de artículo
+PRECIO_TIPO_TMP:
+NoConcatenate
+LOAD
+    Tipo_Material,
+    Median(Importe_Unidad) as Precio_Med_Tipo
+Group by Tipo_Material;
+LOAD
+    ApplyMap('MAP_TIPO_MATERIAL', Text(Id_Material), Null()) as Tipo_Material,
+    Importe_Unidad
+Resident PEDIDOS_2M_TMP;
+MAP_PRECIO_MATERIAL:
+Mapping LOAD Text(Id_Material), Precio_Med_Material Resident PRECIO_MATERIAL_TMP;
+MAP_PRECIO_TIPO:
+Mapping LOAD Tipo_Material, Precio_Med_Tipo Resident PRECIO_TIPO_TMP;
+DROP Tables PEDIDOS_2M_TMP, PRECIO_MATERIAL_TMP, PRECIO_TIPO_TMP;
+//=============================================================
+// 4) COMPENSACIÓN EN CANTIDAD (expedido + pendiente del mes; atrasados NO)
+//=============================================================
+
+/*COMPENSA_TMP:
+NoConcatenate
+LOAD
+    Id_Material,
+    Año_Mes_Fact,
+    Sum(Cantidad_Facturacion) as Cantidad_Compensa
+Resident FACTURACION
+Where Atrasado = 0
+Group by Id_Material, Año_Mes_Fact;*/
+// Previsión por material y mes (solo mes actual y futuros)
+PREVISION_TMP:
+NoConcatenate
+LOAD
+    CLC_MATER                                              as Id_Material,
+    Year(CONF_DATE) & '_' & Num(Month(CONF_DATE),'00')     as Año_Mes_Fact,
+    Sum(QUANTITY)                                          as Cantidad_Prevision
+Resident MDPB
+//Where Year(CONF_DATE) & '_' & Num(Month(CONF_DATE),'00')
+//      >= Year(Today()) & '_' & Num(Month(Today()),'00')
+Where WeekStart(CONF_DATE) >= WeekStart(Today())
+Group by CLC_MATER, Year(CONF_DATE) & '_' & Num(Month(CONF_DATE),'00');
+/*Left Join (PREVISION_TMP)
+LOAD Id_Material, Año_Mes_Fact, Cantidad_Compensa
+Resident COMPENSA_TMP;
+DROP Table COMPENSA_TMP;*/
+//=============================================================
+// 5) FACTURACION: PREVISIÓN NETA
+//    Precio: mediana material -> mediana grupo artículo -> 0
+//=============================================================
+Concatenate (FACTURACION)
+LOAD
+    *,
+    Cantidad_Facturacion * Importe_Unidad as Importe_Facturacion;
+LOAD
+    Id_Material,
+    Año_Mes_Fact,
+    'Previsión'                                                  as Tipo_Linea,
+    Alt(ApplyMap('MAP_PRECIO_MATERIAL', Text(Id_Material), Null()),
+        ApplyMap('MAP_PRECIO_TIPO',
+                 ApplyMap('MAP_TIPO_MATERIAL', Text(Id_Material), Null()), Null()),
+        0)                                                       as Importe_Unidad,
+    if(Not IsNull(ApplyMap('MAP_PRECIO_MATERIAL', Text(Id_Material), Null())),
+        'Mediana material',
+        if(Not IsNull(ApplyMap('MAP_PRECIO_TIPO',
+                 ApplyMap('MAP_TIPO_MATERIAL', Text(Id_Material), Null()), Null())),
+            'Mediana grupo artículo',
+            'Sin precio'))                                       as Origen_Precio,
+    Cantidad_Prevision                                           as Cantidad_Facturacion,
+/*  --- version con compensacion (reactivar junto con el bloque 4) ---
+    RangeMax(0, Cantidad_Prevision - Alt(Cantidad_Compensa, 0))  as Cantidad_Facturacion,
+    Alt(Cantidad_Compensa, 0)                                    as Cantidad_Compensada,
+*/
+    Cantidad_Prevision,                                          // bruto para comprobar
+    0                                                            as Atrasado
+Resident PREVISION_TMP;
+DROP Table PREVISION_TMP;
+//=============================================================
+// 6) VOLCADO A DATOS Y LIMPIEZA
+//=============================================================
+
+
+directory 'lib://QlikRepository\2.DATOS_NIVEL_2\CLGI_PLANIFICACION\PERSEIDA';
+
+NoConcatenate
+HISTORICO_FACTURACION:
+LOAD
+    *,
+    Date(Today(), 'DD/MM/YYYY')                                  as Fecha_Dato,
+    Año_Mes_Fact&'_'&Text(Id_Material) as Key,
+    Date(Date#(Año_Mes_Fact, 'YYYY_MM'), 'DD/MM/YYYY')           as Fecha,
+    ApplyMap('MAP_PRECIO_MATERIAL', Text(Id_Material), Null())   as Precio_Med_Material,
+    ApplyMap('MAP_PRECIO_TIPO',
+             ApplyMap('MAP_TIPO_MATERIAL', Text(Id_Material), Null()),
+             Null())                                             as Precio_Med_Tipo,
+    'Facturacion' as Tabla
+Resident FACTURACION;
+
+
+
+
+DROP Table FACTURACION;
+
+
+Concatenate(HISTORICO_FACTURACION)
+
+LOAD
+    *
+FROM [lib://QlikRepository/2.DATOS_NIVEL_2/CLGI_PLANIFICACION/PERSEIDA/Historico_Facturacion.qvd]
+(qvd)
+WHERE Fecha_Dato<>TODAY();
+
+
+store HISTORICO_FACTURACION into Historico_Facturacion.qvd(qvd);
+
+
+
+
+NoConcatenate
+UltimoDiaSemana_Fact:
+
+Load
+	DATE(Max(Fecha_Dato)) as UltimoDiaSemana
+Resident HISTORICO_FACTURACION
+GROUP BY WeekStart(Fecha_Dato);
+
+
+NoConcatenate
+UltimoDiaMes_Fact:
+Load
+	DATE(Max(Fecha_Dato)) as UltimoDiaMes
+Resident HISTORICO_FACTURACION
+GROUP BY month(Fecha_Dato), Year(Fecha_Dato);
+
+
+LEFT JOIN (HISTORICO_FACTURACION)
+Load
+    UltimoDiaSemana as Fecha_Dato,
+    1 as EsUltimoDiaSemana
+Resident UltimoDiaSemana_Fact;
+
+LEFT JOIN (HISTORICO_FACTURACION)
+Load
+    UltimoDiaMes as Fecha_Dato,
+    1 as EsUltimoDiaMes
+Resident UltimoDiaMes_Fact;
+
+
+
+
+
+Concatenate (DATOS)
+LOAD
+    *,
+    If(Año_Mes_Fact = Year(Fecha_Dato) & '_' & Num(Month(Fecha_Dato),'00'), 1, 0) as EsMesEnCursoDato
+Resident HISTORICO_FACTURACION
+;
+
+
+
+
+drop Table UltimoDiaSemana_Fact;
+drop Table UltimoDiaMes_Fact;
+DROP Table HISTORICO_FACTURACION;
+DROP Table MDPB;
+DROP Table DATOS_TEMP;
+DROP TABLE Materiales;
