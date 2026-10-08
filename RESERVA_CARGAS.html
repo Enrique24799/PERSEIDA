@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PERSEIDA · Reserva de fechas de carga</title>
+<style>
+  :root {
+    --head-bg: #2f5f8f;
+    --border: #d7dee8;
+    --grid: #eef2f7;
+    --ink: #243140;
+    --muted: #5b6b7d;
+    --libre: #27ae60;
+    --mia: #2f80ed;
+    --bad: #d9534f;
+    --warn: #e0a800;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #eef2f7;
+    font-size: 13px;
+  }
+  .app { padding: 14px 16px 28px; max-width: 1280px; margin: 0 auto; }
+
+  .titlebar {
+    background: linear-gradient(180deg, #37618f, #2f5f8f);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .titlebar .who { margin-left: auto; font-size: 13px; font-weight: 400; display: flex; align-items: center; gap: 10px; }
+  .titlebar .who b { font-weight: 700; }
+  .titlebar .who button { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.4); color: #fff; padding: 4px 10px; }
+  .titlebar .who button:hover { background: rgba(255,255,255,.28); }
+
+  .demo {
+    background: #fff8e1; border: 1px solid #f0d58a; border-top: none;
+    padding: 8px 14px; font-size: 12px; color: #6b5300;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .demo b { color: #4d3c00; }
+  .demo button { margin-left: auto; font-size: 12px; padding: 4px 10px; }
+
+  .card {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    padding: 14px 16px;
+  }
+  .card:last-child { border-radius: 0 0 8px 8px; }
+  h2 { font-size: 15px; margin: 0 0 10px; color: #1f2d3d; }
+  h3 { font-size: 13px; margin: 0 0 8px; color: #41546a; text-transform: uppercase; letter-spacing: .4px; }
+  p { margin: 0 0 8px; line-height: 1.45; }
+  .muted { color: var(--muted); }
+
+  input[type="date"], input[type="text"], input[type="email"], input[type="password"], textarea, button {
+    font-family: inherit; font-size: 13px; padding: 6px 9px;
+    border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
+  }
+  textarea { resize: vertical; min-height: 54px; }
+  input:focus, textarea:focus, button:focus-visible { outline: 2px solid #9cc3f5; outline-offset: 1px; }
+  button { cursor: pointer; }
+  button:hover { background: #f4f8fd; }
+  button:disabled { opacity: .55; cursor: default; }
+  button.primary { background: #2f80ed; color: #fff; border-color: #2f80ed; font-weight: 600; padding: 7px 16px; }
+  button.primary:hover { background: #2b73d4; }
+  button.danger { color: var(--bad); border-color: #e9b4b2; }
+  button.danger:hover { background: #fdf3f2; }
+  button.small { font-size: 12px; padding: 3px 9px; }
+
+  /* ---------- Acceso ---------- */
+  .login { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 28px; padding: 22px 20px; }
+  .login form { display: flex; gap: 8px; margin: 12px 0 6px; }
+  .login form input { flex: 1; min-width: 0; font-size: 15px; letter-spacing: 1px; }
+  .login .err { color: var(--bad); min-height: 18px; font-weight: 600; }
+  .steps { margin: 0; padding-left: 18px; line-height: 1.6; color: #41546a; }
+  .demo-users { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .demo-users button { font-weight: 600; }
+
+  /* ---------- Barra de herramientas ---------- */
+  .toolbar {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+  }
+  .monthnav { display: flex; align-items: center; gap: 6px; }
+  .monthnav .lbl { font-size: 15px; font-weight: 700; min-width: 150px; text-align: center; color: #1f2d3d; }
+  .seg { display: inline-flex; border: 1px solid #b9c6d6; border-radius: 5px; overflow: hidden; }
+  .seg button { border: none; border-radius: 0; padding: 6px 12px; }
+  .seg button + button { border-left: 1px solid #b9c6d6; }
+  .seg button.sel { background: #eaf2fd; color: var(--head-bg); font-weight: 700; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font-size: 12px; color: #41546a; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid transparent; }
+  .sw.libre { background: #e8f7ee; border-color: #9fd8b5; }
+  .sw.mia { background: var(--mia); }
+  .sw.ocupada { background: #f1f3f6; border-color: #cfd6df; }
+
+  /* ---------- Contenido principal ---------- */
+  .main {
+    background: #fff; border: 1px solid var(--border); border-top: none;
+    display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .main.last { border-radius: 0 0 8px 8px; overflow: hidden; }
+  .view { padding: 12px 14px 16px; min-width: 0; }
+  aside { border-left: 1px solid var(--border); padding: 12px 14px 16px; background: #fbfcfe; }
+
+  /* Calendario */
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
+  .cal .dow {
+    background: #eef3f9; color: #41546a; font-size: 11px; text-transform: uppercase; letter-spacing: .3px;
+    padding: 6px 8px; border-right: 1px solid var(--border); border-bottom: 2px solid #c4d0de; font-weight: 600;
+  }
+  .cal .day {
+    min-height: 92px; padding: 4px 5px 6px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 3px; min-width: 0;
+  }
+  .cal .day .num { font-size: 12px; font-weight: 600; color: #41546a; align-self: flex-start; padding: 0 5px; border-radius: 9px; }
+  .cal .day.out { background: #f7f9fc; }
+  .cal .day.out .num { color: #b8c2ce; }
+  .cal .day.past { background: #f9fafb; }
+  .cal .day.past .num { color: #aab4c0; }
+  .cal .day.today .num { background: var(--head-bg); color: #fff; }
+
+  .chip {
+    display: block; width: 100%; text-align: left; font-family: inherit; font-size: 11px; font-weight: 600;
+    padding: 3px 6px; border-radius: 4px; border: 1px solid transparent; line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  button.chip { cursor: pointer; }
+  .chip.libre { background: #e8f7ee; border-color: #9fd8b5; color: #1e7e45; }
+  button.chip.libre:hover { background: var(--libre); border-color: var(--libre); color: #fff; }
+  .chip.mia { background: var(--mia); border-color: var(--mia); color: #fff; }
+  button.chip.mia:hover { background: #2b73d4; }
+  .chip.ocupada { background: #f1f3f6; border-color: #dde3ea; color: #8a96a5; font-weight: 400; }
+  .chip.cli { color: #fff; }
+  button.chip.cli:hover { filter: brightness(.9); }
+  .chip.past { opacity: .6; }
+
+  /* Lista */
+  .lday { display: grid; grid-template-columns: 170px minmax(0, 1fr); border-bottom: 1px solid var(--grid); padding: 8px 0; gap: 10px; }
+  .lday .ld { font-weight: 700; color: #1f2d3d; }
+  .lday .ld small { display: block; font-weight: 400; color: var(--muted); }
+  .lslot { display: flex; align-items: center; gap: 10px; padding: 3px 0; flex-wrap: wrap; }
+  .lslot .fr { min-width: 110px; font-weight: 600; }
+  .lslot .ob { color: var(--muted); flex: 1; min-width: 120px; }
+  .lslot button { margin-left: auto; }
+  .empty { padding: 30px 10px; text-align: center; color: var(--muted); }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge.libre { background: #e8f7ee; color: #1e7e45; }
+  .badge.mia { background: var(--mia); color: #fff; }
+  .badge.ocupada { background: #f1f3f6; color: #8a96a5; }
+  .badge.cli { color: #fff; }
+
+  /* Lateral */
+  .res { border: 1px solid var(--border); border-left: 4px solid var(--mia); border-radius: 5px; padding: 8px 10px; margin-bottom: 8px; background: #fff; }
+  .res .d { font-weight: 700; }
+  .res .m { color: var(--muted); font-size: 12px; margin: 2px 0 6px; }
+  .info { font-size: 12px; color: #41546a; border-top: 1px solid var(--border); margin-top: 14px; padding-top: 12px; }
+  .info ol { margin: 6px 0 0; padding-left: 18px; line-height: 1.55; }
+  .stats { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; margin-bottom: 4px; }
+  .stats .n { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* Planificación: alta de fechas */
+  .planform { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field > label, .field > span { font-size: 11px; color: var(--muted); }
+  .field.grow { flex: 1; min-width: 180px; }
+  .wd { display: flex; gap: 3px; }
+  .wd label {
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #b9c6d6; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 12px; user-select: none;
+  }
+  .wd input { position: absolute; opacity: 0; pointer-events: none; }
+  .wd label:focus-within { outline: 2px solid #9cc3f5; outline-offset: 1px; }
+  .wd label:has(input:checked) { background: var(--head-bg); border-color: var(--head-bg); color: #fff; }
+  .preview { font-size: 12px; color: var(--muted); width: 100%; }
+
+  /* Planificación: tabla */
+  .tablewrap { overflow: auto; max-height: 60vh; border: 1px solid var(--border); border-radius: 5px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; white-space: nowrap; }
+  thead th {
+    position: sticky; top: 0; z-index: 2; background: #eef3f9; color: #41546a;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .3px; text-align: left;
+    padding: 7px 9px; border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
+  }
+  tbody td { padding: 5px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid); }
+  tbody td.wrap { white-space: normal; min-width: 160px; }
+  tbody tr:hover td { background: #f4f9ff; }
+  tbody tr.past td { color: #98a3b0; }
+  .tablehead { display: flex; align-items: center; gap: 12px; margin: 16px 0 8px; flex-wrap: wrap; }
+  .tablehead h3 { margin: 0; }
+  .tablehead label { font-size: 12px; color: var(--muted); display: flex; gap: 5px; align-items: center; }
+
+  /* Diálogo */
+  dialog {
+    border: 1px solid var(--border); border-radius: 8px; padding: 0; width: min(460px, calc(100vw - 32px));
+    color: var(--ink); box-shadow: 0 12px 40px rgba(20, 40, 70, .25);
+  }
+  dialog::backdrop { background: rgba(25, 40, 60, .45); }
+  .dh { background: var(--head-bg); color: #fff; padding: 10px 16px; font-weight: 600; font-size: 14px; }
+  .db { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .db .sum { background: #f4f8fd; border: 1px solid #d6e4f5; border-radius: 6px; padding: 9px 11px; }
+  .db .sum b { display: block; font-size: 14px; }
+  .db label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  .db dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 12px; margin: 0; }
+  .db dt { color: var(--muted); }
+  .db dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .db .note { font-size: 12px; color: var(--muted); }
+  .da { padding: 10px 16px 14px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--grid); }
+
+  /* Avisos */
+  .toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; max-width: min(420px, calc(100vw - 32px)); }
+  .toast {
+    background: #1f2d3d; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 13px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.2); border-left: 4px solid var(--libre); line-height: 1.4;
+  }
+  .toast.err { border-left-color: var(--bad); }
+  .toast.warn { border-left-color: var(--warn); }
+  .toast.mail { border-left-color: var(--mia); }
+
+  .busy { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, #2f80ed, transparent); background-size: 50% 100%; animation: busy 1s linear infinite; z-index: 60; }
+  @keyframes busy { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+
+  @media (max-width: 900px) {
+    .main { grid-template-columns: minmax(0, 1fr); }
+    aside { border-left: none; border-top: 1px solid var(--border); }
+    .login { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .legend { margin-left: 0; }
+  }
+  @media (max-width: 600px) {
+    .app { padding: 10px 10px 20px; }
+    .lday { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .lslot { gap: 4px 10px; padding: 5px 0; }
+    .lslot .fr { min-width: 0; }
+    .lslot .ob { order: 5; flex-basis: 100%; font-size: 12px; }
+    .lslot .ob:empty { display: none; }
+    .cal .day { min-height: 70px; padding: 3px 2px; }
+    .cal .dow { padding: 5px 3px; font-size: 10px; }
+    .chip { font-size: 10px; padding: 2px 3px; }
+  }
+</style>
+</head>
+<body>
+<div class="busy" id="busy" hidden></div>
+<div class="app">
+
+  <header class="titlebar">
+    <span>PERSEIDA · Reserva de fechas de carga</span>
+    <span class="who" id="who" hidden></span>
+  </header>
+
+  <div class="demo" id="demoBar" hidden>
+    <span><b>MODO DEMOSTRACIÓN</b> — no hay servidor configurado: los datos se guardan solo en este navegador y no se envían
+      correos. Entra como un cliente, reserva, sal y entra como otro para comprobar el bloqueo.</span>
+    <button type="button" id="btnDemoReset">Reiniciar demo</button>
+  </div>
+
+  <!-- ===================== Acceso ===================== -->
+  <section class="card login" id="vLogin" hidden>
+    <div>
+      <h2>Acceso de clientes</h2>
+      <p class="muted">Introduce el código de acceso que te ha facilitado Perseida.</p>
+      <form id="fLogin" autocomplete="off">
+        <input type="password" id="iCode" placeholder="Código de acceso" aria-label="Código de acceso" required />
+        <button class="primary" type="submit">Entrar</button>
+      </form>
+      <div class="err" id="loginErr" role="alert"></div>
+      <div id="demoUsers" hidden>
+        <p class="muted">Demo: entra directamente como…</p>
+        <div class="demo-users">
+          <button type="button" data-demo="demo-fedefarma">FEDEFARMA</button>
+          <button type="button" data-demo="demo-bidafarma">BIDAFARMA</button>
+          <button type="button" data-demo="demo-unnefa">UNNEFA</button>
+          <button type="button" data-demo="demo-planificacion">Planificación Perseida</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Cómo funciona</h3>
+      <ol class="steps">
+        <li>La planificación de Perseida publica las fechas de carga disponibles.</li>
+        <li>Elige una fecha <b>libre</b> y confirma la reserva.</li>
+        <li>En cuanto reservas, la fecha deja de estar disponible para el resto de clientes.</li>
+        <li>Perseida recibe un aviso por correo con los datos de tu reserva.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===================== Aplicación ===================== -->
+  <div id="vMain" hidden>
+
+    <!-- Alta de fechas (solo planificación) -->
+    <section class="card" id="planPanel" hidden>
+      <h3>Añadir fechas de carga posibles</h3>
+      <form class="planform" id="fAlta">
+        <div class="field">
+          <label for="aDesde">Desde</label>
+          <input type="date" id="aDesde" required />
+        </div>
+        <div class="field">
+          <label for="aHasta">Hasta (opcional)</label>
+          <input type="date" id="aHasta" />
+        </div>
+        <div class="field">
+          <span>Días de la semana</span>
+          <div class="wd" id="aDias">
+            <label title="Lunes"><input type="checkbox" value="1" checked />L</label>
+            <label title="Martes"><input type="checkbox" value="2" checked />M</label>
+            <label title="Miércoles"><input type="checkbox" value="3" checked />X</label>
+            <label title="Jueves"><input type="checkbox" value="4" checked />J</label>
+            <label title="Viernes"><input type="checkbox" value="5" checked />V</label>
+            <label title="Sábado"><input type="checkbox" value="6" />S</label>
+            <label title="Domingo"><input type="checkbox" value="0" />D</label>
+          </div>
+        </div>
+        <div class="field grow">
+          <label for="aFranja">Franja(s) horaria(s) — opcional, separadas por comas</label>
+          <input type="text" id="aFranja" maxlength="120" placeholder="Ej.: 08:00–10:00, 12:00–14:00" />
+        </div>
+        <div class="field grow">
+          <label for="aObs">Observaciones (visibles para los clientes)</label>
+          <input type="text" id="aObs" maxlength="200" placeholder="Ej.: Muelle 2 · máx. 33 palets" />
+        </div>
+        <button class="primary" type="submit">＋ Añadir fechas</button>
+        <div class="preview" id="aPreview"></div>
+      </form>
+    </section>
+
+    <div class="toolbar">
+      <div class="monthnav">
+        <button type="button" id="btnPrev" aria-label="Mes anterior">‹</button>
+        <span class="lbl" id="mesLbl"></span>
+        <button type="button" id="btnNext" aria-label="Mes siguiente">›</button>
+        <button type="button" id="btnHoy">Hoy</button>
+      </div>
+      <div class="seg" role="group" aria-label="Vista">
+        <button type="button" data-vista="cal">Calendario</button>
+        <button type="button" data-vista="lista">Lista</button>
+      </div>
+      <button type="button" id="btnRefresh" title="Actualizar">⟳ Actualizar</button>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="main" id="mainBox">
+      <div class="view" id="view"></div>
+      <aside id="side"></aside>
+    </div>
+
+    <!-- Tabla completa (solo planificación) -->
+    <section class="card" id="planTable" hidden></section>
+  </div>
+</div>
+
+<dialog id="dlg"></dialog>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+/* =====================================================================
+   PERSEIDA · Reserva de fechas de carga (FEDEFARMA · BIDAFARMA · UNNEFA)
+
+   - La planificación publica fechas de carga posibles.
+   - Cada cliente entra con su código y reserva una fecha libre; desde ese
+     momento la fecha queda bloqueada para los demás clientes.
+   - Cada reserva/anulación envía un aviso por correo (lo hace el servidor).
+
+   Servidor: Google Sheets + Apps Script (carpeta reserva-cargas-apps-script/).
+   Sin API_URL la página funciona en MODO DEMO (datos solo en este navegador).
+   ===================================================================== */
+
+const CONFIG = {
+  API_URL: '',          // URL de la aplicación web de Apps Script (termina en /exec)
+  REFRESCO_SEG: 60,     // refresco automático de la disponibilidad
+};
+
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const DOW = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const PALETA = ['#2f80ed', '#e08a1e', '#8e44ad', '#16a085', '#c0392b', '#7f8c8d'];
+const LS_CODE = 'perseida_reservas_code';
+const LS_CONTACTO = 'perseida_reservas_contacto';
+
+const S = {
+  code: null, usuario: null, plan: false, reglas: {}, clientes: [], fechas: [],
+  mes: null, vista: 'cal', verPasadas: false, busy: 0,
+};
+
+/* ---------- Utilidades ---------- */
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const hoyISO = () => toISO(new Date());
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+function fechaLarga(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`; }
+function fechaMedia(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)}`; }
+function fechaCorta(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()].slice(0, 3)} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`; }
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } }
+function colorCliente(c) {
+  let i = S.clientes.indexOf(c);
+  if (i < 0) i = [...c].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  return PALETA[i % PALETA.length];
+}
+const demo = () => !CONFIG.API_URL;
+
+function toast(msg, tipo = 'ok', ms = 5000) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + tipo;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+/* ---------- Comunicación con el servidor ---------- */
+async function api(action, extra = {}) {
+  const req = { action, code: S.code, ...extra };
+  if (demo()) return demoApi(req);
+  let res;
+  try {
+    // text/plain evita la petición previa CORS que Apps Script no admite.
+    res = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(req),
+    });
+  } catch (e) {
+    throw new Error('No se pudo conectar con el servidor de reservas. Revisa tu conexión e inténtalo de nuevo.');
+  }
+  let data;
+  try { data = await res.json(); } catch (e) { throw new Error('Respuesta no válida del servidor de reservas.'); }
+  if (!data.ok) {
+    const err = new Error(data.error || 'Error desconocido.');
+    err.conflicto = !!data.conflicto;
+    throw err;
+  }
+  return data;
+}
+
+async function conCarga(fn) {
+  S.busy++;
+  $('#busy').hidden = false;
+  document.querySelectorAll('dialog button, #fAlta button, #fLogin button').forEach(b => b.disabled = true);
+  try { return await fn(); }
+  finally {
+    S.busy--;
+    if (!S.busy) {
+      $('#busy').hidden = true;
+      document.querySelectorAll('dialog button, #fAlta button, #fLogin button').forEach(b => b.disabled = false);
+    }
+  }
+}
+
+function aplicar(d) {
+  S.usuario = d.usuario;
+  S.plan = !!d.planificador;
+  S.reglas = d.reglas || {};
+  S.clientes = d.clientes || [];
+  S.fechas = d.fechas || [];
+  render();
+}
+
+/* Ejecuta una operación y muestra el resultado. Devuelve 'ok', 'conflicto'
+   (la fecha cambió mientras tanto: se refresca) o 'error'. */
+async function operar(action, extra) {
+  try {
+    const d = await conCarga(() => api(action, extra));
+    aplicar(d);
+    if (d.mensaje) toast(d.mensaje, 'ok');
+    if (d.correo) {
+      if (d.correo.enviado) toast(demo() ? '📧 (demo) Aquí se enviaría el aviso por correo a Perseida.' : '📧 Perseida ha recibido el aviso por correo.', 'mail');
+      else toast('La operación se ha guardado, pero no se pudo enviar el aviso por correo.', 'warn', 8000);
+    }
+    return 'ok';
+  } catch (e) {
+    toast(e.message, 'err', 8000);
+    if (e.conflicto) { refrescar(true); return 'conflicto'; }
+    return 'error';
+  }
+}
+
+async function refrescar(silencioso) {
+  if (!S.code) return;
+  try {
+    const d = silencioso ? await api('list') : await conCarga(() => api('list'));
+    aplicar(d);
+  } catch (e) {
+    if (/código de acceso/i.test(e.message)) return salir(e.message);
+    if (!silencioso) toast(e.message, 'err');
+  }
+}
+
+/* ---------- Acceso ---------- */
+async function entrar(code) {
+  S.code = code.trim();
+  $('#loginErr').textContent = '';
+  try {
+    const d = await conCarga(() => api('list'));
+    lsSet(LS_CODE, S.code);
+    S.mes = null;
+    aplicar(d);
+    $('#vLogin').hidden = true;
+    $('#vMain').hidden = false;
+  } catch (e) {
+    S.code = null;
+    lsSet(LS_CODE, null);
+    $('#loginErr').textContent = e.message;
+    mostrarLogin();
+  }
+}
+
+function salir(msg) {
+  S.code = S.usuario = null;
+  S.fechas = [];
+  lsSet(LS_CODE, null);
+  $('#iCode').value = '';
+  $('#loginErr').textContent = typeof msg === 'string' ? msg : '';
+  mostrarLogin();
+}
+
+function mostrarLogin() {
+  $('#vMain').hidden = true;
+  $('#who').hidden = true;
+  $('#vLogin').hidden = false;
+  $('#demoUsers').hidden = !demo();
+  $('#iCode').focus();
+}
+
+/* ---------- Render ---------- */
+function visibles() {
+  const hoy = hoyISO();
+  return S.fechas.filter(f => S.verPasadas || f.fecha >= hoy);
+}
+
+function render() {
+  if (!S.usuario) return;
+  const who = $('#who');
+  who.hidden = false;
+  who.innerHTML = `<span>${S.plan ? 'Planificación Perseida' : 'Cliente: <b>' + esc(S.usuario) + '</b>'}</span>` +
+    `<button type="button" id="btnSalir">Salir</button>`;
+
+  if (!S.mes) {
+    const prox = S.fechas.find(f => f.fecha >= hoyISO() && f.estado === 'libre') || S.fechas.find(f => f.fecha >= hoyISO());
+    const base = prox ? fromISO(prox.fecha) : new Date();
+    S.mes = new Date(base.getFullYear(), base.getMonth(), 1);
+  }
+  $('#mesLbl').textContent = cap(MESES[S.mes.getMonth()]) + ' ' + S.mes.getFullYear();
+  document.querySelectorAll('[data-vista]').forEach(b => b.classList.toggle('sel', b.dataset.vista === S.vista));
+  document.querySelectorAll('.monthnav button').forEach(b => b.disabled = S.vista !== 'cal');
+
+  $('#legend').innerHTML = S.plan
+    ? `<span><i class="sw libre"></i>Libre</span>` + S.clientes.map(c => `<span><i class="sw" style="background:${colorCliente(c)}"></i>${esc(c)}</span>`).join('')
+    : `<span><i class="sw libre"></i>Libre (pulsa para reservar)</span><span><i class="sw mia"></i>Tu reserva</span><span><i class="sw ocupada"></i>No disponible</span>`;
+
+  $('#view').innerHTML = S.vista === 'cal' ? htmlCalendario() : htmlLista();
+  $('#side').innerHTML = S.plan ? htmlResumen() : htmlMisReservas();
+  $('#planPanel').hidden = !S.plan;
+  $('#planTable').hidden = !S.plan;
+  $('#mainBox').classList.toggle('last', !S.plan);
+  if (S.plan) { $('#planTable').innerHTML = htmlTabla(); previewAlta(); }
+}
+
+function chip(f) {
+  const hoy = hoyISO();
+  const past = f.fecha < hoy ? ' past' : '';
+  const fr = f.franja ? esc(f.franja) : '';
+  const tip = esc([fechaLarga(f.fecha), f.franja, f.obs].filter(Boolean).join(' · '));
+  if (S.plan) {
+    if (f.estado === 'libre') return `<button type="button" class="chip libre${past}" data-act="detalle" data-id="${esc(f.id)}" title="${tip}">${fr || 'Libre'}</button>`;
+    return `<button type="button" class="chip cli${past}" style="background:${colorCliente(f.cliente)}" data-act="detalle" data-id="${esc(f.id)}" title="${tip}">${esc(f.cliente)}${fr ? ' · ' + fr : ''}</button>`;
+  }
+  if (f.estado === 'libre') return `<button type="button" class="chip libre" data-act="reservar" data-id="${esc(f.id)}" title="Reservar · ${tip}">＋ ${fr || 'Libre'}</button>`;
+  if (f.estado === 'mia') return `<button type="button" class="chip mia" data-act="detalle" data-id="${esc(f.id)}" title="Tu reserva · ${tip}">✓ ${fr || 'Tu reserva'}</button>`;
+  return `<span class="chip ocupada" title="No disponible · ${tip}">${fr ? fr + ' · ' : ''}No disponible</span>`;
+}
+
+function htmlCalendario() {
+  const y = S.mes.getFullYear(), m = S.mes.getMonth();
+  const offset = (new Date(y, m, 1).getDay() + 6) % 7;
+  const nDias = new Date(y, m + 1, 0).getDate();
+  const celdas = Math.ceil((offset + nDias) / 7) * 7;
+  const hoy = hoyISO();
+  const porDia = {};
+  visibles().forEach(f => (porDia[f.fecha] = porDia[f.fecha] || []).push(f));
+
+  let h = '<div class="cal">' + DOW.map(d => `<div class="dow">${d}</div>`).join('');
+  for (let i = 0; i < celdas; i++) {
+    const d = new Date(y, m, 1 - offset + i);
+    const iso = toISO(d);
+    const cls = ['day', d.getMonth() !== m && 'out', iso < hoy && 'past', iso === hoy && 'today'].filter(Boolean).join(' ');
+    h += `<div class="${cls}"><span class="num">${d.getDate()}</span>${(porDia[iso] || []).map(chip).join('')}</div>`;
+  }
+  h += '</div>';
+  const delMes = visibles().filter(f => f.fecha.startsWith(`${y}-${pad(m + 1)}`));
+  if (!delMes.length) {
+    const sig = visibles().find(f => f.fecha > `${y}-${pad(m + 1)}-31`);
+    h += `<p class="empty">No hay fechas de carga publicadas en este mes.` +
+      (sig ? ` <button type="button" class="small" data-act="ir" data-fecha="${esc(sig.fecha)}">Ir a la siguiente: ${esc(fechaMedia(sig.fecha))}</button>` : '') + '</p>';
+  }
+  return h;
+}
+
+function htmlLista() {
+  const lista = visibles();
+  if (!lista.length) return `<p class="empty">${S.plan ? 'No hay fechas publicadas. Añádelas con el formulario de arriba.' : 'Ahora mismo no hay fechas de carga publicadas.'}</p>`;
+  const grupos = [];
+  lista.forEach(f => {
+    const g = grupos[grupos.length - 1];
+    if (g && g.fecha === f.fecha) g.items.push(f); else grupos.push({ fecha: f.fecha, items: [f] });
+  });
+  return grupos.map(g => `
+    <div class="lday">
+      <div class="ld">${esc(cap(fechaMedia(g.fecha)))}<small>${esc(fechaCorta(g.fecha))}</small></div>
+      <div>${g.items.map(f => `
+        <div class="lslot">
+          <span class="fr">${esc(f.franja || 'Todo el día')}</span>
+          ${badge(f)}
+          <span class="ob">${esc(f.obs)}</span>
+          ${accionLista(f)}
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function badge(f) {
+  if (f.estado === 'libre') return '<span class="badge libre">Libre</span>';
+  if (S.plan) return `<span class="badge cli" style="background:${colorCliente(f.cliente)}">${esc(f.cliente)}</span>`;
+  if (f.estado === 'mia') return '<span class="badge mia">Tu reserva</span>';
+  return '<span class="badge ocupada">No disponible</span>';
+}
+
+function accionLista(f) {
+  const id = esc(f.id);
+  if (S.plan) return `<button type="button" class="small" data-act="detalle" data-id="${id}">Detalle</button>`;
+  if (f.estado === 'libre') return `<button type="button" class="small primary" data-act="reservar" data-id="${id}">Reservar</button>`;
+  if (f.estado === 'mia') return `<button type="button" class="small" data-act="detalle" data-id="${id}">Ver reserva</button>`;
+  return '';
+}
+
+function htmlMisReservas() {
+  const mias = S.fechas.filter(f => f.estado === 'mia');
+  const libres = S.fechas.filter(f => f.estado === 'libre').length;
+  const max = S.reglas.maxReservas || 0;
+  let h = `<h3>Tus reservas</h3>`;
+  h += mias.length ? mias.map(f => `
+    <div class="res">
+      <div class="d">${esc(cap(fechaLarga(f.fecha)))}</div>
+      <div class="m">${esc([f.franja, f.obs].filter(Boolean).join(' · ') || 'Sin franja horaria')}<br>Contacto: ${esc(f.contacto || '—')}</div>
+      <button type="button" class="small" data-act="detalle" data-id="${esc(f.id)}">Ver detalle</button>
+    </div>`).join('') : `<p class="muted">Aún no tienes ninguna reserva.</p>`;
+  h += `<p class="muted">${libres} fecha(s) libre(s) disponible(s).${max ? ` Puedes tener como máximo ${max} reserva(s) activa(s).` : ''}</p>`;
+  h += `<div class="info"><b>Cómo reservar</b><ol>
+      <li>Pulsa una fecha <b>libre</b> (verde).</li>
+      <li>Indica la persona de contacto y confirma.</li>
+      <li>La fecha queda bloqueada para el resto de clientes y Perseida recibe un aviso.</li>
+    </ol>${S.reglas.permitirAnular ? '<p style="margin-top:8px">Si necesitas cambiarla, anúlala desde «Ver detalle» y reserva otra.</p>' : '<p style="margin-top:8px">Para anular una reserva contacta con la planificación de Perseida.</p>'}</div>`;
+  return h;
+}
+
+function htmlResumen() {
+  const fut = S.fechas.filter(f => f.fecha >= hoyISO());
+  const libres = fut.filter(f => f.estado === 'libre').length;
+  const por = c => fut.filter(f => f.cliente === c).length;
+  return `<h3>Próximas fechas</h3>
+    <div class="stats">
+      <span><i class="sw libre"></i> Libres</span><span class="n">${libres}</span>
+      ${S.clientes.map(c => `<span><i class="sw" style="background:${colorCliente(c)}"></i> ${esc(c)}</span><span class="n">${por(c)}</span>`).join('')}
+      <span><b>Total</b></span><span class="n">${fut.length}</span>
+    </div>
+    <div class="info">
+      <p>Pulsa una fecha del calendario para ver el detalle, <b>liberarla</b> (si está reservada) o <b>eliminarla</b> (si está libre).</p>
+      <p>También puedes editar directamente la hoja de Google «Fechas»: una fila sin cliente es una fecha libre.</p>
+      ${demo() ? '' : '<p>Cada reserva o anulación envía un aviso por correo a Perseida.</p>'}
+    </div>`;
+}
+
+function htmlTabla() {
+  const lista = visibles();
+  const hoy = hoyISO();
+  return `<div class="tablehead" style="margin-top:0">
+      <h3>Todas las fechas (${lista.length})</h3>
+      <label><input type="checkbox" id="chkPasadas" ${S.verPasadas ? 'checked' : ''}/> Mostrar fechas pasadas</label>
+    </div>
+    ${lista.length ? `<div class="tablewrap"><table>
+      <thead><tr><th>Fecha</th><th>Franja</th><th>Observaciones</th><th>Estado</th><th>Contacto</th><th>Email</th><th>Comentario</th><th>Reservado el</th><th></th></tr></thead>
+      <tbody>${lista.map(f => `
+        <tr class="${f.fecha < hoy ? 'past' : ''}">
+          <td>${esc(fechaCorta(f.fecha))}</td>
+          <td>${esc(f.franja || '—')}</td>
+          <td class="wrap">${esc(f.obs)}</td>
+          <td>${badge(f)}</td>
+          <td>${esc(f.contacto)}</td>
+          <td>${f.email ? `<a href="mailto:${esc(f.email)}">${esc(f.email)}</a>` : ''}</td>
+          <td class="wrap">${esc(f.comentario)}</td>
+          <td>${esc(f.reservadoEl)}</td>
+          <td>${f.estado === 'libre'
+            ? `<button type="button" class="small danger" data-act="eliminar" data-id="${esc(f.id)}">Eliminar</button>`
+            : `<button type="button" class="small" data-act="liberar" data-id="${esc(f.id)}">Liberar</button>`}</td>
+        </tr>`).join('')}
+      </tbody></table></div>` : '<p class="empty">No hay fechas.</p>'}`;
+}
+
+/* ---------- Diálogos ---------- */
+const dlg = $('#dlg');
+
+function abrirDialogo(titulo, cuerpo, acciones) {
+  dlg.onclose = null;
+  dlg.innerHTML = `<form method="dialog" id="dForm"><div class="dh">${esc(titulo)}</div><div class="db">${cuerpo}</div><div class="da">${acciones}</div></form>`;
+  if (!dlg.open) dlg.showModal();
+}
+
+function resumenFecha(f) {
+  return `<div class="sum"><b>${esc(cap(fechaLarga(f.fecha)))}</b>${esc([f.franja, f.obs].filter(Boolean).join(' · ') || 'Sin franja horaria')}</div>`;
+}
+
+function confirmar(titulo, texto, boton, peligro) {
+  return new Promise(resolve => {
+    abrirDialogo(titulo, `<p>${texto}</p>`,
+      `<button type="button" data-close>Cancelar</button><button type="submit" class="${peligro ? 'danger' : 'primary'}">${esc(boton)}</button>`);
+    $('#dForm').onsubmit = e => { e.preventDefault(); resolve(true); dlg.close(); };
+    dlg.onclose = () => resolve(false);
+  });
+}
+
+function dialogoReserva(f) {
+  let prev = {};
+  try { prev = JSON.parse(lsGet(LS_CONTACTO + '_' + S.usuario) || '{}'); } catch (e) { /* nada */ }
+  abrirDialogo('Reservar fecha de carga', `
+      ${resumenFecha(f)}
+      <label>Persona de contacto *<input type="text" name="contacto" maxlength="80" required value="${esc(prev.contacto)}" /></label>
+      <label>Email de contacto${S.reglas.copiaCliente ? ' (recibirás copia del aviso)' : ''}<input type="email" name="email" maxlength="120" value="${esc(prev.email)}" /></label>
+      <label>Comentario (nº de palets, matrícula, observaciones…)<textarea name="comentario" maxlength="500"></textarea></label>
+      <p class="note">Al confirmar, la fecha queda reservada para <b>${esc(S.usuario)}</b> y deja de estar disponible para el resto de clientes.</p>`,
+    `<button type="button" data-close>Cancelar</button><button type="submit" class="primary">Confirmar reserva</button>`);
+  const form = $('#dForm');
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const datos = { contacto: form.contacto.value.trim(), email: form.email.value.trim(), comentario: form.comentario.value.trim() };
+    lsSet(LS_CONTACTO + '_' + S.usuario, JSON.stringify({ contacto: datos.contacto, email: datos.email }));
+    // Si falla una validación el diálogo sigue abierto para corregir los datos.
+    if (await operar('reserve', { id: f.id, ...datos }) !== 'error') dlg.close();
+  };
+  form.contacto.focus();
+}
+
+function dialogoDetalle(f) {
+  const hoy = hoyISO();
+  const filas = [
+    ['Estado', S.plan ? (f.estado === 'libre' ? 'Libre' : 'Reservada por ' + f.cliente) : 'Reservada por ti'],
+    ['Persona de contacto', f.contacto], ['Email', f.email], ['Comentario', f.comentario], ['Reservado el', f.reservadoEl],
+  ].filter(([, v]) => v);
+  let acciones = `<button type="button" data-close>Cerrar</button>`;
+  if (S.plan) {
+    acciones += f.estado === 'libre'
+      ? `<button type="button" class="danger" data-act="eliminar" data-id="${esc(f.id)}">Eliminar fecha</button>`
+      : `<button type="button" class="danger" data-act="liberar" data-id="${esc(f.id)}">Liberar fecha</button>`;
+  } else if (S.reglas.permitirAnular && f.fecha >= hoy) {
+    acciones += `<button type="button" class="danger" data-act="anular" data-id="${esc(f.id)}">Anular reserva</button>`;
+  }
+  abrirDialogo(S.plan ? 'Detalle de la fecha' : 'Tu reserva', `${resumenFecha(f)}
+    <dl>${filas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`, acciones);
+}
+
+/* ---------- Alta de fechas (planificación) ---------- */
+function fechasAlta() {
+  const desde = $('#aDesde').value, hasta = $('#aHasta').value || desde;
+  if (!desde || hasta < desde) return [];
+  const dias = new Set([...document.querySelectorAll('#aDias input:checked')].map(i => Number(i.value)));
+  const franjas = $('#aFranja').value.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  const obs = $('#aObs').value.trim();
+  const out = [];
+  const unSoloDia = desde === hasta;
+  for (let d = fromISO(desde), n = 0; toISO(d) <= hasta && n < 400; d.setDate(d.getDate() + 1), n++) {
+    if (!unSoloDia && !dias.has(d.getDay())) continue;
+    (franjas.length ? franjas : ['']).forEach(franja => out.push({ fecha: toISO(d), franja, obs }));
+  }
+  return out;
+}
+
+function previewAlta() {
+  const desde = $('#aDesde').value, hasta = $('#aHasta').value;
+  const n = fechasAlta().length;
+  let t = '';
+  if (!desde) t = 'Indica al menos la fecha «Desde». Si no pones «Hasta», se añade solo ese día.';
+  else if (hasta && hasta < desde) t = '«Hasta» no puede ser anterior a «Desde».';
+  else if (desde < hoyISO()) t = 'No se pueden añadir fechas pasadas.';
+  else t = `Se añadirán ${n} fecha(s) de carga.` + (hasta && hasta !== desde ? ' (Solo los días de la semana marcados.)' : '');
+  $('#aPreview').textContent = t;
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click', async e => {
+  if (e.target.closest('[data-close]')) { dlg.close(); return; }
+  if (e.target.closest('#btnSalir')) { salir(); return; }
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const f = S.fechas.find(x => x.id === b.dataset.id);
+  switch (b.dataset.act) {
+    case 'reservar': if (f) dialogoReserva(f); break;
+    case 'detalle': if (f) dialogoDetalle(f); break;
+    case 'ir': S.mes = new Date(fromISO(b.dataset.fecha).getFullYear(), fromISO(b.dataset.fecha).getMonth(), 1); render(); break;
+    case 'anular':
+      if (f && await confirmar('Anular reserva', `¿Seguro que quieres anular tu reserva del <b>${esc(fechaLarga(f.fecha))}</b>${f.franja ? ' (' + esc(f.franja) + ')' : ''}? La fecha quedará libre para otros clientes.`, 'Anular reserva', true)) {
+        await operar('cancel', { id: f.id });
+      }
+      break;
+    case 'liberar':
+      if (f && await confirmar('Liberar fecha', `La fecha <b>${esc(fechaLarga(f.fecha))}</b>${f.franja ? ' (' + esc(f.franja) + ')' : ''} está reservada por <b>${esc(f.cliente)}</b>. ¿Liberarla? Se enviará aviso por correo.`, 'Liberar', true)) {
+        await operar('cancel', { id: f.id });
+      }
+      break;
+    case 'eliminar':
+      if (f && await confirmar('Eliminar fecha', `¿Eliminar la fecha <b>${esc(fechaLarga(f.fecha))}</b>${f.franja ? ' (' + esc(f.franja) + ')' : ''}?`, 'Eliminar', true)) {
+        await operar('deleteSlot', { id: f.id });
+      }
+      break;
+  }
+});
+
+$('#fLogin').addEventListener('submit', e => { e.preventDefault(); const c = $('#iCode').value.trim(); if (c) entrar(c); });
+document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => entrar(b.dataset.demo)));
+$('#btnPrev').onclick = () => { S.mes = new Date(S.mes.getFullYear(), S.mes.getMonth() - 1, 1); render(); };
+$('#btnNext').onclick = () => { S.mes = new Date(S.mes.getFullYear(), S.mes.getMonth() + 1, 1); render(); };
+$('#btnHoy').onclick = () => { const d = new Date(); S.mes = new Date(d.getFullYear(), d.getMonth(), 1); render(); };
+$('#btnRefresh').onclick = () => refrescar(false);
+document.querySelectorAll('[data-vista]').forEach(b => b.onclick = () => { S.vista = b.dataset.vista; render(); });
+document.addEventListener('change', e => { if (e.target.id === 'chkPasadas') { S.verPasadas = e.target.checked; render(); } });
+['#aDesde', '#aHasta', '#aFranja', '#aObs'].forEach(s => $(s).addEventListener('input', previewAlta));
+$('#aDias').addEventListener('change', previewAlta);
+$('#fAlta').addEventListener('submit', async e => {
+  e.preventDefault();
+  const lista = fechasAlta();
+  if (!lista.length) { toast('No hay fechas que añadir con esos criterios.', 'warn'); return; }
+  if (await operar('addSlots', { fechas: lista }) === 'ok') { $('#aDesde').value = ''; $('#aHasta').value = ''; previewAlta(); }
+});
+$('#btnDemoReset').onclick = () => { lsSet(DEMO_KEY, null); demoMemoria = null; toast('Demo reiniciada.'); if (S.code) refrescar(false); };
+
+setInterval(() => { if (S.code && !document.hidden && !S.busy && !dlg.open) refrescar(true); }, CONFIG.REFRESCO_SEG * 1000);
+window.addEventListener('focus', () => { if (S.code && !S.busy && !dlg.open) refrescar(true); });
+
+/* =====================================================================
+   MODO DEMO — simula el servidor (mismas reglas que Code.gs) guardando
+   los datos en este navegador. Solo se usa si CONFIG.API_URL está vacío.
+   ===================================================================== */
+const DEMO_KEY = 'perseida_reservas_demo_v1';
+const DEMO_USERS = { 'demo-fedefarma': 'FEDEFARMA', 'demo-bidafarma': 'BIDAFARMA', 'demo-unnefa': 'UNNEFA', 'demo-planificacion': 'PLANIFICACION' };
+const DEMO_REGLAS = { permitirAnular: true, maxReservas: 0, copiaCliente: true };
+let demoMemoria = null;
+
+function demoCargar() {
+  try { const s = lsGet(DEMO_KEY); if (s) return JSON.parse(s); } catch (e) { /* datos corruptos → se regeneran */ }
+  if (demoMemoria) return demoMemoria;
+  // Fechas de ejemplo: lunes, miércoles y viernes de las próximas 6 semanas.
+  const fechas = [];
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  for (let i = 0; i < 42; i++, d.setDate(d.getDate() + 1)) {
+    if (![1, 3, 5].includes(d.getDay())) continue;
+    fechas.push({ id: 'd' + fechas.length, fecha: toISO(d), franja: '07:00–09:00', obs: 'Muelle 1', cliente: '' });
+    if (d.getDay() === 3) fechas.push({ id: 'd' + fechas.length, fecha: toISO(d), franja: '12:00–14:00', obs: 'Muelle 2', cliente: '' });
+  }
+  [[2, 'BIDAFARMA', 'Laura Martín'], [5, 'UNNEFA', 'Pedro Ruiz'], [9, 'BIDAFARMA', 'Laura Martín']].forEach(([i, c, p]) => {
+    if (fechas[i]) Object.assign(fechas[i], { cliente: c, contacto: p, email: '', comentario: '', reservadoEl: fechaCorta(hoyISO()) });
+  });
+  return { fechas, seq: fechas.length };
+}
+
+function demoGuardar(db) { demoMemoria = db; lsSet(DEMO_KEY, JSON.stringify(db)); }
+
+function demoError(msg, conflicto) { const e = new Error(msg); e.conflicto = !!conflicto; return e; }
+
+async function demoApi(req) {
+  await new Promise(r => setTimeout(r, 250));
+  const usuario = DEMO_USERS[req.code];
+  if (!usuario) throw demoError('Código de acceso no válido. En modo demo usa los botones de acceso directo.');
+  const esPlan = usuario === 'PLANIFICACION';
+  const db = demoCargar();
+  const hoy = hoyISO();
+  const f = db.fechas.find(x => x.id === req.id);
+  let mensaje = '', correo = null;
+
+  switch (req.action) {
+    case 'list': break;
+    case 'reserve':
+      if (esPlan) throw demoError('La planificación no reserva desde aquí.');
+      if (!f) throw demoError('Esta fecha ya no está disponible.', true);
+      if (f.cliente === usuario) throw demoError('Ya tienes reservada esta fecha.', true);
+      if (f.cliente) throw demoError('Lo sentimos: otro cliente acaba de reservar esta fecha. Elige otra, por favor.', true);
+      if (String(req.contacto || '').trim().length < 2) throw demoError('Indica la persona de contacto.');
+      if (req.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.email)) throw demoError('El email de contacto no es válido.');
+      Object.assign(f, { cliente: usuario, contacto: req.contacto, email: req.email, comentario: req.comentario,
+        reservadoEl: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) });
+      mensaje = `Reserva confirmada: ${fechaLarga(f.fecha)}${f.franja ? ' · ' + f.franja : ''}.`;
+      correo = { enviado: true };
+      break;
+    case 'cancel':
+      if (!f || !f.cliente) throw demoError('Esta fecha ya no está reservada.', true);
+      if (!esPlan && f.cliente !== usuario) throw demoError('Solo puedes anular tus propias reservas.');
+      mensaje = esPlan ? `Fecha liberada (estaba reservada por ${f.cliente}).` : 'Reserva anulada. La fecha vuelve a estar libre.';
+      Object.assign(f, { cliente: '', contacto: '', email: '', comentario: '', reservadoEl: '' });
+      correo = { enviado: true };
+      break;
+    case 'addSlots': {
+      if (!esPlan) throw demoError('Solo la planificación puede añadir fechas.');
+      const existentes = new Set(db.fechas.map(x => x.fecha + '|' + x.franja.toLowerCase()));
+      let n = 0, rep = 0;
+      (req.fechas || []).forEach(x => {
+        if (x.fecha < hoy) return;
+        const k = x.fecha + '|' + x.franja.toLowerCase();
+        if (existentes.has(k)) { rep++; return; }
+        existentes.add(k);
+        db.fechas.push({ id: 'd' + db.seq++, fecha: x.fecha, franja: x.franja, obs: x.obs, cliente: '' });
+        n++;
+      });
+      mensaje = `${n} fecha(s) añadida(s)` + (rep ? `; ${rep} ya existían y se han omitido.` : '.');
+      break;
+    }
+    case 'deleteSlot':
+      if (!esPlan) throw demoError('Solo la planificación puede eliminar fechas.');
+      if (!f) throw demoError('La fecha ya no existe.', true);
+      if (f.cliente) throw demoError(`La fecha está reservada por ${f.cliente}. Libérala antes de eliminarla.`);
+      db.fechas = db.fechas.filter(x => x !== f);
+      mensaje = 'Fecha eliminada.';
+      break;
+    default: throw demoError('Acción no válida.');
+  }
+  demoGuardar(db);
+
+  const fechas = db.fechas
+    .filter(x => esPlan || x.fecha >= hoy)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.franja.localeCompare(b.franja))
+    .map(x => {
+      const mia = x.cliente === usuario;
+      const v = { id: x.id, fecha: x.fecha, franja: x.franja, obs: x.obs, estado: !x.cliente ? 'libre' : (mia ? 'mia' : 'ocupada') };
+      if (esPlan || mia) Object.assign(v, { cliente: x.cliente, contacto: x.contacto, email: x.email, comentario: x.comentario, reservadoEl: x.reservadoEl });
+      return v;
+    });
+  return { ok: true, usuario, planificador: esPlan, clientes: esPlan ? ['FEDEFARMA', 'BIDAFARMA', 'UNNEFA'] : [], reglas: DEMO_REGLAS, mensaje, correo, fechas };
+}
+
+/* ---------- Arranque ---------- */
+(function iniciar() {
+  $('#demoBar').hidden = !demo();
+  $('#aDesde').min = $('#aHasta').min = hoyISO();
+  if (window.matchMedia('(max-width: 600px)').matches) S.vista = 'lista';
+  // Enlace personalizado: …/RESERVA_CARGAS.html?c=CODIGO (se quita de la barra de direcciones).
+  const params = new URLSearchParams(location.search);
+  const enlace = params.get('c');
+  if (enlace) {
+    params.delete('c');
+    try { history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '') + location.hash); } catch (e) { /* nada */ }
+  }
+  const code = enlace || lsGet(LS_CODE);
+  if (code) entrar(code); else mostrarLogin();
+})();
+</script>
+</body>
+</html>
