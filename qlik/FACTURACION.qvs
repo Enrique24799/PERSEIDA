@@ -1,4 +1,5 @@
 SET vClientesExcluir = '0000267528','0000267525','0000267613','0000270091';
+SET vMesesClienteDefecto = 6;      // meses de ventas para elegir el cliente por defecto de la previsión
 
 LIB CONNECT TO 'GPP-Perseida (<usuario_conexion>)';
 
@@ -174,6 +175,46 @@ Where (Status_Global = 'A' or Status_Global = 'B')
     Importe_Unidad, Cantidad_Pedido, Fecha_Entrega_Pedido, Valor_Pedido
 ;
 //=============================================================
+// 2.bis) CLIENTE POR DEFECTO DE CADA MATERIAL (para la previsión)
+//    Base: expedido en los últimos N meses (vMesesClienteDefecto) + cartera actual
+//          (Pendiente, incluido el atrasado). Clientes excluidos ya
+//          no están en FACTURACION.
+//    Criterio: el cliente con más cantidad del material
+//              (empate -> más importe -> Id_Cliente)
+//    Material con previsión y sin ventas/cartera -> 'Sin cliente'
+//    PROVISIONAL: cuando esté la tabla de registros info de venta
+//    (cliente-material) tendrá prioridad sobre este cálculo.
+//=============================================================
+CLIENTE_MAT_TMP:
+NoConcatenate
+LOAD
+    Id_Material,
+    Id_Cliente,
+    Sum(Cantidad_Facturacion)                                as Cantidad_Cliente,
+    Sum(Importe_Facturacion)                                 as Importe_Cliente
+Resident FACTURACION
+Where Len(Trim(Id_Cliente)) > 0
+  and Cantidad_Facturacion > 0
+  and (   Tipo_Linea = 'Pendiente'
+       or (Tipo_Linea = 'Expedido'
+           and Fecha_Salida >= AddMonths(Today(), -$(vMesesClienteDefecto))))
+Group by Id_Material, Id_Cliente;
+// orden de cada cliente dentro del material (1 = cliente por defecto)
+CLIENTE_ORDEN_TMP:
+NoConcatenate
+LOAD
+    Id_Material,
+    Id_Cliente,
+    If(Id_Material = Previous(Id_Material),
+       Peek('Orden_Cliente') + 1, 1)                         as Orden_Cliente
+Resident CLIENTE_MAT_TMP
+Order By Id_Material, Cantidad_Cliente desc, Importe_Cliente desc, Id_Cliente;
+MAP_CLIENTE_DEFECTO:
+Mapping LOAD Text(Id_Material), Id_Cliente
+Resident CLIENTE_ORDEN_TMP
+Where Orden_Cliente = 1;
+DROP Tables CLIENTE_MAT_TMP, CLIENTE_ORDEN_TMP;
+//=============================================================
 // 3) PRECIOS PARA PREVISIÓN (medianas últimos 2 meses)
 //    Fallback por GRUPO DE ARTÍCULO (Tipo_Material)
 //=============================================================
@@ -246,15 +287,21 @@ DROP Table COMPENSA_TMP;*/
 //=============================================================
 // 5) FACTURACION: PREVISIÓN NETA
 //    Precio: mediana material -> mediana grupo artículo -> 0
+//    Cliente: cliente por defecto del material (2.bis) -> 'Sin cliente'
 //=============================================================
 Concatenate (FACTURACION)
 LOAD
     *,
-    Cantidad_Facturacion * Importe_Unidad as Importe_Facturacion;
+    Cantidad_Facturacion * Importe_Unidad as Importe_Facturacion,
+    If(Id_Cliente = 'Sin cliente',
+        'Sin ventas ni cartera',
+        'Ventas + cartera')                                      as Origen_Cliente;
 LOAD
     Id_Material,
     Año_Mes_Fact,
     'Previsión'                                                  as Tipo_Linea,
+    ApplyMap('MAP_CLIENTE_DEFECTO', Text(Id_Material),
+             'Sin cliente')                                      as Id_Cliente,
     Alt(ApplyMap('MAP_PRECIO_MATERIAL', Text(Id_Material), Null()),
         ApplyMap('MAP_PRECIO_TIPO',
                  ApplyMap('MAP_TIPO_MATERIAL', Text(Id_Material), Null()), Null()),

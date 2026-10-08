@@ -64,3 +64,25 @@ totales de volumen/peso se muestran una sola vez por camión.
 
 Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
 si procede, `runAlgo()` por la llamada al algoritmo real.
+
+## `qlik/FACTURACION.qvs` — Script Qlik de facturación
+
+Pestaña de facturación de PERSEIDA: genera las líneas `Expedido`, `Pendiente` y `Previsión`, las
+guarda en `Historico_Facturacion.qvd` y las añade a `DATOS`.
+
+### Cliente por defecto de la previsión (provisional)
+
+La previsión (MDPB) viene por material, así que se le asigna un **cliente por defecto**
+(bloque `2.bis`):
+
+- Base: lo expedido en los últimos `vMesesClienteDefecto` meses (6, por `Fecha_Salida`) más la
+  cartera actual (líneas `Pendiente`, incluidas las atrasadas). Los clientes de `vClientesExcluir`
+  no cuentan.
+- Se elige el cliente con **más cantidad** del material (si empatan: más importe y, después,
+  `Id_Cliente`).
+- Un material con previsión pero sin ventas ni cartera queda con `Id_Cliente = 'Sin cliente'`.
+- En las líneas de previsión, `Origen_Cliente` indica de dónde sale el cliente
+  (`Ventas + cartera` / `Sin ventas ni cartera`).
+
+Cuando esté disponible la tabla de registros info de venta (cliente-material), tendrá prioridad
+sobre este cálculo.
