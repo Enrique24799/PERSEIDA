@@ -72,6 +72,10 @@ resident MARA
 where SOURSYSTEM='20' AND CLC_PLANT='12'
 ;
 
+// la agrupación ya está en Materiales; se quita de MARA (no se borra y solo
+// enlaza por Estrategia) para que no quede suelta en el modelo
+DROP FIELDS CLC_AGRCL, CLC_AGRCL_TEXT FROM MARA;
+
 
 Directory 'lib://QlikRepository\2.DATOS_NIVEL_2\CLGI_PLANIFICACION\PERSEIDA';
 

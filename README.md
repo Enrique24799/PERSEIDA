@@ -86,3 +86,23 @@ La previsión (MDPB) viene por material, así que se le asigna un **cliente por 
 
 Cuando esté disponible la tabla de registros info de venta (cliente-material), tendrá prioridad
 sobre este cálculo.
+
+## `qlik/MAESTRO_MATERIALES.qvs` — Maestro de materiales
+
+Construye `Materiales` (un registro por material del centro 12) y `MAESTRO_PERSEIDA`, la foto
+mensual del maestro (mes actual guardado en `MAESTRO_PERSEIDA.qvd` junto con los meses pasados, más
+18 meses futuros sin guardar). `MAESTRO_PERSEIDA` enlaza con las líneas de facturación de `DATOS`
+por `Key` (`YYYY_MM_IdMaterial`).
+
+### Agrupación de clientes
+
+`CLC_AGRCL` / `CLC_AGRCL_TEXT` de `CL_MARA` indican a qué cliente pertenece cada material. Se
+exponen en `Materiales` como `Id_Agrupacion_Cliente` y `Nombre_Agrupacion_Cliente`, y llegan a las
+líneas de facturación (expedido, pendiente y previsión) a través de `Key`.
+
+- **No** añadir campos con esos mismos nombres a `FACTURACION` / `DATOS`: Qlik crearía una clave
+  sintética con `MAESTRO_PERSEIDA` y las líneas de meses pasados perderían los atributos del maestro.
+  Si hace falta en la propia línea, usar otro nombre (p. ej. `Id_Agrupacion_Cliente_Fact`).
+- Los meses anteriores a 2026_10 ya guardados en el QVD no tienen agrupación; tampoco los meses más
+  allá del horizonte (`vHorizonte` = 18) ni los materiales que no están en el centro 12.
+- Supone un único valor por material en `CL_MARA`; si hubiera varios, `Materiales` duplicaría filas.
