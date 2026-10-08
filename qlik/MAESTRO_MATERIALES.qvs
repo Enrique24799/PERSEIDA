@@ -16,7 +16,9 @@ load
     CLC_MATLG,
     CLC_MATLG_TEXT,
     MATL_TYPE,
-    MATL_TYPE_TEXT
+    MATL_TYPE_TEXT,
+    CLC_AGRCL,                  // agrupación de clientes (id)
+    CLC_AGRCL_TEXT              // agrupación de clientes (nombre)
 FROM [lib://QlikRepository/1.DATOS_NIVEL_1/RAW_DATA/1.ORIGEN_1/1.QVD/CL_MARA.qvd]
 (qvd);
 
@@ -63,7 +65,9 @@ MATL_TYPE_TEXT as Texto_Clasificacion,
    IF(MATL_TYPE = 1206, 'PT',
    IF(MATL_TYPE = 1202 OR MATL_TYPE = 1211, 'Packaging',
    IF(MATL_TYPE = 1208 OR MATL_TYPE = 1209, 'Otros', ''))))) as Clasificacion_2,
-Estrategia
+Estrategia,
+CLC_AGRCL as Id_Agrupacion_Cliente,
+CLC_AGRCL_TEXT as Nombre_Agrupacion_Cliente
 resident MARA
 where SOURSYSTEM='20' AND CLC_PLANT='12'
 ;
