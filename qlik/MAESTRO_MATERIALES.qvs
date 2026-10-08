@@ -1,0 +1,111 @@
+MARC:
+Load
+	SOURSYSTEM,
+    CLC_MATER,
+    CLC_PLANT,
+    RSPL_FCSTR
+FROM [lib://QlikRepository/1.DATOS_NIVEL_1/RAW_DATA/1.ORIGEN_1/1.QVD/CL_MARC.qvd]
+(qvd);
+
+
+MARA2:
+load
+    SOURSYSTEM,
+    CLC_MATER,
+    CLC_MATER_TEXT,
+    CLC_MATLG,
+    CLC_MATLG_TEXT,
+    MATL_TYPE,
+    MATL_TYPE_TEXT
+FROM [lib://QlikRepository/1.DATOS_NIVEL_1/RAW_DATA/1.ORIGEN_1/1.QVD/CL_MARA.qvd]
+(qvd);
+
+NoConcatenate
+MARA:
+Load
+*
+Resident MARA2
+WHERE SOURSYSTEM='20';
+
+LEFT JOIN (MARA)
+Load
+	CLC_MATER,
+    CLC_PLANT
+Resident MARC
+where SOURSYSTEM='20';
+
+
+left Join(MARA)
+
+Load
+	CLC_MATER,
+    Estrategia
+Resident Materiales_2;
+
+
+
+drop table Materiales_2;
+DROP Table MARA2;
+
+Materiales:
+Load distinct
+SOURSYSTEM as Mandante_1,
+CLC_PLANT as  Centro,
+Text(CLC_MATER) as Id_Material,
+CLC_MATER_TEXT as Nombre_Material,
+CLC_MATLG_TEXT as Nombre_Tipo_Material,
+CLC_MATLG as Tipo_Material,
+CLC_MATLG_TEXT as Texto_Tipo,
+MATL_TYPE as Clasificacion,
+MATL_TYPE_TEXT as Texto_Clasificacion,
+   IF(MATL_TYPE = 1201 OR MATL_TYPE = 1203, 'MMPP',
+   IF(MATL_TYPE = 1205 OR MATL_TYPE = 1215, 'ST',
+   IF(MATL_TYPE = 1206, 'PT',
+   IF(MATL_TYPE = 1202 OR MATL_TYPE = 1211, 'Packaging',
+   IF(MATL_TYPE = 1208 OR MATL_TYPE = 1209, 'Otros', ''))))) as Clasificacion_2,
+Estrategia
+resident MARA
+where SOURSYSTEM='20' AND CLC_PLANT='12'
+;
+
+
+Directory 'lib://QlikRepository\2.DATOS_NIVEL_2\CLGI_PLANIFICACION\PERSEIDA';
+
+NoConcatenate
+MAESTRO_PERSEIDA:
+Load
+	YEAR(Today())&'_'&Num(Month(Today()),'00') as Año_Mes,
+	YEAR(Today())&'_'&Num(Month(Today()),'00')&'_'&Text(Id_Material) as Key,
+    *
+Resident Materiales;
+
+Concatenate(MAESTRO_PERSEIDA)
+
+LOAD
+	*
+FROM [lib://QlikRepository/2.DATOS_NIVEL_2/CLGI_PLANIFICACION/PERSEIDA/MAESTRO_PERSEIDA.qvd]
+(qvd)
+where Año_Mes<>YEAR(Today())&'_'&Num(Month(Today()),'00');
+
+
+
+store MAESTRO_PERSEIDA into MAESTRO_PERSEIDA.qvd(qvd);
+
+SET vHorizonte = 18;   // nº de meses futuros a cubrir
+FOR i = 1 to $(vHorizonte)
+    Concatenate (MAESTRO_PERSEIDA)
+    LOAD
+        Year(AddMonths(Today(), $(i))) & '_' & Num(Month(AddMonths(Today(), $(i))),'00')                            as Año_Mes,
+        Year(AddMonths(Today(), $(i))) & '_' & Num(Month(AddMonths(Today(), $(i))),'00') & '_' & Text(Id_Material)  as Key,
+        *
+    Resident Materiales;
+NEXT i
+
+
+drop field Año_Mes from MAESTRO_PERSEIDA;
+drop Field Id_Material from MAESTRO_PERSEIDA;
+
+
+
+
+Drop Table MARC;
