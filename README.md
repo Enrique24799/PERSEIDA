@@ -166,8 +166,34 @@ material.
 
 Cada pestaña cierra con una fila de totales y cada material recuerda la pestaña abierta.
 
+### Generar camión de traslado
+
+1. Cada **posición de solped** del nivel 2 tiene un check; se pueden marcar varias, también de
+   materiales distintos (*Desplegar todo* ayuda). La cabecera de cada tabla marca todas las de ese
+   material y la fila del nivel 1 indica cuántas lleva marcadas. Las posiciones sin palets pendientes
+   salen deshabilitadas.
+2. Con algo marcado aparece una barra con el nº de posiciones, palets, unidades y destino, y el botón
+   **Generar camión de traslado**.
+3. La ventana previa pide la **fecha del camión** (por defecto, hoy) y muestra el desglose por
+   material y posición: `Material`, `Nombre`, `Solicitud`, `Pos.`, `Pdte. (pal)`,
+   **`Palets en camión`** (editable), `UD / palet` y `Unidades`. Al cambiar los palets se recalculan
+   las unidades (palets × UD por palet), la diferencia con lo pendiente (+/−) y los totales; una línea
+   a 0 no se carga. Una barra indica la ocupación frente a **33 palets** por camión y avisa si se pasa.
+4. Si lo marcado va a **varios destinos**, la ventana lo avisa y genera **un camión por destino**.
+5. Al confirmar, cada posición suma los palets cargados, pasa a *Convertida* si queda cubierta o a
+   *Parcial* si no, y apunta el camión en la columna `Camión` (en verde los generados en la sesión).
+   Un aviso resume cada camión: número, fecha, destino, palets y unidades.
+
+El nivel 2 de *Necesidades de traslado* suma para esto las columnas `Pdte. (pal)` (palets aún sin
+camión) y `Camión`. Los datos de ejemplo se generan alrededor de la fecha de hoy y los camiones
+generados no se guardan al recargar.
+
 ### Pendiente de confirmar
 
+- **Varios destinos en una selección:** hoy se parte en un camión por destino; la alternativa es un
+  único camión con varias descargas.
+- **Capacidad del camión:** 33 palets, como en la pantalla de ventas; si se supera, se avisa pero se
+  deja generar.
 - **Centro de cada país:** `12FR`, `12NL`, `12BE` y `12DE` están puestos por coherencia con el flujo
   objetivo; sólo `12` (España) y `12FR` se han confirmado. Se cambian en la constante `PAISES`.
 - **Almacén y centro de origen** de la solicitud: en el ejemplo todas salen del `1202`, por lo que no

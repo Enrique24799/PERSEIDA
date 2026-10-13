@@ -176,6 +176,7 @@
     box-shadow: 0 14px 40px rgba(20,32,48,.28); color: var(--ink);
   }
   dialog::backdrop { background: rgba(20,32,48,.45); }
+  #dlgCam { width: min(1040px, 96vw); max-width: 96vw; }
   .dlg-head {
     display: flex; align-items: center; gap: 16px;
     padding: 14px 18px 10px; border-bottom: 1px solid var(--border);
@@ -207,6 +208,77 @@
 
   footer.nota { font-size: 11.5px; color: #7b8a9c; padding: 12px 2px 0; max-width: 104ch; }
   footer.nota b { color: var(--muted); }
+
+  [hidden] { display: none !important; }
+
+  /* ---------- Selección de posiciones ---------- */
+  table.n2 th.chk, table.n2 td.chk { width: 30px; text-align: center; padding-left: 8px; padding-right: 2px; }
+  .chk input { accent-color: var(--head-bg); width: 15px; height: 15px; cursor: pointer; vertical-align: middle; margin: 0; }
+  .chk input:disabled { cursor: not-allowed; opacity: .4; }
+  table.n2 tbody tr.sel td { background: #e3eefc; }
+  .selchip {
+    display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 9px;
+    font-size: 10.5px; font-weight: 700; background: var(--head-bg); color: #fff; vertical-align: 1px;
+  }
+  .selbar {
+    background: #eaf2fd; border: 1px solid #b9d0ee; border-top: none;
+    padding: 8px 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    font-size: 12.5px; color: #1f3f66;
+  }
+  .selbar b { font-variant-numeric: tabular-nums; }
+  .selbar .acciones { margin-left: auto; display: flex; gap: 6px; }
+  button.primary { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 600; padding: 7px 16px; }
+  button.primary:hover { background: #2b73d4; }
+  button.primary:disabled { background: #a9c4ea; border-color: #a9c4ea; cursor: not-allowed; }
+  .camion { font-family: ui-monospace, Consolas, monospace; font-size: 11px; font-weight: 600; color: #1f5fa9; }
+  .camion.nuevo { background: #e4f3ea; color: #1b6b43; padding: 1px 5px; border-radius: 3px; }
+
+  /* ---------- Ventana de generar camión ---------- */
+  .cam-fecha { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .cam-fecha .ayuda { font-size: 11.5px; color: var(--muted); padding-bottom: 7px; }
+  .aviso {
+    background: #fdf3e2; border: 1px solid #f0d29c; color: #7a4f05;
+    border-radius: 6px; padding: 8px 12px; font-size: 12px; margin-bottom: 14px; max-width: 80ch;
+  }
+  .cam-grupo + .cam-grupo { margin-top: 18px; }
+  .cam-grupo-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .cam-grupo-head h3 { margin: 0; font-size: 13px; font-weight: 700; }
+  .meter { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .meter .bar { width: 130px; height: 8px; background: #e6ecf3; border-radius: 4px; overflow: hidden; }
+  .meter .bar i { display: block; height: 100%; background: var(--blue); }
+  .meter.over { color: #8a5a06; font-weight: 600; }
+  .meter.over .bar i { background: var(--amber); }
+  #camGrupos table.dlg { width: 100%; table-layout: fixed; }
+  #camGrupos table.dlg td, #camGrupos table.dlg th { overflow: hidden; text-overflow: ellipsis; }
+  table.dlg td.palcell { padding: 4px 8px; }
+  .palin {
+    width: 64px; text-align: right; font-size: 12.5px; padding: 4px 6px;
+    border: 1px solid #b9c6d6; border-radius: 4px; font-variant-numeric: tabular-nums;
+  }
+  .delta { display: inline-block; min-width: 26px; margin-left: 6px; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .delta.mas { color: #1b6b43; }
+  .delta.menos { color: #8a5a06; }
+  table.dlg tr.cero td { color: #a9b5c3; }
+  table.dlg td.ud { color: var(--ink); font-weight: 600; }
+  .dlg-foot {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 18px; border-top: 1px solid var(--border); background: #f6f9fc; border-radius: 0 0 8px 8px;
+  }
+  .dlg-foot .tot { font-size: 12.5px; color: var(--muted); }
+  .dlg-foot .tot b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .dlg-foot .botones { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ---------- Aviso de camión generado ---------- */
+  .toast {
+    position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 50;
+    background: #1f3f2c; color: #fff; border-radius: 8px; padding: 12px 40px 12px 16px;
+    box-shadow: 0 10px 30px rgba(20,32,48,.3); font-size: 12.5px; max-width: min(520px, 92vw); line-height: 1.5;
+  }
+  .toast b { font-family: ui-monospace, Consolas, monospace; }
+  .toast button {
+    position: absolute; top: 6px; right: 6px; border: none; background: none; color: #cfe3d6;
+    font-size: 15px; padding: 4px 8px; cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -214,7 +286,7 @@
 
   <div class="titlebar">
     <span>Necesidades · Solicitudes de traslado</span>
-    <span class="v">v0.2 · diseño</span>
+    <span class="v">v0.3 · diseño</span>
     <span class="scope">Alcance actual: traslados</span>
   </div>
 
@@ -281,6 +353,17 @@
     </span>
   </div>
 
+  <div class="selbar" id="selbar" hidden>
+    <span>
+      <b id="selN">0</b> posiciones marcadas · <b id="selPal">0</b> palets · <b id="selUd">0</b> UD
+      · destino <span id="selDest"></span>
+    </span>
+    <span class="acciones">
+      <button id="btnQuitarSel">Quitar selección</button>
+      <button class="primary" id="btnCamion">Generar camión de traslado</button>
+    </span>
+  </div>
+
   <div class="tablewrap">
     <table class="n1">
       <thead>
@@ -308,7 +391,8 @@
     solicitud de traslado y los de país y almacén, al destino de la solicitud: un material aparece en el
     nivel 1 si tiene al menos una solicitud que cumpla las tres cosas. El filtro de cliente se aplica a
     los pedidos de venta y arrastra al material. Las columnas de fabricación, faltas y compras son del
-    material y no dependen del destino filtrado.
+    material y no dependen del destino filtrado. Los camiones que se generan en este diseño viven sólo
+    mientras la página está abierta.
   </footer>
 
 </div>
@@ -321,6 +405,37 @@
   </div>
   <div class="dlg-body" id="dlgBody"></div>
 </dialog>
+
+<dialog id="dlgCam" aria-labelledby="camTit">
+  <div class="dlg-head">
+    <h2 id="camTit">Generar camión de traslado</h2>
+    <span class="sub" id="camSub"></span>
+    <button id="camX" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="dlg-body">
+    <div class="cam-fecha">
+      <div class="field">
+        <label for="camFecha">Fecha del camión</label>
+        <input type="date" id="camFecha" />
+      </div>
+      <span class="ayuda">Por defecto, hoy. Los palets se pueden cambiar en cada línea: las unidades se recalculan solas.</span>
+    </div>
+    <div id="camAviso" class="aviso" hidden></div>
+    <div id="camGrupos"></div>
+  </div>
+  <div class="dlg-foot">
+    <span class="tot" id="camTot"></span>
+    <span class="botones">
+      <button id="camCancelar">Cancelar</button>
+      <button class="primary" id="camOk">Generar camión</button>
+    </span>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden>
+  <div id="toastTxt"></div>
+  <button id="toastX" aria-label="Cerrar aviso">✕</button>
+</div>
 
 <script>
 /* =====================================================================
@@ -384,7 +499,11 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 const pick = (rnd, arr) => arr[Math.floor(rnd() * arr.length)];
 
 /* ---------- Datos de ejemplo ---------- */
-const HOY = new Date(2026, 8, 28);   // 28/09/2026
+const _hoy = new Date();
+const HOY = new Date(_hoy.getFullYear(), _hoy.getMonth(), _hoy.getDate());   // los datos se generan alrededor de hoy
+const MAX_PAL = 33;                                                          // palets por camión, como en la pantalla de ventas
+const idCamion = n => 'TR' + String(HOY.getFullYear()).slice(2) + '-' + String(n).padStart(5, '0');
+let nCamion = 141;                                                           // siguiente camión que se genera
 
 function genDatos(){
   const rnd = mulberry32(20260928);
@@ -422,13 +541,17 @@ function genDatos(){
       const r = rnd();
       const verif = r < .45 ? cant : (r < .8 ? Math.round(cant * (.3 + rnd() * .5) / 10) * 10 : 0);
       const fecha = addDays(HOY, -6 + Math.floor(rnd() * 38));
+      const fDisp = verif >= cant ? fecha : addDays(fecha, 2 + Math.floor(rnd() * 12));
+      const estado = pick(rnd, ESTADOS);
+      /* palets ya cargados en camiones anteriores */
+      const palCam = estado.k === 'conv' ? pal
+                   : estado.k === 'parcial' ? Math.max(1, Math.floor(pal * (.3 + rnd() * .4))) : 0;
       solicitudes.push({
         sol: String(nSol), pos: (i+1)*10, mat: m.mat,
         fecha, cant, pal,
         dest: DESTINOS[(d0 + i) % DESTINOS.length],
-        verif,
-        fDisp: verif >= cant ? fecha : addDays(fecha, 2 + Math.floor(rnd() * 12)),
-        estado: pick(rnd, ESTADOS),
+        verif, fDisp, estado, palCam,
+        camiones: palCam ? [idCamion(60 + Math.floor(rnd() * 80))] : [],
       });
     }
 
@@ -483,10 +606,17 @@ function genDatos(){
   return { solicitudes, pedidos, ordenes, faltas, compras };
 }
 const DATOS = genDatos();
+const MAT = Object.fromEntries(MATERIALES.map(m => [m.mat, m]));
+const clave = s => s.sol + '-' + s.pos;
+const SOL_POR_CLAVE = new Map(DATOS.solicitudes.map(s => [clave(s), s]));
+const pendiente = s => Math.max(0, s.pal - s.palCam);
+const ESTADO = Object.fromEntries(ESTADOS.map(e => [e.k, e]));
 
 /* ---------- Estado de la pantalla ---------- */
 const abiertos = new Map();              // material -> pestaña activa ('sol' | 'ped')
 let orden = { col:'fecha', dir:1 };
+const seleccion = new Set();             // posiciones de solped marcadas ('solicitud-pos')
+const camionesNuevos = new Set();        // camiones generados en esta sesión
 
 /* ---------- Filtros ---------- */
 function filtros(){
@@ -564,31 +694,43 @@ function filaDetalle(g){
   if (tab === 'sol'){
     cuerpo =
       '<table class="n2"><thead><tr>' +
+        '<th class="chk"><input type="checkbox" data-all="' + g.mat + '" aria-label="Marcar todas las posiciones de ' + g.mat + '"></th>' +
         '<th>Solicitud</th><th>Pos.</th><th>Fecha de solicitud</th>' +
         '<th style="text-align:right">Cantidad (UD)</th><th style="text-align:right">Palets</th>' +
+        '<th style="text-align:right">Pdte. (pal)</th>' +
         '<th>País</th><th>Centro destino</th><th>Almacén destino</th>' +
-        '<th style="text-align:right">Stock verificado (UD)</th><th>F. disponibilidad</th><th>Estado</th>' +
+        '<th style="text-align:right">Stock verificado (UD)</th><th>F. disponibilidad</th><th>Estado</th><th>Camión</th>' +
       '</tr></thead><tbody>' +
-      g.sol.map(s =>
-        '<tr>' +
+      g.sol.map(s => {
+        const k = clave(s), pdte = pendiente(s), marcada = seleccion.has(k);
+        return '<tr' + (marcada ? ' class="sel"' : '') + '>' +
+          '<td class="chk"><input type="checkbox" data-key="' + k + '" data-mat="' + g.mat + '"' +
+            (marcada ? ' checked' : '') + (pdte ? '' : ' disabled title="Ya cargada en camión"') +
+            ' aria-label="Marcar solicitud ' + s.sol + ' posición ' + s.pos + '"></td>' +
           '<td class="doc">' + s.sol + '</td>' +
           '<td>' + s.pos + '</td>' +
           '<td>' + fmtDate(s.fecha) + '</td>' +
           '<td class="num">' + num(s.cant) + '</td>' +
           '<td class="num">' + s.pal + '</td>' +
+          '<td class="num">' + (pdte ? '<b>' + pdte + '</b>' : '<span class="nada">0</span>') + '</td>' +
           '<td><span class="pais">' + esc(s.dest.pais) + '</span></td>' +
           '<td><span class="dest">' + s.dest.centro + '</span></td>' +
           '<td><span class="dest">' + s.dest.alm + '</span></td>' +
           '<td class="num"><span class="cob ' + cobertura(s) + '">' + num(s.verif) + '</span></td>' +
           '<td>' + fmtDate(s.fDisp) + '</td>' +
           '<td><span class="badge ' + s.estado.k + '">' + s.estado.t + '</span></td>' +
-        '</tr>').join('') +
+          '<td>' + (s.camiones.length
+              ? s.camiones.map(c => '<span class="camion' + (camionesNuevos.has(c) ? ' nuevo' : '') + '">' + c + '</span>').join(' ')
+              : '<span class="nada">—</span>') + '</td>' +
+        '</tr>';
+      }).join('') +
       '</tbody><tfoot><tr>' +
-        '<td colspan="3">' + g.nSol + ' solicitud' + (g.nSol === 1 ? '' : 'es') + '</td>' +
+        '<td colspan="4">' + g.nSol + ' solicitud' + (g.nSol === 1 ? '' : 'es') + '</td>' +
         '<td class="num">' + num(g.cant) + '</td><td class="num">' + g.pal + '</td>' +
+        '<td class="num">' + g.sol.reduce((a,s) => a + pendiente(s), 0) + '</td>' +
         '<td colspan="3"></td>' +
         '<td class="num">' + num(g.sol.reduce((a,s) => a + s.verif, 0)) + '</td>' +
-        '<td colspan="2"></td>' +
+        '<td colspan="3"></td>' +
       '</tr></tfoot></table>';
   } else {
     cuerpo = g.ped.length ?
@@ -719,7 +861,7 @@ function render(){
       return '<tr class="mat' + (ab ? ' open' : '') + '" data-mat="' + g.mat + '">' +
           '<td class="exp"><button class="chev" aria-expanded="' + ab + '" aria-label="' +
             (ab ? 'Contraer' : 'Desplegar') + ' ' + g.mat + '">▶</button></td>' +
-          '<td class="mat">' + g.mat + '</td>' +
+          '<td class="mat">' + g.mat + '<span class="selchip" data-chip="' + g.mat + '" hidden></span></td>' +
           '<td class="nom">' + esc(g.nom) + '</td>' +
           '<td class="num"><b>' + g.nSol + '</b></td>' +
           '<td class="num">' + num(g.cant) + '</td>' +
@@ -750,6 +892,165 @@ function render(){
     const act = th.dataset.col === orden.col;
     th.innerHTML = th.textContent.replace(/ [▲▼]$/, '') + (act ? ' <span class="arr">' + (orden.dir > 0 ? '▲' : '▼') + '</span>' : '');
   });
+  actualizarSeleccion();
+}
+
+/* ---------- Selección de posiciones ---------- */
+function marcadas(){
+  return [...seleccion].map(k => SOL_POR_CLAVE.get(k)).filter(Boolean);
+}
+
+function actualizarSeleccion(){
+  const filas = marcadas();
+  const pal = filas.reduce((a,s) => a + pendiente(s), 0);
+  const ud  = filas.reduce((a,s) => a + pendiente(s) * MAT[s.mat].udPal, 0);
+  const dests = [...new Set(filas.map(s => s.dest.pais + ' · ' + s.dest.alm))];
+
+  $('#selbar').hidden = !filas.length;
+  $('#selN').textContent = filas.length;
+  $('#selPal').textContent = pal;
+  $('#selUd').textContent = num(ud);
+  $('#selDest').textContent = dests.length > 1 ? dests.length + ' destinos (' + dests.join(', ') + ')' : (dests[0] || '');
+
+  document.querySelectorAll('[data-chip]').forEach(ch => {
+    const n = filas.filter(s => s.mat === ch.dataset.chip).length;
+    ch.hidden = !n;
+    ch.textContent = n + (n === 1 ? ' marcada' : ' marcadas');
+  });
+  document.querySelectorAll('input[data-all]').forEach(h => {
+    const cajas = [...document.querySelectorAll('input[data-key][data-mat="' + h.dataset.all + '"]:not(:disabled)')];
+    const n = cajas.filter(c => c.checked).length;
+    h.disabled = !cajas.length;
+    h.checked = cajas.length > 0 && n === cajas.length;
+    h.indeterminate = n > 0 && n < cajas.length;
+  });
+}
+
+function marcar(caja, si){
+  caja.checked = si;
+  caja.closest('tr').classList.toggle('sel', si);
+  if (si) seleccion.add(caja.dataset.key); else seleccion.delete(caja.dataset.key);
+}
+
+/* ---------- Generar camión de traslado ---------- */
+let borrador = [];                        // un grupo por destino: { dest, filas:[{ s, pal }] }
+
+function abrirCamion(){
+  const porDestino = new Map();
+  marcadas().forEach(s => {
+    const k = s.dest.centro + '|' + s.dest.alm;
+    if (!porDestino.has(k)) porDestino.set(k, { dest: s.dest, filas: [] });
+    porDestino.get(k).filas.push({ s, pal: pendiente(s) });
+  });
+  borrador = [...porDestino.values()];
+  borrador.forEach(g => g.filas.sort((a,b) => a.s.mat.localeCompare(b.s.mat) || a.s.fecha - b.s.fecha));
+
+  $('#camFecha').value = isoDate(HOY);
+  $('#camSub').textContent = marcadas().length + ' posiciones de solped';
+  $('#camAviso').hidden = borrador.length < 2;
+  $('#camAviso').innerHTML = '<b>La selección va a ' + borrador.length + ' destinos distintos.</b> ' +
+    'Un camión de traslado va a un único destino, así que se generará un camión por destino.';
+
+  $('#camGrupos').innerHTML = borrador.map((g, gi) =>
+    '<div class="cam-grupo">' +
+      '<div class="cam-grupo-head">' +
+        '<h3>' + (borrador.length > 1 ? 'Camión ' + (gi + 1) + ' · ' : '') +
+          'Destino ' + esc(g.dest.pais) + ' · centro ' + g.dest.centro + ' · almacén ' + g.dest.alm + '</h3>' +
+        '<span class="meter" id="meter-' + gi + '"><span class="bar"><i></i></span><span class="txt"></span></span>' +
+      '</div>' +
+      '<table class="dlg"><colgroup>' +
+        '<col style="width:10%"><col style="width:25%"><col style="width:11%"><col style="width:6%">' +
+        '<col style="width:10%"><col style="width:16%"><col style="width:10%"><col style="width:12%">' +
+      '</colgroup><thead><tr>' +
+        '<th>Material</th><th>Nombre</th><th>Solicitud</th><th>Pos.</th>' +
+        '<th style="text-align:right">Pdte. (pal)</th><th style="text-align:right">Palets en camión</th>' +
+        '<th style="text-align:right">UD / palet</th><th style="text-align:right">Unidades</th>' +
+      '</tr></thead><tbody>' +
+      g.filas.map((f, fi) => {
+        const m = MAT[f.s.mat];
+        return '<tr id="fila-' + gi + '-' + fi + '">' +
+          '<td class="doc">' + m.mat + '</td>' +
+          '<td>' + esc(m.nom) + '</td>' +
+          '<td>' + f.s.sol + '</td>' +
+          '<td>' + f.s.pos + '</td>' +
+          '<td class="num" style="color:var(--ink)">' + pendiente(f.s) + '</td>' +
+          '<td class="num palcell"><input type="number" class="palin" min="0" step="1" value="' + f.pal + '"' +
+            ' data-g="' + gi + '" data-f="' + fi + '" aria-label="Palets de ' + m.mat + ', solicitud ' + f.s.sol + '">' +
+            '<span class="delta" id="delta-' + gi + '-' + fi + '"></span></td>' +
+          '<td class="num" style="color:var(--muted)">' + num(m.udPal) + '</td>' +
+          '<td class="num ud" id="ud-' + gi + '-' + fi + '"></td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody><tfoot><tr>' +
+        '<td colspan="5">Total del camión</td>' +
+        '<td class="num" id="gpal-' + gi + '"></td><td></td><td class="num ud" id="gud-' + gi + '"></td>' +
+      '</tr></tfoot></table>' +
+    '</div>').join('');
+
+  recalcularCamion();
+  $('#dlgCam').showModal();
+}
+
+function recalcularCamion(){
+  let totPal = 0, totUd = 0, nCam = 0;
+  borrador.forEach((g, gi) => {
+    let gPal = 0, gUd = 0;
+    g.filas.forEach((f, fi) => {
+      const udPal = MAT[f.s.mat].udPal;
+      const ud = f.pal * udPal;
+      gPal += f.pal; gUd += ud;
+      $('#ud-' + gi + '-' + fi).textContent = num(ud);
+      $('#fila-' + gi + '-' + fi).classList.toggle('cero', !f.pal);
+      const d = f.pal - pendiente(f.s);
+      const el = $('#delta-' + gi + '-' + fi);
+      el.textContent = d ? (d > 0 ? '+' + d : '−' + (-d)) : '';
+      el.className = 'delta' + (d > 0 ? ' mas' : d < 0 ? ' menos' : '');
+    });
+    $('#gpal-' + gi).textContent = gPal;
+    $('#gud-' + gi).textContent = num(gUd);
+    const mt = $('#meter-' + gi);
+    mt.classList.toggle('over', gPal > MAX_PAL);
+    mt.querySelector('i').style.width = Math.min(100, gPal / MAX_PAL * 100) + '%';
+    mt.querySelector('.txt').textContent = gPal + ' / ' + MAX_PAL + ' palets' + (gPal > MAX_PAL ? ' · supera la capacidad' : '');
+    totPal += gPal; totUd += gUd;
+    if (gPal) nCam++;
+  });
+  $('#camTot').innerHTML = (borrador.length > 1 ? '<b>' + nCam + '</b> camiones · ' : '') +
+    '<b>' + totPal + '</b> palets · <b>' + num(totUd) + '</b> UD';
+  $('#camOk').disabled = !totPal || !$('#camFecha').value;
+  $('#camOk').textContent = nCam > 1 ? 'Generar ' + nCam + ' camiones' : 'Generar camión';
+}
+
+function confirmarCamion(){
+  const fecha = parseDate($('#camFecha').value);
+  const lineas = [];
+  borrador.forEach(g => {
+    const cargadas = g.filas.filter(f => f.pal > 0);
+    if (!cargadas.length) return;
+    const id = idCamion(nCamion++);
+    camionesNuevos.add(id);
+    let pal = 0, ud = 0;
+    cargadas.forEach(f => {
+      f.s.palCam += f.pal;
+      f.s.camiones.push(id);
+      f.s.estado = f.s.palCam >= f.s.pal ? ESTADO.conv : ESTADO.parcial;
+      pal += f.pal; ud += f.pal * MAT[f.s.mat].udPal;
+    });
+    lineas.push('Camión <b>' + id + '</b> para el ' + fmtDate(fecha) + ' · ' + esc(g.dest.pais) + ' · ' +
+      g.dest.centro + ' · ' + g.dest.alm + ' · ' + pal + ' palets · ' + num(ud) + ' UD');
+  });
+  seleccion.clear();
+  $('#dlgCam').close();
+  render();
+  aviso(lineas.join('<br>'));
+}
+
+let avisoT;
+function aviso(html){
+  $('#toastTxt').innerHTML = html;
+  $('#toast').hidden = false;
+  clearTimeout(avisoT);
+  avisoT = setTimeout(() => { $('#toast').hidden = true; }, 9000);
 }
 
 /* ---------- Eventos ---------- */
@@ -774,6 +1075,35 @@ $('#tbody').addEventListener('click', e => {
 });
 
 $('#dlgX').addEventListener('click', () => $('#dlg').close());
+
+$('#tbody').addEventListener('change', e => {
+  const t = e.target;
+  if (t.matches('input[data-key]')){ marcar(t, t.checked); actualizarSeleccion(); }
+  if (t.matches('input[data-all]')){
+    document.querySelectorAll('input[data-key][data-mat="' + t.dataset.all + '"]:not(:disabled)')
+      .forEach(c => marcar(c, t.checked));
+    actualizarSeleccion();
+  }
+});
+$('#btnQuitarSel').addEventListener('click', () => { seleccion.clear(); render(); });
+$('#btnCamion').addEventListener('click', abrirCamion);
+
+$('#camGrupos').addEventListener('input', e => {
+  const t = e.target;
+  if (!t.matches('.palin')) return;
+  const v = Math.max(0, Math.floor(Number(t.value) || 0));
+  borrador[t.dataset.g].filas[t.dataset.f].pal = v;
+  recalcularCamion();
+});
+$('#camGrupos').addEventListener('change', e => {
+  if (e.target.matches('.palin')) e.target.value = borrador[e.target.dataset.g].filas[e.target.dataset.f].pal;
+});
+$('#camFecha').addEventListener('input', recalcularCamion);
+$('#camOk').addEventListener('click', confirmarCamion);
+$('#camCancelar').addEventListener('click', () => $('#dlgCam').close());
+$('#camX').addEventListener('click', () => $('#dlgCam').close());
+$('#dlgCam').addEventListener('click', e => { if (e.target === $('#dlgCam')) $('#dlgCam').close(); });
+$('#toastX').addEventListener('click', () => { $('#toast').hidden = true; });
 $('#dlg').addEventListener('click', e => { if (e.target === $('#dlg')) $('#dlg').close(); });
 
 document.querySelectorAll('table.n1 > thead th.sortable').forEach(th => {
