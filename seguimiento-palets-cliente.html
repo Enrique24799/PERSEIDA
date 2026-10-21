@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seguimiento de Palets por Cliente</title>
+<style>
+:root {
+  --head-bg: #2f5f8f;
+  --border:  #d7dee8;
+  --grid:    #eef2f7;
+  --ink:     #243140;
+  --ok:      #27ae60;
+  --warn:    #e0a800;
+  --bad:     #d9534f;
+  --blue:    #2f80ed;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--grid);
+  font: 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+}
+
+.app { padding: 14px 16px 28px; }
+
+/* ── Titlebar ── */
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #37618f, #2f5f8f);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px 8px 0 0;
+}
+.titlebar h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .2px; }
+.titlebar .ver { font-size: 11px; opacity: .75; }
+
+/* ── Filter Panel ── */
+.panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: none;
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-end;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px 10px;
+  margin: 0;
+}
+legend {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5b6b7d;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 0 4px;
+}
+
+.field-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+select, input[type=text], input[type=date] {
+  font: 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+  color: var(--ink);
+  border: 1px solid #b9c6d6;
+  border-radius: 5px;
+  padding: 6px 9px;
+  background: #fff;
+  outline: none;
+}
+select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(47,128,237,.15); }
+
+.btn {
+  font: 600 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.btn-primary   { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: #2b73d4; }
+.btn-secondary { background: #f4f7fb; color: var(--ink); border: 1px solid var(--border); display: inline-flex; gap: 5px; align-items: center; }
+.btn-secondary:hover { background: #e7eef7; }
+
+/* ── Summary Bar ── */
+.summary {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: none;
+  padding: 8px 14px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: #51637a;
+}
+.stat { display: flex; align-items: center; gap: 6px; }
+.stat strong { font-size: 18px; font-weight: 700; color: var(--ink); }
+.stat-label  { font-size: 11px; color: #41546a; }
+.stat.ok   strong { color: var(--ok); }
+.stat.warn strong { color: var(--warn); }
+.stat.blue strong { color: var(--blue); }
+.stat.purple strong { color: #7b2d9c; }
+.sep { width: 1px; height: 30px; background: var(--border); }
+
+/* ── Table ── */
+.tbl-wrap {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: auto;
+  max-height: 70vh;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #eef3f9;
+  border-bottom: 2px solid var(--border);
+  padding: 7px 10px;
+  font-weight: 600;
+  color: #41546a;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  z-index: 2;
+}
+thead th.num    { text-align: right; }
+thead th.center { text-align: center; }
+
+tbody tr { border-bottom: 1px solid #eef2f7; transition: background .1s; }
+tbody tr:hover { background: #f4f9ff; }
+
+td { padding: 7px 10px; color: var(--ink); vertical-align: middle; }
+td.num    { text-align: right; font-variant-numeric: tabular-nums; color: #41546a; }
+td.center { text-align: center; }
+td.mono   { font-family: monospace; font-size: 11px; color: #41546a; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge.alq { background: #e7f0fd; color: #2f80ed; }
+.badge.cmp { background: #f0e4f4; color: #7b2d9c; }
+
+/* ── Client column ── */
+td.cliente { font-weight: 600; color: #1f2d3d; }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 32px; color: #aab4c0; font-size: 13px; }
+
+/* ── Legend ── */
+.legend { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #5b6b7d; }
+.leg-dot  { width: 12px; height: 12px; border-radius: 3px; }
+
+/* ── Modal overlay ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(36,49,64,.45);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 560px;
+  max-width: 96vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+.modal-head {
+  background: linear-gradient(180deg, #37618f, #2f5f8f);
+  color: #fff;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-head .close-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  opacity: .8;
+}
+.modal-head .close-btn:hover { opacity: 1; }
+
+.modal-body { padding: 16px; }
+
+.modal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.modal-row.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.modal-row.full  { grid-template-columns: 1fr; }
+
+.modal-field label {
+  display: block;
+  font-size: 11px;
+  color: #5b6b7d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 4px;
+}
+.modal-field input,
+.modal-field select,
+.modal-field textarea {
+  font: 13px "Segoe UI", Roboto, system-ui, Arial, sans-serif;
+  color: var(--ink);
+  border: 1px solid #b9c6d6;
+  border-radius: 5px;
+  padding: 7px 9px;
+  background: #fff;
+  outline: none;
+  width: 100%;
+}
+.modal-field input:focus,
+.modal-field select:focus,
+.modal-field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(47,128,237,.15); }
+.modal-field textarea { resize: vertical; min-height: 56px; }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: #f8fafc;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Titlebar -->
+  <div class="titlebar">
+    <h1>Seguimiento de Palets por Cliente</h1>
+    <span class="ver">v2.0</span>
+  </div>
+
+  <!-- Filter Panel -->
+  <div class="panel">
+    <fieldset>
+      <legend>Cliente</legend>
+      <div class="field-row">
+        <input type="text" id="fil-cliente" placeholder="ID o nombre..." style="width:180px"
+               oninput="applyFilters()">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Código Palet</legend>
+      <div class="field-row">
+        <input type="text" id="fil-codpal" placeholder="PL-001..." style="width:130px"
+               oninput="applyFilters()">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tipo de Palet</legend>
+      <div class="field-row">
+        <select id="fil-tipo" style="width:140px" onchange="applyFilters()">
+          <option value="">— Todos —</option>
+          <option value="ALQ">Alquiler</option>
+          <option value="CMP">Compra</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Fecha Salida</legend>
+      <div class="field-row">
+        <input type="date" id="fil-desde" style="width:145px" onchange="applyFilters()">
+        <span style="color:#8494a6;font-size:12px">hasta</span>
+        <input type="date" id="fil-hasta" style="width:145px" onchange="applyFilters()">
+      </div>
+    </fieldset>
+
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button class="btn btn-secondary" onclick="clearFilters()">&#8635; Limpiar</button>
+      <button class="btn btn-primary" onclick="openNuevo()">&#65291; Nueva expedicin</button>
+    </div>
+
+    <div style="margin-left:auto;align-self:center">
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#e7f0fd;border:1.5px solid #2f80ed"></div>Alquiler</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#f0e4f4;border:1.5px solid #7b2d9c"></div>Compra</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Bar -->
+  <div class="summary">
+    <div class="stat">
+      <div>
+        <div><strong id="st-total">—</strong></div>
+        <div class="stat-label">Expediciones</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat">
+      <div>
+        <div><strong id="st-uds">—</strong></div>
+        <div class="stat-label">Uds. expedidas</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat blue">
+      <div>
+        <div><strong id="st-alq">—</strong></div>
+        <div class="stat-label">En alquiler</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="stat purple">
+      <div>
+        <div><strong id="st-cmp">—</strong></div>
+        <div class="stat-label">En compra</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID Cliente</th>
+          <th>Nombre Cliente</th>
+          <th>Cd. Palet</th>
+          <th>Nombre Palet</th>
+          <th>Matrcula</th>
+          <th class="center">Tipo</th>
+          <th>Material Expedido</th>
+          <th class="num">Uds. Exp.</th>
+          <th>F. Salida</th>
+          <th>N Entrega</th>
+          <th>Pedido Venta</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /.app -->
+
+<!-- Modal: Nueva Expedicin -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span>Nueva Expedicin de Palet</span>
+      <button class="close-btn" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>ID Cliente *</label>
+          <input type="text" id="m-id-cli" placeholder="C-001">
+        </div>
+        <div class="modal-field">
+          <label>Nombre Cliente *</label>
+          <input type="text" id="m-nom-cli" placeholder="Razn social">
+        </div>
+      </div>
+
+      <div class="modal-row cols3">
+        <div class="modal-field">
+          <label>Cdigo Palet *</label>
+          <input type="text" id="m-cod-pal" placeholder="PL-001">
+        </div>
+        <div class="modal-field">
+          <label>Nombre Palet</label>
+          <input type="text" id="m-nom-pal" placeholder="Palet Europeo 120x80">
+        </div>
+        <div class="modal-field">
+          <label>Matrcula Palet</label>
+          <input type="text" id="m-mat-pal" placeholder="MAT-00000">
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Tipo de Palet</label>
+          <select id="m-tipo">
+            <option value="ALQ">Alquiler</option>
+            <option value="CMP">Compra</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Material Expedido</label>
+          <input type="text" id="m-material" placeholder="Descripcin del material">
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Uds. Expedidas</label>
+          <input type="text" id="m-uds" placeholder="0">
+        </div>
+        <div class="modal-field">
+          <label>Fecha Salida *</label>
+          <input type="date" id="m-fsalida">
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>N Entrega</label>
+          <input type="text" id="m-entrega" placeholder="ENT-000000">
+        </div>
+        <div class="modal-field">
+          <label>Pedido de Venta</label>
+          <input type="text" id="m-pedido" placeholder="PV-000000">
+        </div>
+      </div>
+
+      <div class="modal-row full">
+        <div class="modal-field">
+          <label>Observaciones</label>
+          <textarea id="m-obs" placeholder="Notas adicionales..."></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveModal()">Guardar expedicin</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Datos demo ───────────────────────────────────────────────────────────────────────────────
+
+const CLIENTES_DEMO = [
+  { id: 'C-001', nombre: 'Mercadona S.A.' },
+  { id: 'C-002', nombre: 'Carrefour España' },
+  { id: 'C-003', nombre: 'Lidl Supermercados' },
+  { id: 'C-004', nombre: 'Alcampo Logística' },
+  { id: 'C-005', nombre: 'DIA Distribución' },
+  { id: 'C-006', nombre: 'Eroski Coop.' },
+  { id: 'C-007', nombre: 'El Corte Inglés' },
+  { id: 'C-008', nombre: 'Consum S. Coop.' },
+];
+
+const PALETS_DEMO = [
+  { codigo: 'PL-001', nombre: 'Palet Europeo 120x80',    tipo: 'ALQ' },
+  { codigo: 'PL-002', nombre: 'Palet Americano 120x100', tipo: 'ALQ' },
+  { codigo: 'PL-003', nombre: 'Palet Industrial 120x120',tipo: 'CMP' },
+  { codigo: 'PL-004', nombre: 'Palet Europeo 120x80',    tipo: 'CMP' },
+  { codigo: 'PL-005', nombre: 'Palet Químico 120x80',    tipo: 'ALQ' },
+];
+
+const MATERIALES_DEMO = [
+  'Detergente líquido 5L', 'Zumo naranja 1L', 'Agua mineral 1.5L',
+  'Aceite girasol 1L', 'Leche entera 1L', 'Harina de trigo 1kg',
+  'Arroz largo 1kg', 'Cerveza lata 33cl', 'Vino tinto 75cl', 'Conservas tomate 400g'
+];
+
+const TODAY = new Date('2026-06-16T00:00:00');
+
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function fmtDate(d)    { return d ? d.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—'; }
+function isoDate(d)    { return d.toISOString().slice(0, 10); }
+
+// Seeded random
+let _s = 7;
+function rand()     { _s = (_s * 1664525 + 1013904223) & 0xffffffff; return (_s >>> 0) / 4294967296; }
+function rI(n)      { return Math.floor(rand() * n); }
+function rPick(arr) { return arr[rI(arr.length)]; }
+
+let DATA = [];
+
+(function generate() {
+  let entSeq = 800100, pvSeq = 10500, matSeq = 10000;
+  CLIENTES_DEMO.forEach(cli => {
+    const n = 3 + rI(7);
+    for (let i = 0; i < n; i++) {
+      const pal       = rPick(PALETS_DEMO);
+      const diasAtras = rI(120);
+      const fSalida   = addDays(TODAY, -diasAtras);
+      const uds       = 1 + rI(20);
+      const matricula = `MAT-${String(matSeq++).padStart(5,'0')}`;
+
+      DATA.push({
+        idCliente:   cli.id,
+        nomCliente:  cli.nombre,
+        codPalet:    pal.codigo,
+        nomPalet:    pal.nombre,
+        matricula,
+        tipo:        pal.tipo,
+        material:    rPick(MATERIALES_DEMO),
+        uds,
+        fSalida,
+        entrega:     `ENT-${entSeq++}`,
+        pedidoVenta: `PV-${String(pvSeq++).padStart(6,'0')}`,
+        obs:         ''
+      });
+    }
+  });
+  DATA.sort((a, b) => b.fSalida - a.fSalida);
+})();
+
+// ─── Filtros ──────────────────────────────────────────────────────────────────────────────────────
+
+let filtered = [];
+
+function applyFilters() {
+  const cli    = document.getElementById('fil-cliente').value.trim().toLowerCase();
+  const codpal = document.getElementById('fil-codpal').value.trim().toLowerCase();
+  const tipo   = document.getElementById('fil-tipo').value;
+  const desde  = document.getElementById('fil-desde').value;
+  const hasta  = document.getElementById('fil-hasta').value;
+
+  filtered = DATA.filter(r => {
+    if (cli    && !r.idCliente.toLowerCase().includes(cli)
+               && !r.nomCliente.toLowerCase().includes(cli)) return false;
+    if (codpal && !r.codPalet.toLowerCase().includes(codpal)) return false;
+    if (tipo   && r.tipo !== tipo) return false;
+    if (desde) { const d = new Date(desde + 'T00:00:00'); if (r.fSalida < d) return false; }
+    if (hasta) { const h = new Date(hasta + 'T23:59:59'); if (r.fSalida > h) return false; }
+    return true;
+  });
+
+  render();
+}
+
+function clearFilters() {
+  ['fil-cliente','fil-codpal','fil-tipo','fil-desde','fil-hasta']
+    .forEach(id => document.getElementById(id).value = '');
+  applyFilters();
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────────────────────
+
+function tipoBadge(tipo) {
+  return tipo === 'ALQ'
+    ? '<span class="badge alq">Alquiler</span>'
+    : '<span class="badge cmp">Compra</span>';
+}
+
+function render() {
+  const st = { total: 0, uds: 0, alq: 0, cmp: 0 };
+  filtered.forEach(r => {
+    st.total++;
+    st.uds += r.uds;
+    if (r.tipo === 'ALQ') st.alq++; else st.cmp++;
+  });
+
+  document.getElementById('st-total').textContent = st.total;
+  document.getElementById('st-uds').textContent   = st.uds;
+  document.getElementById('st-alq').textContent   = st.alq;
+  document.getElementById('st-cmp').textContent   = st.cmp;
+
+  const tbody = document.getElementById('tbody');
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="11" class="empty">No se encontraron expediciones con los filtros aplicados.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => `<tr>
+      <td class="mono">${r.idCliente}</td>
+      <td class="cliente">${r.nomCliente}</td>
+      <td class="mono">${r.codPalet}</td>
+      <td style="color:#41546a">${r.nomPalet}</td>
+      <td class="mono">${r.matricula}</td>
+      <td class="center">${tipoBadge(r.tipo)}</td>
+      <td style="color:#41546a;max-width:180px;white-space:normal">${r.material}</td>
+      <td class="num" style="font-weight:600">${r.uds}</td>
+      <td>${fmtDate(r.fSalida)}</td>
+      <td class="mono">${r.entrega}</td>
+      <td class="mono">${r.pedidoVenta}</td>
+    </tr>`).join('');
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────────────────────────
+
+function openNuevo() {
+  document.getElementById('m-id-cli').value   = '';
+  document.getElementById('m-nom-cli').value  = '';
+  document.getElementById('m-cod-pal').value  = '';
+  document.getElementById('m-nom-pal').value  = '';
+  document.getElementById('m-mat-pal').value  = `MAT-${String(10000 + DATA.length).padStart(5,'0')}`;
+  document.getElementById('m-tipo').value     = 'ALQ';
+  document.getElementById('m-material').value = '';
+  document.getElementById('m-uds').value      = '';
+  document.getElementById('m-fsalida').value  = isoDate(TODAY);
+  document.getElementById('m-entrega').value  = `ENT-${800100 + DATA.length}`;
+  document.getElementById('m-pedido').value   = `PV-${String(10500 + DATA.length).padStart(6,'0')}`;
+  document.getElementById('m-obs').value      = '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function saveModal() {
+  const idCli  = document.getElementById('m-id-cli').value.trim();
+  const nomCli = document.getElementById('m-nom-cli').value.trim();
+  const codPal = document.getElementById('m-cod-pal').value.trim();
+  const fSal   = document.getElementById('m-fsalida').value;
+
+  if (!idCli || !nomCli || !codPal || !fSal) {
+    alert('Por favor, completa los campos obligatorios: ID Cliente, Nombre Cliente, Código Palet y Fecha Salida.');
+    return;
+  }
+
+  DATA.unshift({
+    idCliente:   idCli,
+    nomCliente:  nomCli,
+    codPalet:    codPal,
+    nomPalet:    document.getElementById('m-nom-pal').value.trim(),
+    matricula:   document.getElementById('m-mat-pal').value.trim(),
+    tipo:        document.getElementById('m-tipo').value,
+    material:    document.getElementById('m-material').value.trim(),
+    uds:         parseInt(document.getElementById('m-uds').value) || 0,
+    fSalida:     new Date(fSal + 'T00:00:00'),
+    entrega:     document.getElementById('m-entrega').value.trim(),
+    pedidoVenta: document.getElementById('m-pedido').value.trim(),
+    obs:         document.getElementById('m-obs').value.trim()
+  });
+
+  closeModal();
+  applyFilters();
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+applyFilters();
+</script>
+</body>
+</html>

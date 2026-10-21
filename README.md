@@ -4,6 +4,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
+- `AJUSTE_PALETS.html` — Transacción de control y ajuste de inventario de palets.
 - `RESERVA_CARGAS.html` — Reserva de fechas de carga para FEDEFARMA, BIDAFARMA y UNNEFA (con servidor en
   Google Sheets + Apps Script y aviso por correo; ver [su sección](#reserva_cargashtml--reserva-de-fechas-de-carga)).
 
@@ -66,6 +67,58 @@ totales de volumen/peso se muestran una sola vez por camión.
 
 Para conectar con datos reales basta sustituir `MATERIALS` / `genDemanda()` por los datos reales y,
 si procede, `runAlgo()` por la llamada al algoritmo real.
+
+## `AJUSTE_PALETS.html` — Ajuste de palets (control de inventario)
+
+Simulación de una transacción SAP (`ZPAL_AJUS`) para **controlar y ajustar** el inventario de
+palets. A cada material se le cuelga un palet en su lista de materiales; al notificar/consumir
+órdenes los palets se bloquean o quedan libres, y esta transacción permite además ajustarlos
+manualmente.
+
+### Modelo
+
+- Un palet **libre** es un soporte vacío: **no tiene matrícula, ni material, ni orden**. Los libres
+  se **agrupan por código de palet (CLP)**: una fila por código con su recuento en la columna
+  **Nº palets** (en los ocupados, esa columna vale `1`).
+- **Bloquear** (manual): se coge 1 palet libre de un **código** concreto y se le asigna un
+  **material** y sus **unidades**. Como no va asociado a una orden, la columna **Orden** muestra
+  `BLOQUEO MANUAL`.
+- **Alta de palet**: se indican un **código de palet** y una **cantidad** y se suman al stock de
+  libres de ese código.
+- **Ajustar inventario**: corrige las unidades de un palet. Si se ponen **0 unidades**, el palet se
+  da de **baja** (se elimina).
+- **Desbloquear**: el palet se vacía y su código vuelve al stock de libres.
+- **Devolución**: palet con material que el cliente devuelve. Es el **único** caso con la **Entrega**
+  rellena; no tiene matrícula, ni orden, ni ubicación (sí material y unidades).
+
+### Nomenclatura
+
+- **Código Palet (CLP):** `0496xxxx` · **Matrícula:** `1000xxxxxx`.
+- **Componente** semielaborado / terminado: `709xxxxx`; **packaging:** `049xxxxx`.
+- **Documento de compras:** solo lo tienen los componentes de **packaging**.
+
+### Pantalla de selección (parámetros de entrada)
+
+Se introduce **uno** de estos campos (admite combinar varios; coincidencia parcial en los códigos):
+`Código Palet`, `Código Componente`, `Situación Palet` (Bloqueado / Libre / Devolución),
+`Orden Fabricación` y `Entrega`. Botones **Ejecutar** (F8) y **Limpiar**.
+
+### Acciones
+
+- **Bloquear** — en el pop-up se elige el **código de palet** (de los que tienen libres), el
+  **material** y las **unidades** (muestra descripción, tipo, uds/palet y, en packaging, el
+  documento de compras). Crea un palet bloqueado con `BLOQUEO MANUAL`.
+- **Desbloquear** — vacía los palets seleccionados y devuelve su código al stock de libres.
+- **Ajustar inventario** — corrige las unidades de un palet; con **0** unidades lo da de baja.
+- **Alta de palet** — da de alta N palets libres de un código.
+
+Las columnas son: Palet, **Nombre Palet**, Matrícula, Componente, Descripción, Tipo, Uds/Pal.,
+Uds Ocup., Situación, **Nº palets**, Orden Fab., Status Orden, Entrega, **Doc. compras** y Ubicación.
+
+Cada acción queda registrada en el **log de movimientos** (fecha/hora, usuario, palet, acción,
+situación anterior → nueva, unidades, documento y motivo). Incluye **Exportar** a CSV y barra de
+estado tipo SAP. Los datos son de **ejemplo**; para datos reales basta sustituir el array `PALETS`,
+el contador `LIBRES` (por código) y los maestros `MATERIALES` / `PALET_TIPOS` del `<script>`.
 
 ## `RESERVA_CARGAS.html` — Reserva de fechas de carga
 
