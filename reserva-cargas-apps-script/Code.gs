@@ -34,15 +34,24 @@ const CONFIG = {
   REMITENTE: 'PERSEIDA · Reservas de carga',
 };
 
-/* Usuarios que crea setup() en la hoja «Accesos», sin contraseña: se escriben
-   a mano en la hoja (4 cifras, distintas por usuario). Un usuario sin
-   contraseña no puede entrar. Para añadir un cliente basta con añadir una fila. */
+/* Usuarios que crea setup() en la hoja «Accesos». La contraseña se toma de
+   CONTRASENAS_INICIALES; si está vacía, se escribe luego a mano en la hoja.
+   Un usuario sin contraseña no puede entrar. Para añadir un cliente basta con
+   añadir una fila en «Accesos». */
 const USUARIOS_INICIALES = [
   ['FEDEFARMA', 'CLIENTE'],
   ['BIDAFARMA', 'CLIENTE'],
   ['UNNEFA', 'CLIENTE'],
   ['PLANIFICADOR', 'PLANIFICADOR'],
 ];
+
+/* Rellenar solo en la copia pegada en Apps Script (no en el repositorio). */
+const CONTRASENAS_INICIALES = {
+  FEDEFARMA: '',
+  BIDAFARMA: '',
+  UNNEFA: '',
+  PLANIFICADOR: '',
+};
 
 const HOJA = { FECHAS: 'Fechas', ACCESOS: 'Accesos', REGISTRO: 'Registro' };
 const COLS = ['ID', 'Fecha', 'Hora', 'Cliente', 'Nº palets', 'Reservado el'];
@@ -381,7 +390,7 @@ function setup() {
   const accesos = hoja_(HOJA.ACCESOS, true);
   if (accesos.getLastRow() < 2) {
     accesos.getRange(1, 1, 1, 3).setValues([['Usuario', 'Contraseña', 'Perfil']]);
-    const filas = USUARIOS_INICIALES.map(([u, perfil]) => [u, '', perfil]);
+    const filas = USUARIOS_INICIALES.map(([u, perfil]) => [u, CONTRASENAS_INICIALES[u] || '', perfil]);
     accesos.getRange(2, 1, filas.length, 3).setValues(filas);
   }
   accesos.getRange('B2:B').setNumberFormat('@'); // texto: conserva las contraseñas tal cual se escriben

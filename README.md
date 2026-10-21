@@ -202,8 +202,9 @@ y queda anotado en «Registro».
 4. En el editor, elige la función **`setup`** y pulsa **Ejecutar**. Acepta los permisos (si aparece «Google
    no ha verificado esta aplicación»: *Configuración avanzada → Ir a … (no seguro)*; es lo normal en
    scripts propios). Se crean las hojas y la hoja «Accesos» con los usuarios `FEDEFARMA`, `BIDAFARMA`,
-   `UNNEFA` y `PLANIFICADOR` **sin contraseña**. Escribe en la columna «Contraseña» la de cada usuario
-   (4 cifras, distintas; se han facilitado aparte). Un usuario sin contraseña no puede entrar.
+   `UNNEFA` y `PLANIFICADOR`, con las contraseñas de `CONTRASENAS_INICIALES` (en el repositorio está
+   vacío: rellénalo en la copia que pegas en Apps Script, o escribe luego las contraseñas en la columna
+   «Contraseña»). Un usuario sin contraseña no puede entrar.
 5. Ejecuta **`pruebaCorreo`** y comprueba que llega un correo a jgata@perseida.com.
 6. **Implementar → Nueva implementación → Aplicación web**, con *Ejecutar como: Yo* y *Quién tiene acceso:
    Cualquier usuario*. Copia la URL que termina en **`/exec`**.
@@ -249,9 +250,7 @@ y queda anotado en «Registro».
 - Correos: 100/día con una cuenta de Gmail y 1.500/día con Google Workspace (de sobra para este uso).
 - Pensado para pocos usuarios simultáneos (decenas); cada operación tarda 1–2 s.
 
-### Modo demo
+### Sin servidor configurado
 
-Con `CONFIG.API_URL` vacío, la página funciona en **modo demostración** (aviso amarillo arriba): simula el
-servidor con las mismas reglas, guarda los datos solo en ese navegador y no envía correos. Se entra con
-cualquiera de los cuatro usuarios y la contraseña `demo`. **No subas el HTML a los clientes sin
-configurar `API_URL`.**
+Si `CONFIG.API_URL` está vacío, la página no funciona: al iniciar sesión avisa de que falta conectarla al
+servidor de reservas. **No subas el HTML a los clientes sin configurar `API_URL`.**

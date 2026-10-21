@@ -45,13 +45,6 @@
   .titlebar .who button { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.4); color: #fff; padding: 4px 10px; }
   .titlebar .who button:hover { background: rgba(255,255,255,.28); }
 
-  .demo {
-    background: #fff8e1; border: 1px solid #f0d58a; border-top: none;
-    padding: 8px 14px; font-size: 12px; color: #6b5300;
-    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-  }
-  .demo b { color: #4d3c00; }
-  .demo button { margin-left: auto; font-size: 12px; padding: 4px 10px; }
 
   .card {
     background: #fff; border: 1px solid var(--border); border-top: none;
@@ -84,7 +77,6 @@
   .login input { font-size: 15px; padding: 8px 10px; }
   .login button.primary { font-size: 14px; padding: 9px 16px; }
   .login .err { color: var(--bad); min-height: 18px; font-weight: 600; }
-  .login .hint { font-size: 12px; background: #fff8e1; border: 1px solid #f0d58a; border-radius: 5px; padding: 8px 10px; color: #6b5300; }
   .steps { margin: 0; padding-left: 18px; line-height: 1.6; color: #41546a; }
 
   /* ---------- Barra de herramientas ---------- */
@@ -253,12 +245,6 @@
     <span class="who" id="who" hidden></span>
   </header>
 
-  <div class="demo" id="demoBar" hidden>
-    <span><b>MODO DEMOSTRACIÓN</b> — no hay servidor configurado: los datos se guardan solo en este navegador y no se envían
-      correos. Inicia sesión como un cliente, reserva, cierra sesión y entra como otro para comprobar el bloqueo.</span>
-    <button type="button" id="btnDemoReset">Reiniciar demo</button>
-  </div>
-
   <!-- ===================== Inicio de sesión ===================== -->
   <section class="card login" id="vLogin" hidden>
     <div>
@@ -270,8 +256,6 @@
         <button class="primary" type="submit">Iniciar sesión</button>
         <div class="err" id="loginErr" role="alert"></div>
       </form>
-      <p class="hint" id="demoHint" hidden>Demo: usuario <b>FEDEFARMA</b>, <b>BIDAFARMA</b>, <b>UNNEFA</b> o <b>PLANIFICADOR</b>,
-        contraseña <b>demo</b>.</p>
     </div>
     <div>
       <h3>Cómo funciona</h3>
@@ -360,7 +344,6 @@
 
    Este archivo NO contiene usuarios ni contraseñas: se comprueban en el
    servidor (Google Sheets + Apps Script, carpeta reserva-cargas-apps-script/).
-   Sin API_URL la página funciona en MODO DEMO (datos solo en este navegador).
    ===================================================================== */
 
 const CONFIG = {
@@ -392,15 +375,12 @@ function fechaMedia(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()]} $
 function fechaCorta(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()].slice(0, 3)} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`; }
 function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
 function ssSet(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } }
-function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function lsSet(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } }
 function colorCliente(c) {
   let i = S.clientes.indexOf(c);
   if (i < 0) i = [...String(c)].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   return PALETA[i % PALETA.length];
 }
 const palets = n => `${n} palet${Number(n) === 1 ? '' : 's'}`;
-const demo = () => !CONFIG.API_URL;
 
 function toast(msg, tipo = 'ok', ms = 5000) {
   const el = document.createElement('div');
@@ -413,7 +393,7 @@ function toast(msg, tipo = 'ok', ms = 5000) {
 /* ---------- Comunicación con el servidor ---------- */
 async function api(action, extra = {}) {
   const req = { action, token: S.token, ...extra };
-  if (demo()) return demoApi(req);
+  if (!CONFIG.API_URL) throw new Error('Esta página aún no está conectada al servidor de reservas (falta API_URL).');
   let res;
   try {
     // text/plain evita la petición previa CORS que Apps Script no admite.
@@ -467,7 +447,7 @@ async function operar(action, extra) {
     aplicar(d);
     if (d.mensaje) toast(d.mensaje, 'ok', 7000);
     if (d.correo) {
-      if (d.correo.enviado) toast(demo() ? '📧 (demo) Aquí se enviaría el aviso por correo a Perseida.' : '📧 Aviso enviado por correo a Perseida.', 'mail');
+      if (d.correo.enviado) toast('📧 Aviso enviado por correo a Perseida.', 'mail');
       else toast('La operación se ha guardado, pero no se pudo enviar el aviso por correo.', 'warn', 8000);
     }
     return 'ok';
@@ -525,7 +505,6 @@ function mostrarLogin() {
   $('#vMain').hidden = true;
   $('#who').hidden = true;
   $('#vLogin').hidden = false;
-  $('#demoHint').hidden = !demo();
   $('#iUser').focus();
 }
 
@@ -675,7 +654,7 @@ function htmlResumen() {
     <div class="info">
       <p>Pulsa un día del calendario para ver el detalle, <b>liberarlo</b> (si está reservado) o <b>eliminarlo</b> (si está libre).</p>
       <p>Los clientes solo ven los días libres y sus propias reservas: nunca las de otro cliente.</p>
-      ${demo() ? '' : '<p>Cada reserva o anulación envía un aviso por correo a Perseida.</p>'}
+      <p>Cada reserva o anulación envía un aviso por correo a Perseida.</p>
     </div>`;
 }
 
@@ -827,109 +806,12 @@ $('#fAlta').addEventListener('submit', async e => {
   if (!lista.length) { toast('No hay días que añadir con esos criterios.', 'warn'); return; }
   if (await operar('addSlots', { fechas: lista }) === 'ok') { $('#aDesde').value = ''; $('#aHasta').value = ''; previewAlta(); }
 });
-$('#btnDemoReset').onclick = () => { lsSet(DEMO_KEY, null); demoMemoria = null; toast('Demo reiniciada: sin días habilitados ni reservas.'); if (S.token) refrescar(false); };
 
 setInterval(() => { if (S.token && !document.hidden && !S.busy && !dlg.open) refrescar(true); }, CONFIG.REFRESCO_SEG * 1000);
 window.addEventListener('focus', () => { if (S.token && !S.busy && !dlg.open) refrescar(true); });
 
-/* =====================================================================
-   MODO DEMO — simula el servidor (mismas reglas que Code.gs) guardando
-   los datos en este navegador. Solo se usa si CONFIG.API_URL está vacío;
-   con el servidor configurado este bloque no interviene.
-   ===================================================================== */
-const DEMO_KEY = 'perseida_reservas_demo_v2';
-const DEMO_USERS = { FEDEFARMA: false, BIDAFARMA: false, UNNEFA: false, PLANIFICADOR: true }; // usuario → es planificación
-const DEMO_REGLAS = { permitirAnular: true, maxReservas: 0, maxPalets: 0 };
-let demoMemoria = null;
-
-function demoCargar() {
-  try { const s = lsGet(DEMO_KEY); if (s) return JSON.parse(s); } catch (e) { /* datos corruptos → se regeneran */ }
-  return demoMemoria || { fechas: [], seq: 0 };
-}
-
-function demoGuardar(db) { demoMemoria = db; lsSet(DEMO_KEY, JSON.stringify(db)); }
-
-function demoError(msg, extra) { return Object.assign(new Error(msg), extra); }
-
-async function demoApi(req) {
-  await new Promise(r => setTimeout(r, 250));
-  let usuario;
-  if (req.action === 'login') {
-    usuario = String(req.usuario || '').trim().toUpperCase();
-    if (!(usuario in DEMO_USERS) || req.password !== 'demo') throw demoError('Usuario o contraseña incorrectos.');
-  } else {
-    usuario = String(req.token || '').replace(/^demo-/, '');
-    if (!(usuario in DEMO_USERS)) throw demoError('Tu sesión ha caducado. Inicia sesión de nuevo.', { sesion: true });
-  }
-  if (req.action === 'logout') return { ok: true };
-  const esPlan = DEMO_USERS[usuario];
-  const db = demoCargar();
-  const hoy = hoyISO();
-  const f = db.fechas.find(x => x.id === req.id);
-  let mensaje = '', correo = null;
-
-  switch (req.action) {
-    case 'login': case 'list': break;
-    case 'reserve': {
-      if (esPlan) throw demoError('La planificación no reserva desde aquí.');
-      if (f && f.cliente === usuario) throw demoError('Ya tienes reservada esta fecha.', { conflicto: true });
-      if (!f || f.cliente) throw demoError('Lo sentimos: esta fecha y hora ya no está disponible. Elige otra, por favor.', { conflicto: true });
-      const n = Number(req.palets);
-      if (!Number.isInteger(n) || n < 1 || n > 999) throw demoError('Indica un nº de palets entero entre 1 y 999.');
-      Object.assign(f, { cliente: usuario, palets: String(n), reservadoEl: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) });
-      mensaje = `Reserva confirmada a nombre de ${usuario}: ${fechaLarga(f.fecha)}${f.hora ? ' · ' + f.hora : ''} · ${palets(n)}.`;
-      correo = { enviado: true };
-      break;
-    }
-    case 'cancel':
-      if (!f || !f.cliente || (!esPlan && f.cliente !== usuario)) throw demoError('Esta reserva ya no existe.', { conflicto: true });
-      mensaje = esPlan ? `Fecha liberada (estaba reservada por ${f.cliente}).` : 'Reserva anulada. La fecha vuelve a estar libre.';
-      Object.assign(f, { cliente: '', palets: '', reservadoEl: '' });
-      correo = { enviado: true };
-      break;
-    case 'addSlots': {
-      if (!esPlan) throw demoError('Solo la planificación puede habilitar fechas.');
-      const existentes = new Set(db.fechas.map(x => x.fecha + '|' + x.hora.toLowerCase()));
-      let n = 0, rep = 0;
-      (req.fechas || []).forEach(x => {
-        if (x.fecha < hoy) return;
-        const k = x.fecha + '|' + x.hora.toLowerCase();
-        if (existentes.has(k)) { rep++; return; }
-        existentes.add(k);
-        db.fechas.push({ id: 'd' + db.seq++, fecha: x.fecha, hora: x.hora, cliente: '', palets: '', reservadoEl: '' });
-        n++;
-      });
-      mensaje = `${n} fecha(s) añadida(s)` + (rep ? `; ${rep} ya existían y se han omitido.` : '.');
-      break;
-    }
-    case 'deleteSlot':
-      if (!esPlan) throw demoError('Solo la planificación puede eliminar fechas.');
-      if (!f) throw demoError('La fecha ya no existe.', { conflicto: true });
-      if (f.cliente) throw demoError(`La fecha está reservada por ${f.cliente}. Libérala antes de eliminarla.`);
-      db.fechas = db.fechas.filter(x => x !== f);
-      mensaje = 'Fecha eliminada.';
-      break;
-    default: throw demoError('Acción no válida.');
-  }
-  demoGuardar(db);
-
-  const fechas = db.fechas
-    .filter(x => (esPlan || x.fecha >= hoy) && (esPlan || !x.cliente || x.cliente === usuario))
-    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora))
-    .map(x => {
-      const v = { id: x.id, fecha: x.fecha, hora: x.hora, estado: !x.cliente ? 'libre' : (x.cliente === usuario ? 'mia' : 'ocupada') };
-      if (x.cliente) Object.assign(v, { cliente: x.cliente, palets: x.palets, reservadoEl: x.reservadoEl });
-      return v;
-    });
-  return {
-    ok: true, token: req.action === 'login' ? 'demo-' + usuario : undefined, usuario, planificador: esPlan,
-    clientes: esPlan ? Object.keys(DEMO_USERS).filter(u => !DEMO_USERS[u]) : [], reglas: DEMO_REGLAS, mensaje, correo, fechas,
-  };
-}
-
 /* ---------- Arranque ---------- */
 (async function iniciar() {
-  $('#demoBar').hidden = !demo();
   $('#aDesde').min = $('#aHasta').min = hoyISO();
   if (window.matchMedia('(max-width: 600px)').matches) S.vista = 'lista';
   // Si la pestaña ya tenía una sesión abierta, se reutiliza (se cierra al cerrar el navegador).
