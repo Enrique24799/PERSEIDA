@@ -63,12 +63,11 @@
   p { margin: 0 0 8px; line-height: 1.45; }
   .muted { color: var(--muted); }
 
-  input[type="date"], input[type="text"], input[type="email"], input[type="password"], textarea, button {
+  input[type="date"], input[type="text"], input[type="number"], input[type="password"], button {
     font-family: inherit; font-size: 13px; padding: 6px 9px;
     border: 1px solid #b9c6d6; border-radius: 5px; background: #fff; color: var(--ink);
   }
-  textarea { resize: vertical; min-height: 54px; }
-  input:focus, textarea:focus, button:focus-visible { outline: 2px solid #9cc3f5; outline-offset: 1px; }
+  input:focus, button:focus-visible { outline: 2px solid #9cc3f5; outline-offset: 1px; }
   button { cursor: pointer; }
   button:hover { background: #f4f8fd; }
   button:disabled { opacity: .55; cursor: default; }
@@ -78,14 +77,15 @@
   button.danger:hover { background: #fdf3f2; }
   button.small { font-size: 12px; padding: 3px 9px; }
 
-  /* ---------- Acceso ---------- */
-  .login { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 28px; padding: 22px 20px; }
-  .login form { display: flex; gap: 8px; margin: 12px 0 6px; }
-  .login form input { flex: 1; min-width: 0; font-size: 15px; letter-spacing: 1px; }
+  /* ---------- Inicio de sesión ---------- */
+  .login { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 36px; padding: 24px 22px; }
+  .login form { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+  .login label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  .login input { font-size: 15px; padding: 8px 10px; }
+  .login button.primary { font-size: 14px; padding: 9px 16px; }
   .login .err { color: var(--bad); min-height: 18px; font-weight: 600; }
+  .login .hint { font-size: 12px; background: #fff8e1; border: 1px solid #f0d58a; border-radius: 5px; padding: 8px 10px; color: #6b5300; }
   .steps { margin: 0; padding-left: 18px; line-height: 1.6; color: #41546a; }
-  .demo-users { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .demo-users button { font-weight: 600; }
 
   /* ---------- Barra de herramientas ---------- */
   .toolbar {
@@ -103,7 +103,6 @@
   .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid transparent; }
   .sw.libre { background: #e8f7ee; border-color: #9fd8b5; }
   .sw.mia { background: var(--mia); }
-  .sw.ocupada { background: #f1f3f6; border-color: #cfd6df; }
 
   /* ---------- Contenido principal ---------- */
   .main {
@@ -134,16 +133,14 @@
   .chip {
     display: block; width: 100%; text-align: left; font-family: inherit; font-size: 11px; font-weight: 600;
     padding: 3px 6px; border-radius: 4px; border: 1px solid transparent; line-height: 1.3;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
   }
-  button.chip { cursor: pointer; }
   .chip.libre { background: #e8f7ee; border-color: #9fd8b5; color: #1e7e45; }
-  button.chip.libre:hover { background: var(--libre); border-color: var(--libre); color: #fff; }
+  .chip.libre:hover { background: var(--libre); border-color: var(--libre); color: #fff; }
   .chip.mia { background: var(--mia); border-color: var(--mia); color: #fff; }
-  button.chip.mia:hover { background: #2b73d4; }
-  .chip.ocupada { background: #f1f3f6; border-color: #dde3ea; color: #8a96a5; font-weight: 400; }
+  .chip.mia:hover { background: #2b73d4; }
   .chip.cli { color: #fff; }
-  button.chip.cli:hover { filter: brightness(.9); }
+  .chip.cli:hover { filter: brightness(.9); }
   .chip.past { opacity: .6; }
 
   /* Lista */
@@ -151,15 +148,14 @@
   .lday .ld { font-weight: 700; color: #1f2d3d; }
   .lday .ld small { display: block; font-weight: 400; color: var(--muted); }
   .lslot { display: flex; align-items: center; gap: 10px; padding: 3px 0; flex-wrap: wrap; }
-  .lslot .fr { min-width: 110px; font-weight: 600; }
-  .lslot .ob { color: var(--muted); flex: 1; min-width: 120px; }
+  .lslot .fr { min-width: 90px; font-weight: 600; }
+  .lslot .pal { color: var(--muted); }
   .lslot button { margin-left: auto; }
   .empty { padding: 30px 10px; text-align: center; color: var(--muted); }
 
   .badge { display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .badge.libre { background: #e8f7ee; color: #1e7e45; }
   .badge.mia { background: var(--mia); color: #fff; }
-  .badge.ocupada { background: #f1f3f6; color: #8a96a5; }
   .badge.cli { color: #fff; }
 
   /* Lateral */
@@ -168,14 +164,15 @@
   .res .m { color: var(--muted); font-size: 12px; margin: 2px 0 6px; }
   .info { font-size: 12px; color: #41546a; border-top: 1px solid var(--border); margin-top: 14px; padding-top: 12px; }
   .info ol { margin: 6px 0 0; padding-left: 18px; line-height: 1.55; }
-  .stats { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; margin-bottom: 4px; }
+  .stats { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 12px; align-items: center; margin-bottom: 4px; }
   .stats .n { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .stats .h { font-size: 11px; color: var(--muted); text-align: right; }
 
   /* Planificación: alta de fechas */
   .planform { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
   .field { display: flex; flex-direction: column; gap: 3px; }
   .field > label, .field > span { font-size: 11px; color: var(--muted); }
-  .field.grow { flex: 1; min-width: 180px; }
+  .field.grow { flex: 1; min-width: 220px; }
   .wd { display: flex; gap: 3px; }
   .wd label {
     width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
@@ -195,28 +192,26 @@
     padding: 7px 9px; border-bottom: 2px solid #c4d0de; border-right: 1px solid var(--border);
   }
   tbody td { padding: 5px 9px; border-bottom: 1px solid var(--grid); border-right: 1px solid var(--grid); }
-  tbody td.wrap { white-space: normal; min-width: 160px; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
   tbody tr:hover td { background: #f4f9ff; }
   tbody tr.past td { color: #98a3b0; }
-  .tablehead { display: flex; align-items: center; gap: 12px; margin: 16px 0 8px; flex-wrap: wrap; }
+  .tablehead { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; flex-wrap: wrap; }
   .tablehead h3 { margin: 0; }
   .tablehead label { font-size: 12px; color: var(--muted); display: flex; gap: 5px; align-items: center; }
 
   /* Diálogo */
   dialog {
-    border: 1px solid var(--border); border-radius: 8px; padding: 0; width: min(460px, calc(100vw - 32px));
+    border: 1px solid var(--border); border-radius: 8px; padding: 0; width: min(400px, calc(100vw - 32px));
     color: var(--ink); box-shadow: 0 12px 40px rgba(20, 40, 70, .25);
   }
   dialog::backdrop { background: rgba(25, 40, 60, .45); }
   .dh { background: var(--head-bg); color: #fff; padding: 10px 16px; font-weight: 600; font-size: 14px; }
-  .db { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
-  .db .sum { background: #f4f8fd; border: 1px solid #d6e4f5; border-radius: 6px; padding: 9px 11px; }
-  .db .sum b { display: block; font-size: 14px; }
-  .db label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
-  .db dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 12px; margin: 0; }
+  .db { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .db dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; margin: 0; }
   .db dt { color: var(--muted); }
   .db dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-  .db .note { font-size: 12px; color: var(--muted); }
+  .db label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  .db input[type="number"] { font-size: 16px; padding: 8px 10px; width: 140px; }
   .da { padding: 10px 16px 14px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--grid); }
 
   /* Avisos */
@@ -235,7 +230,7 @@
   @media (max-width: 900px) {
     .main { grid-template-columns: minmax(0, 1fr); }
     aside { border-left: none; border-top: 1px solid var(--border); }
-    .login { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .login { grid-template-columns: minmax(0, 1fr); gap: 20px; }
     .legend { margin-left: 0; }
   }
   @media (max-width: 600px) {
@@ -243,8 +238,6 @@
     .lday { grid-template-columns: minmax(0, 1fr); gap: 4px; }
     .lslot { gap: 4px 10px; padding: 5px 0; }
     .lslot .fr { min-width: 0; }
-    .lslot .ob { order: 5; flex-basis: 100%; font-size: 12px; }
-    .lslot .ob:empty { display: none; }
     .cal .day { min-height: 70px; padding: 3px 2px; }
     .cal .dow { padding: 5px 3px; font-size: 10px; }
     .chip { font-size: 10px; padding: 2px 3px; }
@@ -262,37 +255,31 @@
 
   <div class="demo" id="demoBar" hidden>
     <span><b>MODO DEMOSTRACIÓN</b> — no hay servidor configurado: los datos se guardan solo en este navegador y no se envían
-      correos. Entra como un cliente, reserva, sal y entra como otro para comprobar el bloqueo.</span>
+      correos. Inicia sesión como un cliente, reserva, cierra sesión y entra como otro para comprobar el bloqueo.</span>
     <button type="button" id="btnDemoReset">Reiniciar demo</button>
   </div>
 
-  <!-- ===================== Acceso ===================== -->
+  <!-- ===================== Inicio de sesión ===================== -->
   <section class="card login" id="vLogin" hidden>
     <div>
-      <h2>Acceso de clientes</h2>
-      <p class="muted">Introduce el código de acceso que te ha facilitado Perseida.</p>
-      <form id="fLogin" autocomplete="off">
-        <input type="password" id="iCode" placeholder="Código de acceso" aria-label="Código de acceso" required />
-        <button class="primary" type="submit">Entrar</button>
+      <h2>Iniciar sesión</h2>
+      <p class="muted">Introduce el usuario y la contraseña que te ha facilitado Perseida.</p>
+      <form id="fLogin">
+        <label>Usuario<input type="text" id="iUser" autocomplete="username" autocapitalize="characters" spellcheck="false" required /></label>
+        <label>Contraseña<input type="password" id="iPass" autocomplete="current-password" required /></label>
+        <button class="primary" type="submit">Iniciar sesión</button>
+        <div class="err" id="loginErr" role="alert"></div>
       </form>
-      <div class="err" id="loginErr" role="alert"></div>
-      <div id="demoUsers" hidden>
-        <p class="muted">Demo: entra directamente como…</p>
-        <div class="demo-users">
-          <button type="button" data-demo="demo-fedefarma">FEDEFARMA</button>
-          <button type="button" data-demo="demo-bidafarma">BIDAFARMA</button>
-          <button type="button" data-demo="demo-unnefa">UNNEFA</button>
-          <button type="button" data-demo="demo-planificacion">Planificación Perseida</button>
-        </div>
-      </div>
+      <p class="hint" id="demoHint" hidden>Demo: usuario <b>FEDEFARMA</b>, <b>BIDAFARMA</b>, <b>UNNEFA</b> o <b>PLANIFICADOR</b>,
+        contraseña <b>demo</b>.</p>
     </div>
     <div>
       <h3>Cómo funciona</h3>
       <ol class="steps">
-        <li>La planificación de Perseida publica las fechas de carga disponibles.</li>
-        <li>Elige una fecha <b>libre</b> y confirma la reserva.</li>
-        <li>En cuanto reservas, la fecha deja de estar disponible para el resto de clientes.</li>
-        <li>Perseida recibe un aviso por correo con los datos de tu reserva.</li>
+        <li>La planificación de Perseida habilita los días y horas de carga.</li>
+        <li>Elige un día y hora <b>libre</b>, indica el nº de palets y confirma.</li>
+        <li>La fecha queda reservada a tu nombre y deja de estar disponible para el resto de clientes.</li>
+        <li>Perseida recibe un aviso por correo con tu reserva.</li>
       </ol>
     </div>
   </section>
@@ -302,7 +289,7 @@
 
     <!-- Alta de fechas (solo planificación) -->
     <section class="card" id="planPanel" hidden>
-      <h3>Añadir fechas de carga posibles</h3>
+      <h3>Habilitar días y horas de carga</h3>
       <form class="planform" id="fAlta">
         <div class="field">
           <label for="aDesde">Desde</label>
@@ -325,14 +312,10 @@
           </div>
         </div>
         <div class="field grow">
-          <label for="aFranja">Franja(s) horaria(s) — opcional, separadas por comas</label>
-          <input type="text" id="aFranja" maxlength="120" placeholder="Ej.: 08:00–10:00, 12:00–14:00" />
+          <label for="aHoras">Hora(s) de carga, separadas por comas</label>
+          <input type="text" id="aHoras" maxlength="200" placeholder="Ej.: 08:00, 11:00, 15:30" />
         </div>
-        <div class="field grow">
-          <label for="aObs">Observaciones (visibles para los clientes)</label>
-          <input type="text" id="aObs" maxlength="200" placeholder="Ej.: Muelle 2 · máx. 33 palets" />
-        </div>
-        <button class="primary" type="submit">＋ Añadir fechas</button>
+        <button class="primary" type="submit">＋ Añadir</button>
         <div class="preview" id="aPreview"></div>
       </form>
     </section>
@@ -369,12 +352,14 @@
 /* =====================================================================
    PERSEIDA · Reserva de fechas de carga (FEDEFARMA · BIDAFARMA · UNNEFA)
 
-   - La planificación publica fechas de carga posibles.
-   - Cada cliente entra con su código y reserva una fecha libre; desde ese
-     momento la fecha queda bloqueada para los demás clientes.
-   - Cada reserva/anulación envía un aviso por correo (lo hace el servidor).
+   - La planificación habilita días y horas de carga.
+   - Cada cliente inicia sesión con su usuario y contraseña y reserva un día
+     y hora libre indicando el nº de palets. La fecha deja de aparecer al
+     resto de clientes; la planificación ve qué cliente la ha reservado.
+   - Cada reserva envía un aviso por correo (lo hace el servidor).
 
-   Servidor: Google Sheets + Apps Script (carpeta reserva-cargas-apps-script/).
+   Este archivo NO contiene usuarios ni contraseñas: se comprueban en el
+   servidor (Google Sheets + Apps Script, carpeta reserva-cargas-apps-script/).
    Sin API_URL la página funciona en MODO DEMO (datos solo en este navegador).
    ===================================================================== */
 
@@ -387,11 +372,10 @@ const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 const DOW = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const PALETA = ['#2f80ed', '#e08a1e', '#8e44ad', '#16a085', '#c0392b', '#7f8c8d'];
-const LS_CODE = 'perseida_reservas_code';
-const LS_CONTACTO = 'perseida_reservas_contacto';
+const SS_TOKEN = 'perseida_reservas_sesion';
 
 const S = {
-  code: null, usuario: null, plan: false, reglas: {}, clientes: [], fechas: [],
+  token: null, usuario: null, plan: false, reglas: {}, clientes: [], fechas: [],
   mes: null, vista: 'cal', verPasadas: false, busy: 0,
 };
 
@@ -406,13 +390,16 @@ const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 function fechaLarga(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`; }
 function fechaMedia(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()].slice(0, 3)}`; }
 function fechaCorta(iso) { const d = fromISO(iso); return `${DIAS[d.getDay()].slice(0, 3)} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`; }
+function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+function ssSet(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } }
 function colorCliente(c) {
   let i = S.clientes.indexOf(c);
-  if (i < 0) i = [...c].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  if (i < 0) i = [...String(c)].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   return PALETA[i % PALETA.length];
 }
+const palets = n => `${n} palet${Number(n) === 1 ? '' : 's'}`;
 const demo = () => !CONFIG.API_URL;
 
 function toast(msg, tipo = 'ok', ms = 5000) {
@@ -425,7 +412,7 @@ function toast(msg, tipo = 'ok', ms = 5000) {
 
 /* ---------- Comunicación con el servidor ---------- */
 async function api(action, extra = {}) {
-  const req = { action, code: S.code, ...extra };
+  const req = { action, token: S.token, ...extra };
   if (demo()) return demoApi(req);
   let res;
   try {
@@ -443,6 +430,7 @@ async function api(action, extra = {}) {
   if (!data.ok) {
     const err = new Error(data.error || 'Error desconocido.');
     err.conflicto = !!data.conflicto;
+    err.sesion = !!data.sesion;
     throw err;
   }
   return data;
@@ -477,13 +465,14 @@ async function operar(action, extra) {
   try {
     const d = await conCarga(() => api(action, extra));
     aplicar(d);
-    if (d.mensaje) toast(d.mensaje, 'ok');
+    if (d.mensaje) toast(d.mensaje, 'ok', 7000);
     if (d.correo) {
-      if (d.correo.enviado) toast(demo() ? '📧 (demo) Aquí se enviaría el aviso por correo a Perseida.' : '📧 Perseida ha recibido el aviso por correo.', 'mail');
+      if (d.correo.enviado) toast(demo() ? '📧 (demo) Aquí se enviaría el aviso por correo a Perseida.' : '📧 Aviso enviado por correo a Perseida.', 'mail');
       else toast('La operación se ha guardado, pero no se pudo enviar el aviso por correo.', 'warn', 8000);
     }
     return 'ok';
   } catch (e) {
+    if (e.sesion) { dlg.close(); cerrarSesion(e.message); return 'error'; }
     toast(e.message, 'err', 8000);
     if (e.conflicto) { refrescar(true); return 'conflicto'; }
     return 'error';
@@ -491,40 +480,43 @@ async function operar(action, extra) {
 }
 
 async function refrescar(silencioso) {
-  if (!S.code) return;
+  if (!S.token) return;
   try {
     const d = silencioso ? await api('list') : await conCarga(() => api('list'));
     aplicar(d);
   } catch (e) {
-    if (/código de acceso/i.test(e.message)) return salir(e.message);
+    if (e.sesion) return cerrarSesion(e.message);
     if (!silencioso) toast(e.message, 'err');
   }
 }
 
-/* ---------- Acceso ---------- */
-async function entrar(code) {
-  S.code = code.trim();
+/* ---------- Sesión ---------- */
+async function iniciarSesion(usuario, password) {
   $('#loginErr').textContent = '';
   try {
-    const d = await conCarga(() => api('list'));
-    lsSet(LS_CODE, S.code);
-    S.mes = null;
-    aplicar(d);
-    $('#vLogin').hidden = true;
-    $('#vMain').hidden = false;
+    const d = await conCarga(() => api('login', { usuario, password }));
+    S.token = d.token;
+    ssSet(SS_TOKEN, S.token);
+    $('#iPass').value = '';
+    entrarApp(d);
   } catch (e) {
-    S.code = null;
-    lsSet(LS_CODE, null);
     $('#loginErr').textContent = e.message;
-    mostrarLogin();
+    $('#iPass').select();
   }
 }
 
-function salir(msg) {
-  S.code = S.usuario = null;
+function entrarApp(d) {
+  S.mes = null;
+  aplicar(d);
+  $('#vLogin').hidden = true;
+  $('#vMain').hidden = false;
+}
+
+function cerrarSesion(msg) {
+  if (S.token && typeof msg !== 'string') api('logout').catch(() => {});
+  S.token = S.usuario = null;
   S.fechas = [];
-  lsSet(LS_CODE, null);
-  $('#iCode').value = '';
+  ssSet(SS_TOKEN, null);
   $('#loginErr').textContent = typeof msg === 'string' ? msg : '';
   mostrarLogin();
 }
@@ -533,8 +525,8 @@ function mostrarLogin() {
   $('#vMain').hidden = true;
   $('#who').hidden = true;
   $('#vLogin').hidden = false;
-  $('#demoUsers').hidden = !demo();
-  $('#iCode').focus();
+  $('#demoHint').hidden = !demo();
+  $('#iUser').focus();
 }
 
 /* ---------- Render ---------- */
@@ -547,8 +539,8 @@ function render() {
   if (!S.usuario) return;
   const who = $('#who');
   who.hidden = false;
-  who.innerHTML = `<span>${S.plan ? 'Planificación Perseida' : 'Cliente: <b>' + esc(S.usuario) + '</b>'}</span>` +
-    `<button type="button" id="btnSalir">Salir</button>`;
+  who.innerHTML = `<span>${S.plan ? 'Planificación · <b>' + esc(S.usuario) + '</b>' : 'Cliente: <b>' + esc(S.usuario) + '</b>'}</span>` +
+    `<button type="button" id="btnSalir">Cerrar sesión</button>`;
 
   if (!S.mes) {
     const prox = S.fechas.find(f => f.fecha >= hoyISO() && f.estado === 'libre') || S.fechas.find(f => f.fecha >= hoyISO());
@@ -561,7 +553,7 @@ function render() {
 
   $('#legend').innerHTML = S.plan
     ? `<span><i class="sw libre"></i>Libre</span>` + S.clientes.map(c => `<span><i class="sw" style="background:${colorCliente(c)}"></i>${esc(c)}</span>`).join('')
-    : `<span><i class="sw libre"></i>Libre (pulsa para reservar)</span><span><i class="sw mia"></i>Tu reserva</span><span><i class="sw ocupada"></i>No disponible</span>`;
+    : `<span><i class="sw libre"></i>Libre (pulsa para reservar)</span><span><i class="sw mia"></i>Tu reserva</span>`;
 
   $('#view').innerHTML = S.vista === 'cal' ? htmlCalendario() : htmlLista();
   $('#side').innerHTML = S.plan ? htmlResumen() : htmlMisReservas();
@@ -572,17 +564,19 @@ function render() {
 }
 
 function chip(f) {
-  const hoy = hoyISO();
-  const past = f.fecha < hoy ? ' past' : '';
-  const fr = f.franja ? esc(f.franja) : '';
-  const tip = esc([fechaLarga(f.fecha), f.franja, f.obs].filter(Boolean).join(' · '));
-  if (S.plan) {
-    if (f.estado === 'libre') return `<button type="button" class="chip libre${past}" data-act="detalle" data-id="${esc(f.id)}" title="${tip}">${fr || 'Libre'}</button>`;
-    return `<button type="button" class="chip cli${past}" style="background:${colorCliente(f.cliente)}" data-act="detalle" data-id="${esc(f.id)}" title="${tip}">${esc(f.cliente)}${fr ? ' · ' + fr : ''}</button>`;
+  const past = f.fecha < hoyISO() ? ' past' : '';
+  const hora = esc(f.hora || 'Todo el día');
+  const id = esc(f.id);
+  if (f.estado === 'libre') {
+    return S.plan
+      ? `<button type="button" class="chip libre${past}" data-act="detalle" data-id="${id}" title="Libre">${hora}</button>`
+      : `<button type="button" class="chip libre" data-act="reservar" data-id="${id}" title="Reservar">＋ ${hora}</button>`;
   }
-  if (f.estado === 'libre') return `<button type="button" class="chip libre" data-act="reservar" data-id="${esc(f.id)}" title="Reservar · ${tip}">＋ ${fr || 'Libre'}</button>`;
-  if (f.estado === 'mia') return `<button type="button" class="chip mia" data-act="detalle" data-id="${esc(f.id)}" title="Tu reserva · ${tip}">✓ ${fr || 'Tu reserva'}</button>`;
-  return `<span class="chip ocupada" title="No disponible · ${tip}">${fr ? fr + ' · ' : ''}No disponible</span>`;
+  if (S.plan) {
+    return `<button type="button" class="chip cli${past}" style="background:${colorCliente(f.cliente)}" data-act="detalle" data-id="${id}" ` +
+      `title="${esc(f.cliente)} · ${esc(palets(f.palets))}">${esc(f.cliente)} · ${hora}</button>`;
+  }
+  return `<button type="button" class="chip mia" data-act="detalle" data-id="${id}" title="Tu reserva · ${esc(palets(f.palets))}">✓ ${hora} · ${esc(f.palets)} pal.</button>`;
 }
 
 function htmlCalendario() {
@@ -605,15 +599,15 @@ function htmlCalendario() {
   const delMes = visibles().filter(f => f.fecha.startsWith(`${y}-${pad(m + 1)}`));
   if (!delMes.length) {
     const sig = visibles().find(f => f.fecha > `${y}-${pad(m + 1)}-31`);
-    h += `<p class="empty">No hay fechas de carga publicadas en este mes.` +
-      (sig ? ` <button type="button" class="small" data-act="ir" data-fecha="${esc(sig.fecha)}">Ir a la siguiente: ${esc(fechaMedia(sig.fecha))}</button>` : '') + '</p>';
+    h += `<p class="empty">${S.plan && !S.fechas.length ? 'Aún no hay días habilitados. Añádelos con el formulario de arriba.' : 'No hay días de carga disponibles en este mes.'}` +
+      (sig ? ` <button type="button" class="small" data-act="ir" data-fecha="${esc(sig.fecha)}">Ir al siguiente: ${esc(fechaMedia(sig.fecha))}</button>` : '') + '</p>';
   }
   return h;
 }
 
 function htmlLista() {
   const lista = visibles();
-  if (!lista.length) return `<p class="empty">${S.plan ? 'No hay fechas publicadas. Añádelas con el formulario de arriba.' : 'Ahora mismo no hay fechas de carga publicadas.'}</p>`;
+  if (!lista.length) return `<p class="empty">${S.plan ? 'Aún no hay días habilitados. Añádelos con el formulario de arriba.' : 'Ahora mismo no hay días de carga disponibles.'}</p>`;
   const grupos = [];
   lista.forEach(f => {
     const g = grupos[grupos.length - 1];
@@ -624,9 +618,9 @@ function htmlLista() {
       <div class="ld">${esc(cap(fechaMedia(g.fecha)))}<small>${esc(fechaCorta(g.fecha))}</small></div>
       <div>${g.items.map(f => `
         <div class="lslot">
-          <span class="fr">${esc(f.franja || 'Todo el día')}</span>
+          <span class="fr">${esc(f.hora || 'Todo el día')}</span>
           ${badge(f)}
-          <span class="ob">${esc(f.obs)}</span>
+          ${f.palets ? `<span class="pal">${esc(palets(f.palets))}</span>` : ''}
           ${accionLista(f)}
         </div>`).join('')}
       </div>
@@ -636,16 +630,14 @@ function htmlLista() {
 function badge(f) {
   if (f.estado === 'libre') return '<span class="badge libre">Libre</span>';
   if (S.plan) return `<span class="badge cli" style="background:${colorCliente(f.cliente)}">${esc(f.cliente)}</span>`;
-  if (f.estado === 'mia') return '<span class="badge mia">Tu reserva</span>';
-  return '<span class="badge ocupada">No disponible</span>';
+  return '<span class="badge mia">Tu reserva</span>';
 }
 
 function accionLista(f) {
   const id = esc(f.id);
   if (S.plan) return `<button type="button" class="small" data-act="detalle" data-id="${id}">Detalle</button>`;
   if (f.estado === 'libre') return `<button type="button" class="small primary" data-act="reservar" data-id="${id}">Reservar</button>`;
-  if (f.estado === 'mia') return `<button type="button" class="small" data-act="detalle" data-id="${id}">Ver reserva</button>`;
-  return '';
+  return `<button type="button" class="small" data-act="detalle" data-id="${id}">Ver reserva</button>`;
 }
 
 function htmlMisReservas() {
@@ -656,31 +648,33 @@ function htmlMisReservas() {
   h += mias.length ? mias.map(f => `
     <div class="res">
       <div class="d">${esc(cap(fechaLarga(f.fecha)))}</div>
-      <div class="m">${esc([f.franja, f.obs].filter(Boolean).join(' · ') || 'Sin franja horaria')}<br>Contacto: ${esc(f.contacto || '—')}</div>
-      <button type="button" class="small" data-act="detalle" data-id="${esc(f.id)}">Ver detalle</button>
+      <div class="m">${esc(f.hora || 'Todo el día')} · ${esc(palets(f.palets))}</div>
+      <button type="button" class="small" data-act="detalle" data-id="${esc(f.id)}">Ver reserva</button>
     </div>`).join('') : `<p class="muted">Aún no tienes ninguna reserva.</p>`;
-  h += `<p class="muted">${libres} fecha(s) libre(s) disponible(s).${max ? ` Puedes tener como máximo ${max} reserva(s) activa(s).` : ''}</p>`;
+  h += `<p class="muted">${libres} día(s)/hora(s) libre(s).${max ? ` Puedes tener como máximo ${max} reserva(s) activa(s).` : ''}</p>`;
   h += `<div class="info"><b>Cómo reservar</b><ol>
-      <li>Pulsa una fecha <b>libre</b> (verde).</li>
-      <li>Indica la persona de contacto y confirma.</li>
-      <li>La fecha queda bloqueada para el resto de clientes y Perseida recibe un aviso.</li>
-    </ol>${S.reglas.permitirAnular ? '<p style="margin-top:8px">Si necesitas cambiarla, anúlala desde «Ver detalle» y reserva otra.</p>' : '<p style="margin-top:8px">Para anular una reserva contacta con la planificación de Perseida.</p>'}</div>`;
+      <li>Pulsa un día y hora <b>libre</b> (verde).</li>
+      <li>Indica el nº de palets y confirma.</li>
+      <li>Queda reservado a tu nombre y deja de estar disponible para el resto de clientes.</li>
+    </ol>${S.reglas.permitirAnular ? '<p style="margin-top:8px">Si necesitas cambiarla, anúlala desde «Ver reserva» y reserva otra.</p>' : '<p style="margin-top:8px">Para anular una reserva contacta con la planificación de Perseida.</p>'}</div>`;
   return h;
 }
 
 function htmlResumen() {
   const fut = S.fechas.filter(f => f.fecha >= hoyISO());
   const libres = fut.filter(f => f.estado === 'libre').length;
-  const por = c => fut.filter(f => f.cliente === c).length;
-  return `<h3>Próximas fechas</h3>
+  const de = c => fut.filter(f => f.cliente === c);
+  const sumPal = l => l.reduce((a, f) => a + (Number(f.palets) || 0), 0);
+  return `<h3>Próximas cargas</h3>
     <div class="stats">
-      <span><i class="sw libre"></i> Libres</span><span class="n">${libres}</span>
-      ${S.clientes.map(c => `<span><i class="sw" style="background:${colorCliente(c)}"></i> ${esc(c)}</span><span class="n">${por(c)}</span>`).join('')}
-      <span><b>Total</b></span><span class="n">${fut.length}</span>
+      <span></span><span class="h">Reservas</span><span class="h">Palets</span>
+      <span><i class="sw libre"></i> Libres</span><span class="n">${libres}</span><span></span>
+      ${S.clientes.map(c => `<span><i class="sw" style="background:${colorCliente(c)}"></i> ${esc(c)}</span><span class="n">${de(c).length}</span><span class="n">${sumPal(de(c))}</span>`).join('')}
+      <span><b>Total</b></span><span class="n">${fut.length}</span><span class="n">${sumPal(fut)}</span>
     </div>
     <div class="info">
-      <p>Pulsa una fecha del calendario para ver el detalle, <b>liberarla</b> (si está reservada) o <b>eliminarla</b> (si está libre).</p>
-      <p>También puedes editar directamente la hoja de Google «Fechas»: una fila sin cliente es una fecha libre.</p>
+      <p>Pulsa un día del calendario para ver el detalle, <b>liberarlo</b> (si está reservado) o <b>eliminarlo</b> (si está libre).</p>
+      <p>Los clientes solo ven los días libres y sus propias reservas: nunca las de otro cliente.</p>
       ${demo() ? '' : '<p>Cada reserva o anulación envía un aviso por correo a Perseida.</p>'}
     </div>`;
 }
@@ -688,27 +682,24 @@ function htmlResumen() {
 function htmlTabla() {
   const lista = visibles();
   const hoy = hoyISO();
-  return `<div class="tablehead" style="margin-top:0">
-      <h3>Todas las fechas (${lista.length})</h3>
+  return `<div class="tablehead">
+      <h3>Todos los días habilitados (${lista.length})</h3>
       <label><input type="checkbox" id="chkPasadas" ${S.verPasadas ? 'checked' : ''}/> Mostrar fechas pasadas</label>
     </div>
     ${lista.length ? `<div class="tablewrap"><table>
-      <thead><tr><th>Fecha</th><th>Franja</th><th>Observaciones</th><th>Estado</th><th>Contacto</th><th>Email</th><th>Comentario</th><th>Reservado el</th><th></th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Hora</th><th>Estado / cliente</th><th>Nº palets</th><th>Reservado el</th><th></th></tr></thead>
       <tbody>${lista.map(f => `
         <tr class="${f.fecha < hoy ? 'past' : ''}">
           <td>${esc(fechaCorta(f.fecha))}</td>
-          <td>${esc(f.franja || '—')}</td>
-          <td class="wrap">${esc(f.obs)}</td>
+          <td>${esc(f.hora || 'Todo el día')}</td>
           <td>${badge(f)}</td>
-          <td>${esc(f.contacto)}</td>
-          <td>${f.email ? `<a href="mailto:${esc(f.email)}">${esc(f.email)}</a>` : ''}</td>
-          <td class="wrap">${esc(f.comentario)}</td>
-          <td>${esc(f.reservadoEl)}</td>
+          <td class="num">${esc(f.palets || '')}</td>
+          <td>${esc(f.reservadoEl || '')}</td>
           <td>${f.estado === 'libre'
             ? `<button type="button" class="small danger" data-act="eliminar" data-id="${esc(f.id)}">Eliminar</button>`
             : `<button type="button" class="small" data-act="liberar" data-id="${esc(f.id)}">Liberar</button>`}</td>
         </tr>`).join('')}
-      </tbody></table></div>` : '<p class="empty">No hay fechas.</p>'}`;
+      </tbody></table></div>` : '<p class="empty">No hay días habilitados.</p>'}`;
 }
 
 /* ---------- Diálogos ---------- */
@@ -720,70 +711,58 @@ function abrirDialogo(titulo, cuerpo, acciones) {
   if (!dlg.open) dlg.showModal();
 }
 
-function resumenFecha(f) {
-  return `<div class="sum"><b>${esc(cap(fechaLarga(f.fecha)))}</b>${esc([f.franja, f.obs].filter(Boolean).join(' · ') || 'Sin franja horaria')}</div>`;
-}
+const datos = filas => `<dl>${filas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
 
-function confirmar(titulo, texto, boton, peligro) {
+function confirmar(titulo, texto, boton) {
   return new Promise(resolve => {
     abrirDialogo(titulo, `<p>${texto}</p>`,
-      `<button type="button" data-close>Cancelar</button><button type="submit" class="${peligro ? 'danger' : 'primary'}">${esc(boton)}</button>`);
+      `<button type="button" data-close>Cancelar</button><button type="submit" class="danger">${esc(boton)}</button>`);
     $('#dForm').onsubmit = e => { e.preventDefault(); resolve(true); dlg.close(); };
     dlg.onclose = () => resolve(false);
   });
 }
 
 function dialogoReserva(f) {
-  let prev = {};
-  try { prev = JSON.parse(lsGet(LS_CONTACTO + '_' + S.usuario) || '{}'); } catch (e) { /* nada */ }
-  abrirDialogo('Reservar fecha de carga', `
-      ${resumenFecha(f)}
-      <label>Persona de contacto *<input type="text" name="contacto" maxlength="80" required value="${esc(prev.contacto)}" /></label>
-      <label>Email de contacto${S.reglas.copiaCliente ? ' (recibirás copia del aviso)' : ''}<input type="email" name="email" maxlength="120" value="${esc(prev.email)}" /></label>
-      <label>Comentario (nº de palets, matrícula, observaciones…)<textarea name="comentario" maxlength="500"></textarea></label>
-      <p class="note">Al confirmar, la fecha queda reservada para <b>${esc(S.usuario)}</b> y deja de estar disponible para el resto de clientes.</p>`,
+  const maxPal = S.reglas.maxPalets || 999;
+  abrirDialogo('Reservar', `
+      ${datos([['A nombre de', S.usuario], ['Fecha', cap(fechaLarga(f.fecha))], ['Hora', f.hora || 'Todo el día']])}
+      <label>Nº de palets<input type="number" name="palets" min="1" max="${maxPal}" step="1" inputmode="numeric" required /></label>`,
     `<button type="button" data-close>Cancelar</button><button type="submit" class="primary">Confirmar reserva</button>`);
   const form = $('#dForm');
   form.onsubmit = async e => {
     e.preventDefault();
-    const datos = { contacto: form.contacto.value.trim(), email: form.email.value.trim(), comentario: form.comentario.value.trim() };
-    lsSet(LS_CONTACTO + '_' + S.usuario, JSON.stringify({ contacto: datos.contacto, email: datos.email }));
-    // Si falla una validación el diálogo sigue abierto para corregir los datos.
-    if (await operar('reserve', { id: f.id, ...datos }) !== 'error') dlg.close();
+    // Si falla una validación el diálogo sigue abierto para corregir el dato.
+    if (await operar('reserve', { id: f.id, palets: Number(form.palets.value) }) !== 'error') dlg.close();
   };
-  form.contacto.focus();
+  form.palets.focus();
 }
 
 function dialogoDetalle(f) {
-  const hoy = hoyISO();
-  const filas = [
-    ['Estado', S.plan ? (f.estado === 'libre' ? 'Libre' : 'Reservada por ' + f.cliente) : 'Reservada por ti'],
-    ['Persona de contacto', f.contacto], ['Email', f.email], ['Comentario', f.comentario], ['Reservado el', f.reservadoEl],
-  ].filter(([, v]) => v);
+  const filas = [['Fecha', cap(fechaLarga(f.fecha))], ['Hora', f.hora || 'Todo el día']];
+  if (f.estado === 'libre') filas.push(['Estado', 'Libre']);
+  else filas.push(['Cliente', f.cliente], ['Nº de palets', f.palets], ['Reservado el', f.reservadoEl]);
   let acciones = `<button type="button" data-close>Cerrar</button>`;
   if (S.plan) {
     acciones += f.estado === 'libre'
-      ? `<button type="button" class="danger" data-act="eliminar" data-id="${esc(f.id)}">Eliminar fecha</button>`
-      : `<button type="button" class="danger" data-act="liberar" data-id="${esc(f.id)}">Liberar fecha</button>`;
-  } else if (S.reglas.permitirAnular && f.fecha >= hoy) {
+      ? `<button type="button" class="danger" data-act="eliminar" data-id="${esc(f.id)}">Eliminar</button>`
+      : `<button type="button" class="danger" data-act="liberar" data-id="${esc(f.id)}">Liberar</button>`;
+  } else if (S.reglas.permitirAnular && f.fecha >= hoyISO()) {
     acciones += `<button type="button" class="danger" data-act="anular" data-id="${esc(f.id)}">Anular reserva</button>`;
   }
-  abrirDialogo(S.plan ? 'Detalle de la fecha' : 'Tu reserva', `${resumenFecha(f)}
-    <dl>${filas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`, acciones);
+  abrirDialogo(S.plan ? 'Detalle' : 'Tu reserva', datos(filas.filter(([, v]) => v !== '' && v != null)), acciones);
 }
 
-/* ---------- Alta de fechas (planificación) ---------- */
+/* ---------- Alta de días y horas (planificación) ---------- */
 function fechasAlta() {
   const desde = $('#aDesde').value, hasta = $('#aHasta').value || desde;
   if (!desde || hasta < desde) return [];
   const dias = new Set([...document.querySelectorAll('#aDias input:checked')].map(i => Number(i.value)));
-  const franjas = $('#aFranja').value.split(/[,;]/).map(s => s.trim()).filter(Boolean);
-  const obs = $('#aObs').value.trim();
+  const horas = $('#aHoras').value.split(/[,;]/).map(s => s.trim()).filter(Boolean);
   const out = [];
   const unSoloDia = desde === hasta;
   for (let d = fromISO(desde), n = 0; toISO(d) <= hasta && n < 400; d.setDate(d.getDate() + 1), n++) {
     if (!unSoloDia && !dias.has(d.getDay())) continue;
-    (franjas.length ? franjas : ['']).forEach(franja => out.push({ fecha: toISO(d), franja, obs }));
+    (horas.length ? horas : ['']).forEach(hora => out.push({ fecha: toISO(d), hora }));
   }
   return out;
 }
@@ -791,135 +770,133 @@ function fechasAlta() {
 function previewAlta() {
   const desde = $('#aDesde').value, hasta = $('#aHasta').value;
   const n = fechasAlta().length;
-  let t = '';
-  if (!desde) t = 'Indica al menos la fecha «Desde». Si no pones «Hasta», se añade solo ese día.';
+  let t;
+  if (!desde) t = 'Indica al menos la fecha «Desde». Si no pones «Hasta», se habilita solo ese día. Sin hora, el día queda como «Todo el día».';
   else if (hasta && hasta < desde) t = '«Hasta» no puede ser anterior a «Desde».';
-  else if (desde < hoyISO()) t = 'No se pueden añadir fechas pasadas.';
-  else t = `Se añadirán ${n} fecha(s) de carga.` + (hasta && hasta !== desde ? ' (Solo los días de la semana marcados.)' : '');
+  else if (desde < hoyISO()) t = 'No se pueden habilitar fechas pasadas.';
+  else t = `Se habilitarán ${n} día(s)/hora(s) de carga.` + (hasta && hasta !== desde ? ' (Solo los días de la semana marcados.)' : '');
   $('#aPreview').textContent = t;
 }
 
 /* ---------- Eventos ---------- */
 document.addEventListener('click', async e => {
   if (e.target.closest('[data-close]')) { dlg.close(); return; }
-  if (e.target.closest('#btnSalir')) { salir(); return; }
+  if (e.target.closest('#btnSalir')) { cerrarSesion(); return; }
   const b = e.target.closest('[data-act]');
   if (!b) return;
   const f = S.fechas.find(x => x.id === b.dataset.id);
+  const cuando = f ? `<b>${esc(fechaLarga(f.fecha))}</b>${f.hora ? ' a las <b>' + esc(f.hora) + '</b>' : ''}` : '';
   switch (b.dataset.act) {
     case 'reservar': if (f) dialogoReserva(f); break;
     case 'detalle': if (f) dialogoDetalle(f); break;
-    case 'ir': S.mes = new Date(fromISO(b.dataset.fecha).getFullYear(), fromISO(b.dataset.fecha).getMonth(), 1); render(); break;
+    case 'ir': { const d = fromISO(b.dataset.fecha); S.mes = new Date(d.getFullYear(), d.getMonth(), 1); render(); break; }
     case 'anular':
-      if (f && await confirmar('Anular reserva', `¿Seguro que quieres anular tu reserva del <b>${esc(fechaLarga(f.fecha))}</b>${f.franja ? ' (' + esc(f.franja) + ')' : ''}? La fecha quedará libre para otros clientes.`, 'Anular reserva', true)) {
+      if (f && await confirmar('Anular reserva', `¿Seguro que quieres anular tu reserva del ${cuando}? Quedará libre para otros clientes.`, 'Anular reserva')) {
         await operar('cancel', { id: f.id });
       }
       break;
     case 'liberar':
-      if (f && await confirmar('Liberar fecha', `La fecha <b>${esc(fechaLarga(f.fecha))}</b>${f.franja ? ' (' + esc(f.franja) + ')' : ''} está reservada por <b>${esc(f.cliente)}</b>. ¿Liberarla? Se enviará aviso por correo.`, 'Liberar', true)) {
+      if (f && await confirmar('Liberar', `El ${cuando} está reservado por <b>${esc(f.cliente)}</b> (${esc(palets(f.palets))}). ¿Liberarlo?`, 'Liberar')) {
         await operar('cancel', { id: f.id });
       }
       break;
     case 'eliminar':
-      if (f && await confirmar('Eliminar fecha', `¿Eliminar la fecha <b>${esc(fechaLarga(f.fecha))}</b>${f.franja ? ' (' + esc(f.franja) + ')' : ''}?`, 'Eliminar', true)) {
+      if (f && await confirmar('Eliminar', `¿Eliminar el ${cuando}?`, 'Eliminar')) {
         await operar('deleteSlot', { id: f.id });
       }
       break;
   }
 });
 
-$('#fLogin').addEventListener('submit', e => { e.preventDefault(); const c = $('#iCode').value.trim(); if (c) entrar(c); });
-document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => entrar(b.dataset.demo)));
+$('#fLogin').addEventListener('submit', e => {
+  e.preventDefault();
+  const u = $('#iUser').value.trim(), p = $('#iPass').value;
+  if (u && p) iniciarSesion(u, p);
+});
 $('#btnPrev').onclick = () => { S.mes = new Date(S.mes.getFullYear(), S.mes.getMonth() - 1, 1); render(); };
 $('#btnNext').onclick = () => { S.mes = new Date(S.mes.getFullYear(), S.mes.getMonth() + 1, 1); render(); };
 $('#btnHoy').onclick = () => { const d = new Date(); S.mes = new Date(d.getFullYear(), d.getMonth(), 1); render(); };
 $('#btnRefresh').onclick = () => refrescar(false);
 document.querySelectorAll('[data-vista]').forEach(b => b.onclick = () => { S.vista = b.dataset.vista; render(); });
 document.addEventListener('change', e => { if (e.target.id === 'chkPasadas') { S.verPasadas = e.target.checked; render(); } });
-['#aDesde', '#aHasta', '#aFranja', '#aObs'].forEach(s => $(s).addEventListener('input', previewAlta));
+['#aDesde', '#aHasta', '#aHoras'].forEach(s => $(s).addEventListener('input', previewAlta));
 $('#aDias').addEventListener('change', previewAlta);
 $('#fAlta').addEventListener('submit', async e => {
   e.preventDefault();
   const lista = fechasAlta();
-  if (!lista.length) { toast('No hay fechas que añadir con esos criterios.', 'warn'); return; }
+  if (!lista.length) { toast('No hay días que añadir con esos criterios.', 'warn'); return; }
   if (await operar('addSlots', { fechas: lista }) === 'ok') { $('#aDesde').value = ''; $('#aHasta').value = ''; previewAlta(); }
 });
-$('#btnDemoReset').onclick = () => { lsSet(DEMO_KEY, null); demoMemoria = null; toast('Demo reiniciada.'); if (S.code) refrescar(false); };
+$('#btnDemoReset').onclick = () => { lsSet(DEMO_KEY, null); demoMemoria = null; toast('Demo reiniciada: sin días habilitados ni reservas.'); if (S.token) refrescar(false); };
 
-setInterval(() => { if (S.code && !document.hidden && !S.busy && !dlg.open) refrescar(true); }, CONFIG.REFRESCO_SEG * 1000);
-window.addEventListener('focus', () => { if (S.code && !S.busy && !dlg.open) refrescar(true); });
+setInterval(() => { if (S.token && !document.hidden && !S.busy && !dlg.open) refrescar(true); }, CONFIG.REFRESCO_SEG * 1000);
+window.addEventListener('focus', () => { if (S.token && !S.busy && !dlg.open) refrescar(true); });
 
 /* =====================================================================
    MODO DEMO — simula el servidor (mismas reglas que Code.gs) guardando
-   los datos en este navegador. Solo se usa si CONFIG.API_URL está vacío.
+   los datos en este navegador. Solo se usa si CONFIG.API_URL está vacío;
+   con el servidor configurado este bloque no interviene.
    ===================================================================== */
-const DEMO_KEY = 'perseida_reservas_demo_v1';
-const DEMO_USERS = { 'demo-fedefarma': 'FEDEFARMA', 'demo-bidafarma': 'BIDAFARMA', 'demo-unnefa': 'UNNEFA', 'demo-planificacion': 'PLANIFICACION' };
-const DEMO_REGLAS = { permitirAnular: true, maxReservas: 0, copiaCliente: true };
+const DEMO_KEY = 'perseida_reservas_demo_v2';
+const DEMO_USERS = { FEDEFARMA: false, BIDAFARMA: false, UNNEFA: false, PLANIFICADOR: true }; // usuario → es planificación
+const DEMO_REGLAS = { permitirAnular: true, maxReservas: 0, maxPalets: 0 };
 let demoMemoria = null;
 
 function demoCargar() {
   try { const s = lsGet(DEMO_KEY); if (s) return JSON.parse(s); } catch (e) { /* datos corruptos → se regeneran */ }
-  if (demoMemoria) return demoMemoria;
-  // Fechas de ejemplo: lunes, miércoles y viernes de las próximas 6 semanas.
-  const fechas = [];
-  const d = new Date(); d.setDate(d.getDate() + 1);
-  for (let i = 0; i < 42; i++, d.setDate(d.getDate() + 1)) {
-    if (![1, 3, 5].includes(d.getDay())) continue;
-    fechas.push({ id: 'd' + fechas.length, fecha: toISO(d), franja: '07:00–09:00', obs: 'Muelle 1', cliente: '' });
-    if (d.getDay() === 3) fechas.push({ id: 'd' + fechas.length, fecha: toISO(d), franja: '12:00–14:00', obs: 'Muelle 2', cliente: '' });
-  }
-  [[2, 'BIDAFARMA', 'Laura Martín'], [5, 'UNNEFA', 'Pedro Ruiz'], [9, 'BIDAFARMA', 'Laura Martín']].forEach(([i, c, p]) => {
-    if (fechas[i]) Object.assign(fechas[i], { cliente: c, contacto: p, email: '', comentario: '', reservadoEl: fechaCorta(hoyISO()) });
-  });
-  return { fechas, seq: fechas.length };
+  return demoMemoria || { fechas: [], seq: 0 };
 }
 
 function demoGuardar(db) { demoMemoria = db; lsSet(DEMO_KEY, JSON.stringify(db)); }
 
-function demoError(msg, conflicto) { const e = new Error(msg); e.conflicto = !!conflicto; return e; }
+function demoError(msg, extra) { return Object.assign(new Error(msg), extra); }
 
 async function demoApi(req) {
   await new Promise(r => setTimeout(r, 250));
-  const usuario = DEMO_USERS[req.code];
-  if (!usuario) throw demoError('Código de acceso no válido. En modo demo usa los botones de acceso directo.');
-  const esPlan = usuario === 'PLANIFICACION';
+  let usuario;
+  if (req.action === 'login') {
+    usuario = String(req.usuario || '').trim().toUpperCase();
+    if (!(usuario in DEMO_USERS) || req.password !== 'demo') throw demoError('Usuario o contraseña incorrectos.');
+  } else {
+    usuario = String(req.token || '').replace(/^demo-/, '');
+    if (!(usuario in DEMO_USERS)) throw demoError('Tu sesión ha caducado. Inicia sesión de nuevo.', { sesion: true });
+  }
+  if (req.action === 'logout') return { ok: true };
+  const esPlan = DEMO_USERS[usuario];
   const db = demoCargar();
   const hoy = hoyISO();
   const f = db.fechas.find(x => x.id === req.id);
   let mensaje = '', correo = null;
 
   switch (req.action) {
-    case 'list': break;
-    case 'reserve':
+    case 'login': case 'list': break;
+    case 'reserve': {
       if (esPlan) throw demoError('La planificación no reserva desde aquí.');
-      if (!f) throw demoError('Esta fecha ya no está disponible.', true);
-      if (f.cliente === usuario) throw demoError('Ya tienes reservada esta fecha.', true);
-      if (f.cliente) throw demoError('Lo sentimos: otro cliente acaba de reservar esta fecha. Elige otra, por favor.', true);
-      if (String(req.contacto || '').trim().length < 2) throw demoError('Indica la persona de contacto.');
-      if (req.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.email)) throw demoError('El email de contacto no es válido.');
-      Object.assign(f, { cliente: usuario, contacto: req.contacto, email: req.email, comentario: req.comentario,
-        reservadoEl: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) });
-      mensaje = `Reserva confirmada: ${fechaLarga(f.fecha)}${f.franja ? ' · ' + f.franja : ''}.`;
+      if (f && f.cliente === usuario) throw demoError('Ya tienes reservada esta fecha.', { conflicto: true });
+      if (!f || f.cliente) throw demoError('Lo sentimos: esta fecha y hora ya no está disponible. Elige otra, por favor.', { conflicto: true });
+      const n = Number(req.palets);
+      if (!Number.isInteger(n) || n < 1 || n > 999) throw demoError('Indica un nº de palets entero entre 1 y 999.');
+      Object.assign(f, { cliente: usuario, palets: String(n), reservadoEl: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) });
+      mensaje = `Reserva confirmada a nombre de ${usuario}: ${fechaLarga(f.fecha)}${f.hora ? ' · ' + f.hora : ''} · ${palets(n)}.`;
       correo = { enviado: true };
       break;
+    }
     case 'cancel':
-      if (!f || !f.cliente) throw demoError('Esta fecha ya no está reservada.', true);
-      if (!esPlan && f.cliente !== usuario) throw demoError('Solo puedes anular tus propias reservas.');
+      if (!f || !f.cliente || (!esPlan && f.cliente !== usuario)) throw demoError('Esta reserva ya no existe.', { conflicto: true });
       mensaje = esPlan ? `Fecha liberada (estaba reservada por ${f.cliente}).` : 'Reserva anulada. La fecha vuelve a estar libre.';
-      Object.assign(f, { cliente: '', contacto: '', email: '', comentario: '', reservadoEl: '' });
+      Object.assign(f, { cliente: '', palets: '', reservadoEl: '' });
       correo = { enviado: true };
       break;
     case 'addSlots': {
-      if (!esPlan) throw demoError('Solo la planificación puede añadir fechas.');
-      const existentes = new Set(db.fechas.map(x => x.fecha + '|' + x.franja.toLowerCase()));
+      if (!esPlan) throw demoError('Solo la planificación puede habilitar fechas.');
+      const existentes = new Set(db.fechas.map(x => x.fecha + '|' + x.hora.toLowerCase()));
       let n = 0, rep = 0;
       (req.fechas || []).forEach(x => {
         if (x.fecha < hoy) return;
-        const k = x.fecha + '|' + x.franja.toLowerCase();
+        const k = x.fecha + '|' + x.hora.toLowerCase();
         if (existentes.has(k)) { rep++; return; }
         existentes.add(k);
-        db.fechas.push({ id: 'd' + db.seq++, fecha: x.fecha, franja: x.franja, obs: x.obs, cliente: '' });
+        db.fechas.push({ id: 'd' + db.seq++, fecha: x.fecha, hora: x.hora, cliente: '', palets: '', reservadoEl: '' });
         n++;
       });
       mensaje = `${n} fecha(s) añadida(s)` + (rep ? `; ${rep} ya existían y se han omitido.` : '.');
@@ -927,7 +904,7 @@ async function demoApi(req) {
     }
     case 'deleteSlot':
       if (!esPlan) throw demoError('Solo la planificación puede eliminar fechas.');
-      if (!f) throw demoError('La fecha ya no existe.', true);
+      if (!f) throw demoError('La fecha ya no existe.', { conflicto: true });
       if (f.cliente) throw demoError(`La fecha está reservada por ${f.cliente}. Libérala antes de eliminarla.`);
       db.fechas = db.fechas.filter(x => x !== f);
       mensaje = 'Fecha eliminada.';
@@ -937,31 +914,29 @@ async function demoApi(req) {
   demoGuardar(db);
 
   const fechas = db.fechas
-    .filter(x => esPlan || x.fecha >= hoy)
-    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.franja.localeCompare(b.franja))
+    .filter(x => (esPlan || x.fecha >= hoy) && (esPlan || !x.cliente || x.cliente === usuario))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora))
     .map(x => {
-      const mia = x.cliente === usuario;
-      const v = { id: x.id, fecha: x.fecha, franja: x.franja, obs: x.obs, estado: !x.cliente ? 'libre' : (mia ? 'mia' : 'ocupada') };
-      if (esPlan || mia) Object.assign(v, { cliente: x.cliente, contacto: x.contacto, email: x.email, comentario: x.comentario, reservadoEl: x.reservadoEl });
+      const v = { id: x.id, fecha: x.fecha, hora: x.hora, estado: !x.cliente ? 'libre' : (x.cliente === usuario ? 'mia' : 'ocupada') };
+      if (x.cliente) Object.assign(v, { cliente: x.cliente, palets: x.palets, reservadoEl: x.reservadoEl });
       return v;
     });
-  return { ok: true, usuario, planificador: esPlan, clientes: esPlan ? ['FEDEFARMA', 'BIDAFARMA', 'UNNEFA'] : [], reglas: DEMO_REGLAS, mensaje, correo, fechas };
+  return {
+    ok: true, token: req.action === 'login' ? 'demo-' + usuario : undefined, usuario, planificador: esPlan,
+    clientes: esPlan ? Object.keys(DEMO_USERS).filter(u => !DEMO_USERS[u]) : [], reglas: DEMO_REGLAS, mensaje, correo, fechas,
+  };
 }
 
 /* ---------- Arranque ---------- */
-(function iniciar() {
+(async function iniciar() {
   $('#demoBar').hidden = !demo();
   $('#aDesde').min = $('#aHasta').min = hoyISO();
   if (window.matchMedia('(max-width: 600px)').matches) S.vista = 'lista';
-  // Enlace personalizado: …/RESERVA_CARGAS.html?c=CODIGO (se quita de la barra de direcciones).
-  const params = new URLSearchParams(location.search);
-  const enlace = params.get('c');
-  if (enlace) {
-    params.delete('c');
-    try { history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '') + location.hash); } catch (e) { /* nada */ }
-  }
-  const code = enlace || lsGet(LS_CODE);
-  if (code) entrar(code); else mostrarLogin();
+  // Si la pestaña ya tenía una sesión abierta, se reutiliza (se cierra al cerrar el navegador).
+  S.token = ssGet(SS_TOKEN);
+  if (!S.token) return mostrarLogin();
+  try { entrarApp(await conCarga(() => api('list'))); }
+  catch (e) { cerrarSesion(e.sesion ? '' : e.message); }
 })();
 </script>
 </body>

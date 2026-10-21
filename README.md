@@ -122,68 +122,83 @@ el contador `LIBRES` (por código) y los maestros `MATERIALES` / `PALET_TIPOS` d
 
 ## `RESERVA_CARGAS.html` — Reserva de fechas de carga
 
-La planificación de Perseida publica fechas de carga posibles y los clientes **FEDEFARMA**, **BIDAFARMA**
-y **UNNEFA** entran (cada uno cuando quiera) y reservan una. En cuanto un cliente reserva una fecha, deja de
-estar disponible para los otros dos. Cada reserva o anulación envía un correo a **jgata@perseida.com**.
+La planificación de Perseida habilita días y horas de carga y los clientes **FEDEFARMA**, **BIDAFARMA**
+y **UNNEFA** inician sesión (cada uno cuando quiera) y reservan uno indicando el **nº de palets**. En
+cuanto un cliente reserva, ese día y hora **desaparece para los otros dos**; la planificación ve qué
+cliente lo ha reservado y con cuántos palets. Cada reserva envía un correo a **jgata@perseida.com**.
 
 ### Arquitectura
 
-Un HTML estático (GitHub Pages u otro repositorio/hosting) no puede compartir datos entre clientes, así que
-la página habla con un pequeño servidor gratuito: una **hoja de cálculo de Google** con un **Apps Script**
-publicado como aplicación web.
+Un HTML estático (un repositorio, GitHub Pages…) no puede compartir datos entre clientes ni guardar
+contraseñas de forma segura, así que la página habla con un pequeño servidor gratuito: una **hoja de
+cálculo de Google** con un **Apps Script** publicado como aplicación web.
 
 ```
  FEDEFARMA ─┐
  BIDAFARMA ─┼─► RESERVA_CARGAS.html ──POST JSON──► Apps Script (aplicación web) ──► correo a jgata@perseida.com
- UNNEFA ────┤   (repositorio externo)                │  bloqueo: si dos clientes reservan
- Planific. ─┘                                        │  a la vez, solo gana el primero
+ UNNEFA ────┤   (repositorio de clientes)            │  comprueba usuario/contraseña y bloquea:
+ Planific. ─┘                                        │  si dos clientes reservan a la vez, gana el primero
                                                      ▼
-                                     Hoja de Google: «Fechas» · «Accesos» · «Registro»
+                                     Hoja de Google privada: «Fechas» · «Accesos» · «Registro»
 ```
 
-- **Hoja «Fechas»**: una fila por fecha/franja de carga. Fila sin cliente = libre; con cliente = reservada.
-- **Hoja «Accesos»**: código de acceso de cada cliente y de la planificación.
-- **Hoja «Registro»**: histórico de altas, bajas, reservas, anulaciones y errores de correo.
+- **Hoja «Fechas»**: una fila por día/hora de carga (`ID`, `Fecha`, `Hora`, `Cliente`, `Nº palets`,
+  `Reservado el`). Fila sin cliente = libre; con cliente = reservada.
+- **Hoja «Accesos»**: `Usuario`, `Contraseña` y `Perfil` (`CLIENTE` o `PLANIFICADOR`).
+- **Hoja «Registro»**: histórico de accesos fallidos, altas, bajas, reservas, anulaciones y errores de correo.
 
 Código del servidor: [`reserva-cargas-apps-script/Code.gs`](reserva-cargas-apps-script/Code.gs).
+
+### Seguridad (el repositorio lo verán los clientes)
+
+- `RESERVA_CARGAS.html` **no contiene usuarios ni contraseñas**: se comprueban en el servidor contra la
+  hoja «Accesos», que solo ve Perseida. Leer el código fuente de la página no da acceso a nada.
+- Al iniciar sesión el servidor entrega un **token de sesión** (la contraseña no se guarda en el navegador).
+  La sesión se cierra con «Cerrar sesión», al cerrar el navegador o tras 6 h sin uso. Si se cambia una
+  contraseña en «Accesos», las sesiones abiertas de ese usuario dejan de valer al momento.
+- Tras **8 contraseñas erróneas** el usuario queda bloqueado 15 minutos (queda anotado en «Registro»).
+- El servidor solo envía a cada cliente los días libres y sus propias reservas: **nunca** datos de otro cliente.
+- Al repositorio de los clientes basta con subir `RESERVA_CARGAS.html` (con `API_URL` configurada).
+  `Code.gs` y este README no tienen secretos, pero no hace falta que estén ahí.
 
 ### Funcionamiento
 
 **Clientes**
-- Entran con su código (o con su enlace personalizado `…/RESERVA_CARGAS.html?c=CÓDIGO`; el código se quita
-  de la barra de direcciones y queda recordado en ese navegador).
-- Ven un calendario (o lista, en móvil) con las fechas **libres** (verde), **las suyas** (azul) y las
-  **no disponibles** (gris). Un cliente **nunca ve qué otro cliente** ha reservado una fecha.
-- Para reservar indican persona de contacto (obligatoria), email (opcional, recibe copia del aviso) y un
-  comentario (nº de palets, matrícula…).
+- Pantalla **Iniciar sesión** con usuario y contraseña.
+- Ven un calendario (o lista, en móvil) con los días y horas **libres** (verde) y **sus reservas** (azul).
+  Lo reservado por otro cliente no les aparece.
+- Al pulsar un día/hora libre, el popup solo muestra **a nombre de qué cliente** se hace la reserva, la
+  fecha y la hora, y pide el **nº de palets**.
 - Si otro cliente se adelanta mientras tanto, la reserva se rechaza con un aviso y la vista se actualiza.
-- Pueden anular sus reservas futuras (configurable); la fecha vuelve a quedar libre.
+- Pueden anular sus reservas futuras (configurable); el día vuelve a quedar libre para todos.
 - La disponibilidad se refresca sola cada 60 s y al volver a la pestaña.
 
-**Planificación** (código `PLANIFICACION`)
-- Alta de fechas por rango (*desde/hasta*), días de la semana y una o varias franjas horarias separadas por
-  comas, con observaciones visibles para los clientes.
-- Ve qué cliente tiene cada fecha, sus datos de contacto, y puede **liberar** (reservadas) o **eliminar**
-  (libres) fechas.
-- También puede trabajar directamente en la hoja «Fechas»: añadir filas (Fecha, Franja horaria,
-  Observaciones; el ID se rellena solo), escribir un cliente para asignarle una fecha o borrar las columnas
-  E–I para liberarla.
+**Planificación** (usuario `PLANIFICADOR`)
+- Habilita días por rango (*desde/hasta*), días de la semana y una o varias horas separadas por comas.
+- Ve en el calendario y en la tabla qué cliente tiene cada día/hora, con cuántos palets, y un resumen de
+  reservas y palets por cliente.
+- Puede **liberar** (reservados) o **eliminar** (libres) días/horas.
+- También puede trabajar directamente en la hoja «Fechas»: añadir filas (Fecha, Hora; el ID se rellena
+  solo), escribir un cliente para asignarle un día o borrar las columnas D–F para liberarlo.
+- El sistema arranca **sin ninguna fecha**: solo aparecen las que habilite la planificación.
 
-**Correo** a `jgata@perseida.com` en cada reserva y anulación, con cliente, fecha, franja, contacto y
-comentario, y enlace a la hoja. Si el cliente indicó email, va en copia y como dirección de respuesta. Si
-el envío falla, la reserva se mantiene, la página lo indica y queda anotado en «Registro».
+**Correo** a `jgata@perseida.com` en cada reserva (y en cada anulación o liberación), con cliente, fecha,
+hora y nº de palets, y enlace a la hoja. Si el envío falla, la reserva se mantiene, la página lo indica
+y queda anotado en «Registro».
 
 ### Instalación (una sola vez, ~15 minutos)
 
 1. Con la cuenta de Google desde la que saldrán los avisos (p. ej. una cuenta genérica de planificación),
-   crea una **hoja de cálculo de Google** nueva, por ejemplo «PERSEIDA · Reservas de carga».
+   crea una **hoja de cálculo de Google** nueva, por ejemplo «PERSEIDA · Reservas de carga». **No la
+   compartas con los clientes.**
 2. En la hoja: **Extensiones → Apps Script**. Borra el contenido de `Código.gs`, pega el de
    [`reserva-cargas-apps-script/Code.gs`](reserva-cargas-apps-script/Code.gs) y guarda.
 3. **Configuración del proyecto** (⚙): zona horaria **(GMT+01:00) Madrid**. Comprueba también que la hoja
    de cálculo usa esa zona (Archivo → Configuración).
 4. En el editor, elige la función **`setup`** y pulsa **Ejecutar**. Acepta los permisos (si aparece «Google
    no ha verificado esta aplicación»: *Configuración avanzada → Ir a … (no seguro)*; es lo normal en
-   scripts propios). Se crean las hojas y los **códigos de acceso** en la hoja «Accesos».
+   scripts propios). Se crean las hojas y la hoja «Accesos» con los usuarios `FEDEFARMA`, `BIDAFARMA`,
+   `UNNEFA` y `PLANIFICADOR` y **contraseñas aleatorias** (puedes cambiarlas ahí mismo).
 5. Ejecuta **`pruebaCorreo`** y comprueba que llega un correo a jgata@perseida.com.
 6. **Implementar → Nueva implementación → Aplicación web**, con *Ejecutar como: Yo* y *Quién tiene acceso:
    Cualquier usuario*. Copia la URL que termina en **`/exec`**.
@@ -192,10 +207,9 @@ el envío falla, la reserva se mantiene, la página lo indica y queda anotado en
    const CONFIG = {
      API_URL: 'https://script.google.com/macros/s/XXXXXXXX/exec',
    ```
-8. Sube `RESERVA_CARGAS.html` al repositorio externo (p. ej. GitHub Pages: *Settings → Pages → Deploy from
-   a branch*).
-9. Envía a cada cliente su enlace con su código:
-   `https://<usuario>.github.io/<repositorio>/RESERVA_CARGAS.html?c=<CÓDIGO>`.
+8. Sube `RESERVA_CARGAS.html` al repositorio de los clientes (si se publica con GitHub Pages:
+   *Settings → Pages → Deploy from a branch*). También funciona descargándolo y abriéndolo en el navegador.
+9. Comunica a cada cliente su usuario y contraseña por un canal privado (no en el repositorio).
 
 > Si más adelante cambias `Code.gs`: *Implementar → Gestionar implementaciones → ✏️ → Versión: Nueva
 > versión*. Así la URL `/exec` no cambia y no hay que tocar el HTML.
@@ -208,17 +222,20 @@ el envío falla, la reserva se mantiene, la página lo indica y queda anotado en
 | Parámetro | Por defecto | Qué hace |
 |-----------|-------------|----------|
 | `NOTIFICAR_A` | `jgata@perseida.com` | Destinatario(s) del aviso (varios separados por comas). |
-| `COPIA_AL_CLIENTE` | `true` | Copia del aviso al email que indique el cliente. |
+| `AVISAR_ANULACIONES` | `true` | Avisar también cuando se anula o libera una reserva. |
 | `PERMITIR_ANULAR_CLIENTE` | `true` | El cliente puede anular sus reservas futuras. |
 | `MAX_RESERVAS_ACTIVAS_POR_CLIENTE` | `0` | Máximo de reservas futuras por cliente (0 = sin límite), para repartir fechas. |
+| `MAX_PALETS_POR_RESERVA` | `0` | Máximo de palets por reserva (0 = sin límite; p. ej. 33 = un camión). |
 | `DIAS_HISTORICO_PLANIFICACION` | `90` | Días de fechas pasadas que ve la planificación. |
+| `HORAS_SESION` | `6` | Horas sin uso tras las que caduca la sesión (máximo 6). |
+| `INTENTOS_MAX` / `MINUTOS_BLOQUEO` | `8` / `15` | Bloqueo temporal tras contraseñas erróneas. |
 
-### Gestión de accesos
+### Gestión de usuarios
 
-- Cambiar un código (p. ej. si se ha difundido): edítalo en la hoja «Accesos»; el cambio es inmediato.
-- Añadir otro cliente: una fila nueva en «Accesos» con su nombre y un código.
-- Los códigos **no** están en el HTML: la URL del script es pública, pero sin un código válido no se puede
-  ver ni reservar nada.
+- Cambiar una contraseña: edítala en la hoja «Accesos»; el cambio es inmediato y cierra las sesiones
+  abiertas de ese usuario. Usa contraseñas de al menos 8 caracteres.
+- Añadir otro cliente: una fila nueva en «Accesos» con usuario, contraseña y perfil `CLIENTE`.
+- Quitar el acceso: borra la fila (o la contraseña) del usuario.
 
 ### Límites
 
@@ -227,7 +244,7 @@ el envío falla, la reserva se mantiene, la página lo indica y queda anotado en
 
 ### Modo demo
 
-Con `CONFIG.API_URL` vacío, la página funciona en **modo demostración**: simula el servidor con las mismas
-reglas y guarda los datos solo en ese navegador (no envía correos). Hay botones para entrar como cada
-cliente o como planificación y comprobar el bloqueo entre clientes.
-
+Con `CONFIG.API_URL` vacío, la página funciona en **modo demostración** (aviso amarillo arriba): simula el
+servidor con las mismas reglas, guarda los datos solo en ese navegador y no envía correos. Se entra con
+cualquiera de los cuatro usuarios y la contraseña `demo`. **No subas el HTML a los clientes sin
+configurar `API_URL`.**

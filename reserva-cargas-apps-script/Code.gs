@@ -4,11 +4,13 @@
    Hoja de cálculo de Google + este script publicado como «Aplicación web».
    La página RESERVA_CARGAS.html llama a la URL /exec de la aplicación.
 
-   - Hoja «Fechas»:   fechas de carga posibles (las da de alta la planificación,
-                      desde la página o escribiendo directamente en la hoja).
+   - Hoja «Fechas»:   días y horas de carga habilitados por la planificación
+                      (desde la página o escribiendo directamente en la hoja).
                       Fila sin «Cliente» = LIBRE · con «Cliente» = RESERVADA.
-   - Hoja «Accesos»:  código de acceso de cada cliente y de la planificación.
-   - Hoja «Registro»: histórico de reservas, anulaciones, altas y bajas.
+   - Hoja «Accesos»:  usuario, contraseña y perfil (CLIENTE / PLANIFICADOR).
+                      Las contraseñas solo están aquí: nunca en el HTML.
+   - Hoja «Registro»: histórico de accesos fallidos, reservas, anulaciones,
+                      altas y bajas.
 
    Todas las operaciones se hacen con un bloqueo (LockService), de modo que
    si dos clientes reservan la misma fecha a la vez solo gana el primero.
@@ -17,23 +19,30 @@
    ===================================================================== */
 
 const CONFIG = {
-  NOTIFICAR_A: 'jgata@perseida.com',      // aviso de cada reserva/anulación (varios: separados por comas)
-  COPIA_AL_CLIENTE: true,                 // CC al email de contacto que indique el cliente al reservar
+  NOTIFICAR_A: 'jgata@perseida.com',      // aviso de cada reserva (varios: separados por comas)
+  AVISAR_ANULACIONES: true,               // avisar también cuando se anula o libera una reserva
   PERMITIR_ANULAR_CLIENTE: true,          // el cliente puede anular sus propias reservas futuras
   MAX_RESERVAS_ACTIVAS_POR_CLIENTE: 0,    // 0 = sin límite
+  MAX_PALETS_POR_RESERVA: 0,              // 0 = sin límite
   DIAS_HISTORICO_PLANIFICACION: 90,       // la planificación ve también las fechas pasadas de los últimos N días
+  HORAS_SESION: 6,                        // la sesión caduca tras N horas sin uso (máximo 6)
+  INTENTOS_MAX: 8,                        // intentos fallidos de contraseña antes de bloquear el usuario…
+  MINUTOS_BLOQUEO: 15,                    // …durante estos minutos
   REMITENTE: 'PERSEIDA · Reservas de carga',
 };
 
-/* Usuarios que crea setup() en la hoja «Accesos». Para añadir un cliente
-   más basta con añadir una fila en esa hoja (no hace falta tocar el código). */
-const CLIENTES_INICIALES = ['FEDEFARMA', 'BIDAFARMA', 'UNNEFA'];
-const PLANIFICACION = 'PLANIFICACION';
+/* Usuarios que crea setup() en la hoja «Accesos» (con contraseñas aleatorias).
+   Para añadir un cliente más basta con añadir una fila en esa hoja. */
+const USUARIOS_INICIALES = [
+  ['FEDEFARMA', 'CLIENTE'],
+  ['BIDAFARMA', 'CLIENTE'],
+  ['UNNEFA', 'CLIENTE'],
+  ['PLANIFICADOR', 'PLANIFICADOR'],
+];
 
 const HOJA = { FECHAS: 'Fechas', ACCESOS: 'Accesos', REGISTRO: 'Registro' };
-const COLS = ['ID', 'Fecha', 'Franja horaria', 'Observaciones', 'Cliente',
-  'Persona de contacto', 'Email de contacto', 'Comentario del cliente', 'Reservado el'];
-const C = { ID: 0, FECHA: 1, FRANJA: 2, OBS: 3, CLIENTE: 4, CONTACTO: 5, EMAIL: 6, COMENT: 7, RESERVADO: 8 };
+const COLS = ['ID', 'Fecha', 'Hora', 'Cliente', 'Nº palets', 'Reservado el'];
+const C = { ID: 0, FECHA: 1, HORA: 2, CLIENTE: 3, PALETS: 4, RESERVADO: 5 };
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
@@ -46,44 +55,52 @@ function doGet() {
 }
 
 /* La página envía POST con Content-Type text/plain (evita el preflight CORS)
-   y cuerpo JSON: { action, code, ...datos }. */
+   y cuerpo JSON: { action, token | usuario+password, ...datos }. */
 function doPost(e) {
   try {
     const req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     return json_(atender_(req));
   } catch (err) {
-    return json_({ ok: false, error: err.message || String(err), conflicto: !!err.conflicto });
+    return json_({ ok: false, error: err.message || String(err), conflicto: !!err.conflicto, sesion: !!err.sesion });
   }
 }
 
 function atender_(req) {
-  const { usuario, clientes } = autenticar_(req.code);
-  const esPlan = usuario === PLANIFICACION;
+  if (req.action === 'logout') {
+    if (req.token) CacheService.getScriptCache().remove('ses_' + req.token);
+    return { ok: true };
+  }
+  const accesos = leerAccesos_();
+  let token = req.token;
+  let acc;
+  if (req.action === 'login') ({ token, acc } = iniciarSesion_(accesos, req.usuario, req.password));
+  else acc = sesion_(accesos, token);
+
   let aviso = null;
   let mensaje = '';
-
   const fechas = conBloqueo_(() => {
     switch (req.action) {
+      case 'login':
       case 'list':
         break;
       case 'reserve':
-        ({ aviso, mensaje } = reservar_(usuario, req));
+        ({ aviso, mensaje } = reservar_(acc, req));
         break;
       case 'cancel':
-        ({ aviso, mensaje } = anular_(usuario, req));
+        ({ aviso, mensaje } = anular_(acc, req));
         break;
       case 'addSlots':
-        soloPlanificacion_(esPlan);
-        mensaje = altaFechas_(req.fechas);
+        soloPlanificacion_(acc);
+        mensaje = altaFechas_(acc, req.fechas);
         break;
       case 'deleteSlot':
-        soloPlanificacion_(esPlan);
-        mensaje = eliminarFecha_(req.id);
+        soloPlanificacion_(acc);
+        mensaje = eliminarFecha_(acc, req.id);
         break;
       default:
         throw new Error('Acción no válida.');
     }
-    return listar_(usuario);
+    return listar_(acc);
   });
 
   // El correo se envía fuera del bloqueo para no frenar a los demás usuarios.
@@ -91,13 +108,14 @@ function atender_(req) {
 
   return {
     ok: true,
-    usuario,
-    planificador: esPlan,
-    clientes: esPlan ? clientes : [],
+    token: req.action === 'login' ? token : undefined,
+    usuario: acc.usuario,
+    planificador: acc.plan,
+    clientes: acc.plan ? accesos.filter(a => !a.plan).map(a => a.usuario) : [],
     reglas: {
       permitirAnular: CONFIG.PERMITIR_ANULAR_CLIENTE,
       maxReservas: CONFIG.MAX_RESERVAS_ACTIVAS_POR_CLIENTE,
-      copiaCliente: CONFIG.COPIA_AL_CLIENTE,
+      maxPalets: CONFIG.MAX_PALETS_POR_RESERVA,
     },
     mensaje,
     correo,
@@ -105,113 +123,139 @@ function atender_(req) {
   };
 }
 
-/* ---------- Acceso ---------- */
+/* ---------- Usuarios y sesiones ---------- */
 
-function autenticar_(code) {
-  code = String(code || '').trim();
+function leerAccesos_() {
   const sh = hoja_(HOJA.ACCESOS);
-  const filas = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues() : [];
-  const clientes = [];
-  let usuario = null;
-  filas.forEach(([u, codigo]) => {
-    u = String(u).trim().toUpperCase();
-    if (!u) return;
-    if (u !== PLANIFICACION) clientes.push(u);
-    if (code && String(codigo).trim() === code) usuario = u;
-  });
-  if (!usuario) {
-    Utilities.sleep(800); // frena los intentos de adivinar códigos
-    throw new Error('Código de acceso no válido.');
-  }
-  return { usuario, clientes };
+  const n = sh.getLastRow() - 1;
+  const filas = n > 0 ? sh.getRange(2, 1, n, 3).getDisplayValues() : [];
+  return filas
+    .map(([u, p, perfil]) => ({ usuario: u.trim().toUpperCase(), password: p, plan: /^PLANIF/i.test(perfil.trim()) }))
+    .filter(a => a.usuario && a.password);
 }
 
-function soloPlanificacion_(esPlan) {
-  if (!esPlan) throw new Error('Solo la planificación de Perseida puede hacer esta operación.');
+function iniciarSesion_(accesos, usuario, password) {
+  usuario = String(usuario || '').trim().toUpperCase();
+  password = String(password || '');
+  const cache = CacheService.getScriptCache();
+  const kIntentos = 'int_' + usuario.slice(0, 60);
+  const intentos = Number(cache.get(kIntentos) || 0);
+  if (intentos >= CONFIG.INTENTOS_MAX) {
+    throw new Error(`Usuario bloqueado temporalmente por demasiados intentos fallidos. Vuelve a intentarlo en ${CONFIG.MINUTOS_BLOQUEO} minutos.`);
+  }
+  const acc = accesos.find(a => a.usuario === usuario);
+  if (!acc || acc.password !== password) {
+    cache.put(kIntentos, String(intentos + 1), CONFIG.MINUTOS_BLOQUEO * 60);
+    if (acc) registrar_(acc.usuario, 'ACCESO FALLIDO', null, `Intento ${intentos + 1} de ${CONFIG.INTENTOS_MAX}`);
+    Utilities.sleep(1000); // frena los intentos de adivinar contraseñas
+    throw new Error('Usuario o contraseña incorrectos.');
+  }
+  cache.remove(kIntentos);
+  const token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+  // La sesión guarda una huella de la contraseña: si se cambia en «Accesos», la sesión deja de valer.
+  cache.put('ses_' + token, JSON.stringify({ u: acc.usuario, h: huella_(acc.password) }), segundosSesion_());
+  return { token, acc };
+}
+
+function sesion_(accesos, token) {
+  token = String(token || '');
+  const cache = CacheService.getScriptCache();
+  const raw = /^[0-9a-f]{64}$/.test(token) ? cache.get('ses_' + token) : null;
+  if (raw) {
+    const s = JSON.parse(raw);
+    const acc = accesos.find(a => a.usuario === s.u);
+    if (acc && huella_(acc.password) === s.h) {
+      cache.put('ses_' + token, raw, segundosSesion_()); // renueva la caducidad
+      return acc;
+    }
+    cache.remove('ses_' + token);
+  }
+  const e = new Error('Tu sesión ha caducado. Inicia sesión de nuevo.');
+  e.sesion = true;
+  throw e;
+}
+
+function segundosSesion_() { return Math.min(Math.max(CONFIG.HORAS_SESION, 1), 6) * 3600; }
+
+function huella_(s) {
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, s, Utilities.Charset.UTF_8));
+}
+
+function soloPlanificacion_(acc) {
+  if (!acc.plan) throw new Error('Solo la planificación de Perseida puede hacer esta operación.');
 }
 
 /* ---------- Operaciones ---------- */
 
-function listar_(usuario) {
-  const esPlan = usuario === PLANIFICACION;
+function listar_(acc) {
   const hoy = hoy_();
-  const desde = esPlan ? sumarDias_(hoy, -CONFIG.DIAS_HISTORICO_PLANIFICACION) : hoy;
+  const desde = acc.plan ? sumarDias_(hoy, -CONFIG.DIAS_HISTORICO_PLANIFICACION) : hoy;
   return leerFechas_()
-    .filter(f => f.fecha >= desde)
-    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.franja.localeCompare(b.franja))
+    // Un cliente solo ve las fechas libres y las suyas: las reservadas por otro cliente no le aparecen.
+    .filter(f => f.fecha >= desde && (acc.plan || !f.cliente || f.cliente === acc.usuario))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora))
     .map(f => {
-      const mia = f.cliente === usuario;
-      const v = { id: f.id, fecha: f.fecha, franja: f.franja, obs: f.obs,
-        estado: !f.cliente ? 'libre' : (mia ? 'mia' : 'ocupada') };
-      // Un cliente nunca ve qué otro cliente ha reservado una fecha.
-      if (esPlan || mia) {
-        Object.assign(v, { cliente: f.cliente, contacto: f.contacto, email: f.email,
-          comentario: f.comentario, reservadoEl: f.reservadoEl });
-      }
+      const v = { id: f.id, fecha: f.fecha, hora: f.hora, estado: !f.cliente ? 'libre' : (f.cliente === acc.usuario ? 'mia' : 'ocupada') };
+      if (f.cliente) Object.assign(v, { cliente: f.cliente, palets: f.palets, reservadoEl: f.reservadoEl });
       return v;
     });
 }
 
-function reservar_(usuario, req) {
-  if (usuario === PLANIFICACION) {
+function reservar_(acc, req) {
+  if (acc.plan) {
     throw new Error('Para asignar una fecha a un cliente, escribe su nombre en la columna «Cliente» de la hoja «Fechas».');
   }
   const hoy = hoy_();
   const filas = leerFechas_();
   const f = filas.find(x => x.id === String(req.id));
-  if (!f) throw conflicto_('Esta fecha ya no está disponible.');
+  if (f && f.cliente === acc.usuario) throw conflicto_('Ya tienes reservada esta fecha.');
+  if (!f || f.cliente) throw conflicto_('Lo sentimos: esta fecha y hora ya no está disponible. Elige otra, por favor.');
   if (f.fecha < hoy) throw new Error('No se puede reservar una fecha pasada.');
-  if (f.cliente === usuario) throw conflicto_('Ya tienes reservada esta fecha.');
-  if (f.cliente) throw conflicto_('Lo sentimos: otro cliente acaba de reservar esta fecha. Elige otra, por favor.');
 
   const max = CONFIG.MAX_RESERVAS_ACTIVAS_POR_CLIENTE;
-  if (max > 0 && filas.filter(x => x.cliente === usuario && x.fecha >= hoy).length >= max) {
+  if (max > 0 && filas.filter(x => x.cliente === acc.usuario && x.fecha >= hoy).length >= max) {
     throw new Error(`Has alcanzado el máximo de ${max} reserva(s) activa(s).`);
   }
+  const palets = Number(req.palets);
+  const maxPal = CONFIG.MAX_PALETS_POR_RESERVA || 999;
+  if (!Number.isInteger(palets) || palets < 1 || palets > maxPal) {
+    throw new Error(`Indica un nº de palets entero entre 1 y ${maxPal}.`);
+  }
 
-  const contacto = texto_(req.contacto, 80);
-  const email = texto_(req.email, 120).toLowerCase();
-  const comentario = texto_(req.comentario, 500);
-  if (contacto.length < 2) throw new Error('Indica la persona de contacto.');
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('El email de contacto no es válido.');
-
-  hoja_(HOJA.FECHAS).getRange(f.fila, C.CLIENTE + 1, 1, 5)
-    .setValues([[usuario, celda_(contacto), celda_(email), celda_(comentario), new Date()]]);
-  registrar_(usuario, 'RESERVA', f, contacto + (comentario ? ' · ' + comentario : ''));
+  hoja_(HOJA.FECHAS).getRange(f.fila, C.CLIENTE + 1, 1, 3).setValues([[acc.usuario, palets, new Date()]]);
+  registrar_(acc.usuario, 'RESERVA', f, pal_(palets));
 
   return {
-    mensaje: `Reserva confirmada: ${fechaLarga_(f.fecha)}${f.franja ? ' · ' + f.franja : ''}.`,
-    aviso: { tipo: 'reserva', por: usuario, cliente: usuario, fecha: f.fecha, franja: f.franja,
-      obs: f.obs, contacto, email, comentario },
+    mensaje: `Reserva confirmada a nombre de ${acc.usuario}: ${fechaLarga_(f.fecha)}${f.hora ? ' · ' + f.hora : ''} · ${pal_(palets)}.`,
+    aviso: { tipo: 'reserva', por: acc.usuario, cliente: acc.usuario, fecha: f.fecha, hora: f.hora, palets },
   };
 }
 
-function anular_(usuario, req) {
-  const esPlan = usuario === PLANIFICACION;
+function anular_(acc, req) {
   const f = leerFechas_().find(x => x.id === String(req.id));
-  if (!f || !f.cliente) throw conflicto_('Esta fecha ya no está reservada.');
-  if (!esPlan) {
-    if (f.cliente !== usuario) throw new Error('Solo puedes anular tus propias reservas.');
+  if (!f || !f.cliente || (!acc.plan && f.cliente !== acc.usuario)) throw conflicto_('Esta reserva ya no existe.');
+  if (!acc.plan) {
     if (!CONFIG.PERMITIR_ANULAR_CLIENTE) throw new Error('Para anular una reserva contacta con la planificación de Perseida.');
     if (f.fecha < hoy_()) throw new Error('No se puede anular una reserva pasada.');
   }
 
-  hoja_(HOJA.FECHAS).getRange(f.fila, C.CLIENTE + 1, 1, 5).clearContent();
-  registrar_(usuario, 'ANULACIÓN', f, 'Reserva de ' + f.cliente);
+  hoja_(HOJA.FECHAS).getRange(f.fila, C.CLIENTE + 1, 1, 3).clearContent();
+  registrar_(acc.usuario, 'ANULACIÓN', f, `Reserva de ${f.cliente} (${pal_(f.palets)})`);
 
   return {
-    mensaje: esPlan ? `Fecha liberada (estaba reservada por ${f.cliente}).` : 'Reserva anulada. La fecha vuelve a estar libre.',
-    aviso: { tipo: 'anulacion', por: usuario, cliente: f.cliente, fecha: f.fecha, franja: f.franja,
-      obs: f.obs, contacto: f.contacto, email: f.email, comentario: f.comentario },
+    mensaje: acc.plan ? `Fecha liberada (estaba reservada por ${f.cliente}).` : 'Reserva anulada. La fecha vuelve a estar libre.',
+    aviso: CONFIG.AVISAR_ANULACIONES
+      ? { tipo: 'anulacion', por: acc.plan ? 'Planificación Perseida' : acc.usuario, cliente: f.cliente, fecha: f.fecha, hora: f.hora, palets: f.palets }
+      : null,
   };
 }
 
-function altaFechas_(lista) {
+function altaFechas_(acc, lista) {
   if (!Array.isArray(lista) || !lista.length) throw new Error('No hay fechas que añadir.');
   if (lista.length > 500) throw new Error('Demasiadas fechas de una vez (máximo 500).');
   const tz = tz_();
   const hoy = hoy_();
-  const existentes = new Set(leerFechas_().map(f => f.fecha + '|' + f.franja.toLowerCase()));
+  const existentes = new Set(leerFechas_().map(f => f.fecha + '|' + f.hora.toLowerCase()));
   const nuevas = [];
   let repetidas = 0;
 
@@ -219,28 +263,27 @@ function altaFechas_(lista) {
     const fecha = String((x && x.fecha) || '');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || sumarDias_(fecha, 0) !== fecha) throw new Error('Fecha no válida: ' + fecha);
     if (fecha < hoy) throw new Error('No se pueden añadir fechas pasadas: ' + fecha);
-    const franja = texto_(x.franja, 40);
-    const obs = texto_(x.obs, 200);
-    const clave = fecha + '|' + franja.toLowerCase();
+    const hora = texto_(x.hora, 40);
+    const clave = fecha + '|' + hora.toLowerCase();
     if (existentes.has(clave)) { repetidas++; return; }
     existentes.add(clave);
-    nuevas.push([nuevoId_(), Utilities.parseDate(fecha, tz, 'yyyy-MM-dd'), celda_(franja), celda_(obs), '', '', '', '', '']);
+    nuevas.push([nuevoId_(), Utilities.parseDate(fecha, tz, 'yyyy-MM-dd'), celda_(hora), '', '', '']);
   });
 
   if (nuevas.length) {
     const sh = hoja_(HOJA.FECHAS);
     sh.getRange(sh.getLastRow() + 1, 1, nuevas.length, COLS.length).setValues(nuevas);
-    registrar_(PLANIFICACION, 'ALTA', null, nuevas.length + ' fecha(s)');
+    registrar_(acc.usuario, 'ALTA', null, nuevas.length + ' fecha(s)');
   }
   return `${nuevas.length} fecha(s) añadida(s)` + (repetidas ? `; ${repetidas} ya existían y se han omitido.` : '.');
 }
 
-function eliminarFecha_(id) {
+function eliminarFecha_(acc, id) {
   const f = leerFechas_().find(x => x.id === String(id));
   if (!f) throw conflicto_('La fecha ya no existe.');
   if (f.cliente) throw new Error(`La fecha está reservada por ${f.cliente}. Libérala antes de eliminarla.`);
   hoja_(HOJA.FECHAS).deleteRow(f.fila);
-  registrar_(PLANIFICACION, 'BAJA', f, '');
+  registrar_(acc.usuario, 'BAJA', f, '');
   return 'Fecha eliminada.';
 }
 
@@ -250,18 +293,15 @@ function enviarAviso_(a) {
   if (!CONFIG.NOTIFICAR_A) return null;
   const esReserva = a.tipo === 'reserva';
   const titulo = esReserva ? 'Nueva reserva de fecha de carga' : 'Reserva de fecha de carga ANULADA';
-  const asunto = `${titulo} · ${a.cliente} · ${fechaCorta_(a.fecha)}${a.franja ? ' ' + a.franja : ''}`;
+  const asunto = `${titulo} · ${a.cliente} · ${fechaCorta_(a.fecha)}${a.hora ? ' ' + a.hora : ''} · ${pal_(a.palets)}`;
   const filas = [
     ['Cliente', a.cliente],
     ['Fecha de carga', fechaLarga_(a.fecha)],
-    ['Franja horaria', a.franja],
-    ['Observaciones', a.obs],
-    ['Persona de contacto', a.contacto],
-    ['Email de contacto', a.email],
-    ['Comentario del cliente', a.comentario],
+    ['Hora', a.hora],
+    ['Nº de palets', a.palets],
     [esReserva ? 'Reservado el' : 'Anulado el', Utilities.formatDate(new Date(), tz_(), 'dd/MM/yyyy HH:mm')],
   ];
-  if (!esReserva) filas.push(['Anulado por', a.por === PLANIFICACION ? 'Planificación Perseida' : a.por]);
+  if (!esReserva) filas.push(['Anulado por', a.por]);
 
   const color = esReserva ? '#2f5f8f' : '#d9534f';
   const htmlBody =
@@ -276,13 +316,8 @@ function enviarAviso_(a) {
     `</div>`;
   const body = titulo + '\n\n' + filas.map(([k, v]) => `${k}: ${v || '—'}`).join('\n');
 
-  const mensaje = { to: CONFIG.NOTIFICAR_A, subject: asunto, body, htmlBody, name: CONFIG.REMITENTE };
-  if (a.email) {
-    mensaje.replyTo = a.email;
-    if (CONFIG.COPIA_AL_CLIENTE) mensaje.cc = a.email;
-  }
   try {
-    MailApp.sendEmail(mensaje);
+    MailApp.sendEmail({ to: CONFIG.NOTIFICAR_A, subject: asunto, body, htmlBody, name: CONFIG.REMITENTE });
     return { enviado: true };
   } catch (err) {
     console.error('Error enviando aviso: ' + err);
@@ -301,43 +336,43 @@ function pruebaCorreo() {
 
 /* ---------- Instalación ---------- */
 
-/* Ejecutar una vez desde el editor: crea las hojas y genera los códigos de acceso. */
+/* Ejecutar una vez desde el editor: crea las hojas y genera las contraseñas. */
 function setup() {
   const fechas = hoja_(HOJA.FECHAS, true);
   fechas.getRange(1, 1, 1, COLS.length).setValues([COLS]);
   cabecera_(fechas, COLS.length);
   fechas.getRange('B2:B').setNumberFormat('dd/mm/yyyy');
   fechas.getRange('C2:C').setNumberFormat('@');
-  fechas.getRange('I2:I').setNumberFormat('dd/mm/yyyy hh:mm');
+  fechas.getRange('F2:F').setNumberFormat('dd/mm/yyyy hh:mm');
   fechas.setColumnWidth(1, 90);
-  fechas.setColumnWidths(2, 3, 130);
-  fechas.setColumnWidths(5, 5, 170);
+  fechas.setColumnWidths(2, 5, 140);
   fechas.setConditionalFormatRules([
     SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=$E2<>""')
+      .whenFormulaSatisfied('=$D2<>""')
       .setBackground('#fdebd0')
-      .setRanges([fechas.getRange('A2:I')])
+      .setRanges([fechas.getRange('A2:F')])
       .build(),
   ]);
 
   const accesos = hoja_(HOJA.ACCESOS, true);
   if (accesos.getLastRow() < 2) {
-    accesos.getRange(1, 1, 1, 2).setValues([['Usuario', 'Código de acceso']]);
-    const filas = CLIENTES_INICIALES.concat(PLANIFICACION).map(u => [u, nuevoCodigo_()]);
-    accesos.getRange(2, 1, filas.length, 2).setValues(filas);
+    accesos.getRange(1, 1, 1, 3).setValues([['Usuario', 'Contraseña', 'Perfil']]);
+    accesos.getRange('B2:B').setNumberFormat('@');
+    const filas = USUARIOS_INICIALES.map(([u, perfil]) => [u, nuevaPassword_(), perfil]);
+    accesos.getRange(2, 1, filas.length, 3).setValues(filas);
   }
-  cabecera_(accesos, 2);
-  accesos.setColumnWidths(1, 2, 200);
+  cabecera_(accesos, 3);
+  accesos.setColumnWidths(1, 3, 180);
 
   const registro = hoja_(HOJA.REGISTRO, true);
   if (registro.getLastRow() < 1) {
-    registro.appendRow(['Fecha/hora', 'Usuario', 'Acción', 'ID', 'Fecha de carga', 'Franja', 'Detalle']);
+    registro.appendRow(['Fecha/hora', 'Usuario', 'Acción', 'ID', 'Fecha de carga', 'Hora', 'Detalle']);
   }
   cabecera_(registro, 7);
 
-  Logger.log('Hojas preparadas. Códigos de acceso (hoja «Accesos»):');
-  accesos.getRange(2, 1, accesos.getLastRow() - 1, 2).getValues()
-    .forEach(([u, c]) => Logger.log(`  ${u}: ${c}`));
+  Logger.log('Hojas preparadas. Usuarios y contraseñas (hoja «Accesos»):');
+  accesos.getRange(2, 1, accesos.getLastRow() - 1, 3).getDisplayValues()
+    .forEach(([u, p, perfil]) => Logger.log(`  ${u} / ${p} (${perfil})`));
 }
 
 /* ---------- Lectura de la hoja «Fechas» ---------- */
@@ -362,12 +397,9 @@ function leerFechas_() {
       fila: i + 2,
       id: String(v[C.ID]),
       fecha,
-      franja: t[C.FRANJA],
-      obs: t[C.OBS],
+      hora: t[C.HORA],
       cliente: t[C.CLIENTE].toUpperCase(),
-      contacto: t[C.CONTACTO],
-      email: t[C.EMAIL],
-      comentario: t[C.COMENT],
+      palets: t[C.PALETS],
       reservadoEl: t[C.RESERVADO],
     });
   });
@@ -390,8 +422,8 @@ function conBloqueo_(fn) {
 }
 
 function registrar_(usuario, accion, f, detalle) {
-  hoja_(HOJA.REGISTRO).appendRow([new Date(), usuario, accion,
-    f ? f.id || '' : '', f ? f.fecha : '', f ? celda_(f.franja || '') : '', celda_(detalle || '')]);
+  hoja_(HOJA.REGISTRO).appendRow([new Date(), celda_(usuario), accion,
+    f ? f.id || '' : '', f ? f.fecha : '', f ? celda_(f.hora || '') : '', celda_(String(detalle || ''))]);
 }
 
 function hoja_(nombre, crear) {
@@ -441,7 +473,7 @@ function aISO_(v, tz) {
 
 function texto_(v, max) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max); }
 
-/* Evita que un texto del cliente se interprete como fórmula en la hoja. */
+/* Evita que un texto se interprete como fórmula en la hoja. */
 function celda_(s) { return /^[=+\-@]/.test(s) ? "'" + s : s; }
 
 function esc_(s) {
@@ -458,9 +490,15 @@ function fechaCorta_(iso) {
   return `${DIAS[new Date(iso + 'T12:00:00Z').getUTCDay()].slice(0, 3)} ${d}/${m}/${y}`;
 }
 
+function pal_(n) { return `${n} palet${Number(n) === 1 ? '' : 's'}`; }
+
 function nuevoId_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 8); }
 
-function nuevoCodigo_() {
-  const h = Utilities.getUuid().replace(/-/g, '').toUpperCase();
-  return `${h.slice(0, 4)}-${h.slice(4, 8)}-${h.slice(8, 12)}`;
+/* Contraseña aleatoria de 10 caracteres sin caracteres ambiguos (0/O, 1/l/I). */
+function nuevaPassword_() {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid());
+  let p = '';
+  for (let i = 0; i < 10; i++) p += abc[(bytes[i] + 256) % abc.length];
+  return p;
 }
