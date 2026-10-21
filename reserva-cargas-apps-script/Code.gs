@@ -8,7 +8,8 @@
                       (desde la página o escribiendo directamente en la hoja).
                       Fila sin «Cliente» = LIBRE · con «Cliente» = RESERVADA.
    - Hoja «Accesos»:  usuario, contraseña y perfil (CLIENTE / PLANIFICADOR).
-                      Las contraseñas solo están aquí: nunca en el HTML.
+                      Las contraseñas solo están aquí: nunca en el HTML ni en
+                      el repositorio (setup() crea los usuarios sin contraseña).
    - Hoja «Registro»: histórico de accesos fallidos, reservas, anulaciones,
                       altas y bajas.
 
@@ -26,13 +27,16 @@ const CONFIG = {
   MAX_PALETS_POR_RESERVA: 0,              // 0 = sin límite
   DIAS_HISTORICO_PLANIFICACION: 90,       // la planificación ve también las fechas pasadas de los últimos N días
   HORAS_SESION: 6,                        // la sesión caduca tras N horas sin uso (máximo 6)
-  INTENTOS_MAX: 8,                        // intentos fallidos de contraseña antes de bloquear el usuario…
-  MINUTOS_BLOQUEO: 15,                    // …durante estos minutos
+  INTENTOS_MAX: 5,                        // contraseñas erróneas seguidas antes de bloquear el usuario…
+  MINUTOS_BLOQUEO: 60,                    // …durante estos minutos (máximo 360). Con contraseñas de 4 cifras
+                                          // conviene que sea estricto: 5 intentos/hora = meses para adivinarla.
+  AVISAR_BLOQUEOS: true,                  // correo a NOTIFICAR_A cuando se bloquea un usuario
   REMITENTE: 'PERSEIDA · Reservas de carga',
 };
 
-/* Usuarios que crea setup() en la hoja «Accesos» (con contraseñas aleatorias).
-   Para añadir un cliente más basta con añadir una fila en esa hoja. */
+/* Usuarios que crea setup() en la hoja «Accesos», sin contraseña: se escriben
+   a mano en la hoja (4 cifras, distintas por usuario). Un usuario sin
+   contraseña no puede entrar. Para añadir un cliente basta con añadir una fila. */
 const USUARIOS_INICIALES = [
   ['FEDEFARMA', 'CLIENTE'],
   ['BIDAFARMA', 'CLIENTE'],
@@ -146,7 +150,10 @@ function iniciarSesion_(accesos, usuario, password) {
   const acc = accesos.find(a => a.usuario === usuario);
   if (!acc || acc.password !== password) {
     cache.put(kIntentos, String(intentos + 1), CONFIG.MINUTOS_BLOQUEO * 60);
-    if (acc) registrar_(acc.usuario, 'ACCESO FALLIDO', null, `Intento ${intentos + 1} de ${CONFIG.INTENTOS_MAX}`);
+    if (acc) {
+      registrar_(acc.usuario, 'ACCESO FALLIDO', null, `Intento ${intentos + 1} de ${CONFIG.INTENTOS_MAX}`);
+      if (intentos + 1 === CONFIG.INTENTOS_MAX) avisarBloqueo_(acc.usuario);
+    }
     Utilities.sleep(1000); // frena los intentos de adivinar contraseñas
     throw new Error('Usuario o contraseña incorrectos.');
   }
@@ -173,6 +180,23 @@ function sesion_(accesos, token) {
   const e = new Error('Tu sesión ha caducado. Inicia sesión de nuevo.');
   e.sesion = true;
   throw e;
+}
+
+function avisarBloqueo_(usuario) {
+  registrar_(usuario, 'USUARIO BLOQUEADO', null, `${CONFIG.MINUTOS_BLOQUEO} minutos`);
+  if (!CONFIG.AVISAR_BLOQUEOS || !CONFIG.NOTIFICAR_A) return;
+  try {
+    MailApp.sendEmail({
+      to: CONFIG.NOTIFICAR_A,
+      name: CONFIG.REMITENTE,
+      subject: `Reservas de carga · usuario ${usuario} bloqueado por contraseñas erróneas`,
+      body: `Se han introducido ${CONFIG.INTENTOS_MAX} contraseñas erróneas seguidas para el usuario ${usuario}, ` +
+        `que queda bloqueado ${CONFIG.MINUTOS_BLOQUEO} minutos.\n\nSi no ha sido el propio cliente, cambia su ` +
+        `contraseña en la hoja «Accesos»: ${SpreadsheetApp.getActive().getUrl()}`,
+    });
+  } catch (err) {
+    console.error('Error enviando aviso de bloqueo: ' + err);
+  }
 }
 
 function segundosSesion_() { return Math.min(Math.max(CONFIG.HORAS_SESION, 1), 6) * 3600; }
@@ -357,10 +381,10 @@ function setup() {
   const accesos = hoja_(HOJA.ACCESOS, true);
   if (accesos.getLastRow() < 2) {
     accesos.getRange(1, 1, 1, 3).setValues([['Usuario', 'Contraseña', 'Perfil']]);
-    accesos.getRange('B2:B').setNumberFormat('@');
-    const filas = USUARIOS_INICIALES.map(([u, perfil]) => [u, nuevaPassword_(), perfil]);
+    const filas = USUARIOS_INICIALES.map(([u, perfil]) => [u, '', perfil]);
     accesos.getRange(2, 1, filas.length, 3).setValues(filas);
   }
+  accesos.getRange('B2:B').setNumberFormat('@'); // texto: conserva las contraseñas tal cual se escriben
   cabecera_(accesos, 3);
   accesos.setColumnWidths(1, 3, 180);
 
@@ -370,9 +394,9 @@ function setup() {
   }
   cabecera_(registro, 7);
 
-  Logger.log('Hojas preparadas. Usuarios y contraseñas (hoja «Accesos»):');
+  Logger.log('Hojas preparadas. Usuarios de la hoja «Accesos»:');
   accesos.getRange(2, 1, accesos.getLastRow() - 1, 3).getDisplayValues()
-    .forEach(([u, p, perfil]) => Logger.log(`  ${u} / ${p} (${perfil})`));
+    .forEach(([u, p, perfil]) => Logger.log(`  ${u} (${perfil}): ${p ? 'con contraseña' : 'SIN CONTRASEÑA — escríbela en la hoja'}`));
 }
 
 /* ---------- Lectura de la hoja «Fechas» ---------- */
@@ -493,12 +517,3 @@ function fechaCorta_(iso) {
 function pal_(n) { return `${n} palet${Number(n) === 1 ? '' : 's'}`; }
 
 function nuevoId_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 8); }
-
-/* Contraseña aleatoria de 10 caracteres sin caracteres ambiguos (0/O, 1/l/I). */
-function nuevaPassword_() {
-  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid());
-  let p = '';
-  for (let i = 0; i < 10; i++) p += abc[(bytes[i] + 256) % abc.length];
-  return p;
-}

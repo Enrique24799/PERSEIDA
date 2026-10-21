@@ -156,7 +156,11 @@ Código del servidor: [`reserva-cargas-apps-script/Code.gs`](reserva-cargas-apps
 - Al iniciar sesión el servidor entrega un **token de sesión** (la contraseña no se guarda en el navegador).
   La sesión se cierra con «Cerrar sesión», al cerrar el navegador o tras 6 h sin uso. Si se cambia una
   contraseña en «Accesos», las sesiones abiertas de ese usuario dejan de valer al momento.
-- Tras **8 contraseñas erróneas** el usuario queda bloqueado 15 minutos (queda anotado en «Registro»).
+- Las contraseñas son de **4 cifras, distintas por usuario**, y **no están en el repositorio**: se entregan
+  aparte y se escriben a mano en la hoja «Accesos».
+- Como 4 cifras son pocas combinaciones, tras **5 contraseñas erróneas seguidas** el usuario queda
+  bloqueado **1 hora** y se envía un **correo de alerta** a jgata@perseida.com (todo queda en «Registro»).
+  Así, adivinar una contraseña probando llevaría meses y Perseida se entera desde el primer bloqueo.
 - El servidor solo envía a cada cliente los días libres y sus propias reservas: **nunca** datos de otro cliente.
 - Al repositorio de los clientes basta con subir `RESERVA_CARGAS.html` (con `API_URL` configurada).
   `Code.gs` y este README no tienen secretos, pero no hace falta que estén ahí.
@@ -198,7 +202,8 @@ y queda anotado en «Registro».
 4. En el editor, elige la función **`setup`** y pulsa **Ejecutar**. Acepta los permisos (si aparece «Google
    no ha verificado esta aplicación»: *Configuración avanzada → Ir a … (no seguro)*; es lo normal en
    scripts propios). Se crean las hojas y la hoja «Accesos» con los usuarios `FEDEFARMA`, `BIDAFARMA`,
-   `UNNEFA` y `PLANIFICADOR` y **contraseñas aleatorias** (puedes cambiarlas ahí mismo).
+   `UNNEFA` y `PLANIFICADOR` **sin contraseña**. Escribe en la columna «Contraseña» la de cada usuario
+   (4 cifras, distintas; se han facilitado aparte). Un usuario sin contraseña no puede entrar.
 5. Ejecuta **`pruebaCorreo`** y comprueba que llega un correo a jgata@perseida.com.
 6. **Implementar → Nueva implementación → Aplicación web**, con *Ejecutar como: Yo* y *Quién tiene acceso:
    Cualquier usuario*. Copia la URL que termina en **`/exec`**.
@@ -228,12 +233,14 @@ y queda anotado en «Registro».
 | `MAX_PALETS_POR_RESERVA` | `0` | Máximo de palets por reserva (0 = sin límite; p. ej. 33 = un camión). |
 | `DIAS_HISTORICO_PLANIFICACION` | `90` | Días de fechas pasadas que ve la planificación. |
 | `HORAS_SESION` | `6` | Horas sin uso tras las que caduca la sesión (máximo 6). |
-| `INTENTOS_MAX` / `MINUTOS_BLOQUEO` | `8` / `15` | Bloqueo temporal tras contraseñas erróneas. |
+| `INTENTOS_MAX` / `MINUTOS_BLOQUEO` | `5` / `60` | Bloqueo temporal tras contraseñas erróneas seguidas (máx. 360 min). |
+| `AVISAR_BLOQUEOS` | `true` | Correo de alerta a `NOTIFICAR_A` cuando se bloquea un usuario. |
 
 ### Gestión de usuarios
 
 - Cambiar una contraseña: edítala en la hoja «Accesos»; el cambio es inmediato y cierra las sesiones
-  abiertas de ese usuario. Usa contraseñas de al menos 8 caracteres.
+  abiertas de ese usuario. Usa 4 cifras aleatorias, distintas para cada usuario y sin patrones obvios
+  (1234, 1111, años…). Si recibes una alerta de bloqueo que no ha provocado el cliente, cámbiala.
 - Añadir otro cliente: una fila nueva en «Accesos» con usuario, contraseña y perfil `CLIENTE`.
 - Quitar el acceso: borra la fila (o la contraseña) del usuario.
 
