@@ -7,7 +7,8 @@
    - Hoja «Fechas»:   días y horas de carga habilitados por la planificación
                       (desde la página o escribiendo directamente en la hoja).
                       Fila sin «Cliente» = LIBRE · con «Cliente» = RESERVADA.
-   - Hoja «Accesos»:  usuario, contraseña y perfil (CLIENTE / PLANIFICADOR).
+   - Hoja «Accesos»:  usuario, contraseña y perfil (CLIENTE / PLANIFICADOR /
+                      VISUALIZACION = solo consulta).
                       Las contraseñas solo están aquí: nunca en el HTML ni en
                       el repositorio (setup() crea los usuarios sin contraseña).
    - Hoja «Registro»: histórico de accesos fallidos, reservas, anulaciones,
@@ -34,15 +35,17 @@ const CONFIG = {
   REMITENTE: 'PERSEIDA · Reservas de carga',
 };
 
-/* Usuarios que crea setup() en la hoja «Accesos». La contraseña se toma de
-   CONTRASENAS_INICIALES; si está vacía, se escribe luego a mano en la hoja.
-   Un usuario sin contraseña no puede entrar. Para añadir un cliente basta con
-   añadir una fila en «Accesos». */
+/* Usuarios que setup() añade a la hoja «Accesos» si aún no están (no toca los
+   que ya existen). La contraseña se toma de CONTRASENAS_INICIALES; si está
+   vacía, se escribe luego a mano en la hoja. Un usuario sin contraseña no puede
+   entrar. Perfiles: CLIENTE (reserva), PLANIFICADOR (habilita, libera y elimina)
+   y VISUALIZACION (ve todo como el planificador, sin poder cambiar nada). */
 const USUARIOS_INICIALES = [
   ['FEDEFARMA', 'CLIENTE'],
   ['BIDAFARMA', 'CLIENTE'],
   ['UNNEFA', 'CLIENTE'],
   ['PLANIFICADOR', 'PLANIFICADOR'],
+  ['VISUALIZACION', 'VISUALIZACION'],
 ];
 
 /* Rellenar solo en la copia pegada en Apps Script (no en el repositorio). */
@@ -51,6 +54,7 @@ const CONTRASENAS_INICIALES = {
   BIDAFARMA: '',
   UNNEFA: '',
   PLANIFICADOR: '',
+  VISUALIZACION: '',
 };
 
 const HOJA = { FECHAS: 'Fechas', ACCESOS: 'Accesos', REGISTRO: 'Registro' };
@@ -124,7 +128,8 @@ function atender_(req) {
     token: req.action === 'login' ? token : undefined,
     usuario: acc.usuario,
     planificador: acc.plan,
-    clientes: acc.plan ? accesos.filter(a => !a.plan).map(a => a.usuario) : [],
+    soloLectura: acc.ver,
+    clientes: acc.plan || acc.ver ? accesos.filter(a => a.cliente).map(a => a.usuario) : [],
     reglas: {
       permitirAnular: CONFIG.PERMITIR_ANULAR_CLIENTE,
       maxReservas: CONFIG.MAX_RESERVAS_ACTIVAS_POR_CLIENTE,
@@ -143,7 +148,11 @@ function leerAccesos_() {
   const n = sh.getLastRow() - 1;
   const filas = n > 0 ? sh.getRange(2, 1, n, 3).getDisplayValues() : [];
   return filas
-    .map(([u, p, perfil]) => ({ usuario: u.trim().toUpperCase(), password: p, plan: /^PLANIF/i.test(perfil.trim()) }))
+    .map(([u, p, perfil]) => {
+      const plan = /^PLANIF/i.test(perfil.trim());
+      const ver = /^VISUAL/i.test(perfil.trim());
+      return { usuario: u.trim().toUpperCase(), password: p, plan, ver, cliente: !plan && !ver };
+    })
     .filter(a => a.usuario && a.password);
 }
 
@@ -218,14 +227,19 @@ function soloPlanificacion_(acc) {
   if (!acc.plan) throw new Error('Solo la planificación de Perseida puede hacer esta operación.');
 }
 
+function noSoloLectura_(acc) {
+  if (acc.ver) throw new Error('Usuario de solo consulta: no puede reservar ni modificar fechas.');
+}
+
 /* ---------- Operaciones ---------- */
 
 function listar_(acc) {
   const hoy = hoy_();
-  const desde = acc.plan ? sumarDias_(hoy, -CONFIG.DIAS_HISTORICO_PLANIFICACION) : hoy;
+  const todo = acc.plan || acc.ver; // planificación y consulta ven todas las reservas
+  const desde = todo ? sumarDias_(hoy, -CONFIG.DIAS_HISTORICO_PLANIFICACION) : hoy;
   return leerFechas_()
     // Un cliente solo ve las fechas libres y las suyas: las reservadas por otro cliente no le aparecen.
-    .filter(f => f.fecha >= desde && (acc.plan || !f.cliente || f.cliente === acc.usuario))
+    .filter(f => f.fecha >= desde && (todo || !f.cliente || f.cliente === acc.usuario))
     .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora))
     .map(f => {
       const v = { id: f.id, fecha: f.fecha, hora: f.hora, estado: !f.cliente ? 'libre' : (f.cliente === acc.usuario ? 'mia' : 'ocupada') };
@@ -235,6 +249,7 @@ function listar_(acc) {
 }
 
 function reservar_(acc, req) {
+  noSoloLectura_(acc);
   if (acc.plan) {
     throw new Error('Para asignar una fecha a un cliente, escribe su nombre en la columna «Cliente» de la hoja «Fechas».');
   }
@@ -265,6 +280,7 @@ function reservar_(acc, req) {
 }
 
 function anular_(acc, req) {
+  noSoloLectura_(acc);
   const f = leerFechas_().find(x => x.id === String(req.id));
   if (!f || !f.cliente || (!acc.plan && f.cliente !== acc.usuario)) throw conflicto_('Esta reserva ya no existe.');
   if (!acc.plan) {
@@ -388,12 +404,14 @@ function setup() {
   ]);
 
   const accesos = hoja_(HOJA.ACCESOS, true);
-  if (accesos.getLastRow() < 2) {
-    accesos.getRange(1, 1, 1, 3).setValues([['Usuario', 'Contraseña', 'Perfil']]);
-    const filas = USUARIOS_INICIALES.map(([u, perfil]) => [u, CONTRASENAS_INICIALES[u] || '', perfil]);
-    accesos.getRange(2, 1, filas.length, 3).setValues(filas);
-  }
+  accesos.getRange(1, 1, 1, 3).setValues([['Usuario', 'Contraseña', 'Perfil']]);
   accesos.getRange('B2:B').setNumberFormat('@'); // texto: conserva las contraseñas tal cual se escriben
+  const existentes = accesos.getLastRow() > 1
+    ? accesos.getRange(2, 1, accesos.getLastRow() - 1, 1).getDisplayValues().map(([u]) => u.trim().toUpperCase())
+    : [];
+  const nuevos = USUARIOS_INICIALES.filter(([u]) => !existentes.includes(u))
+    .map(([u, perfil]) => [u, CONTRASENAS_INICIALES[u] || '', perfil]);
+  if (nuevos.length) accesos.getRange(accesos.getLastRow() + 1, 1, nuevos.length, 3).setValues(nuevos);
   cabecera_(accesos, 3);
   accesos.setColumnWidths(1, 3, 180);
 

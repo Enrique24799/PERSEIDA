@@ -358,7 +358,7 @@ const PALETA = ['#2f80ed', '#e08a1e', '#8e44ad', '#16a085', '#c0392b', '#7f8c8d'
 const SS_TOKEN = 'perseida_reservas_sesion';
 
 const S = {
-  token: null, usuario: null, plan: false, reglas: {}, clientes: [], fechas: [],
+  token: null, usuario: null, plan: false, lectura: false, reglas: {}, clientes: [], fechas: [],
   mes: null, vista: 'cal', verPasadas: false, busy: 0,
 };
 
@@ -380,6 +380,8 @@ function colorCliente(c) {
   if (i < 0) i = [...String(c)].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   return PALETA[i % PALETA.length];
 }
+// Planificación y usuario de consulta ven todas las reservas; solo la planificación puede modificarlas.
+const verTodo = () => S.plan || S.lectura;
 const palets = n => `${n} palet${Number(n) === 1 ? '' : 's'}`;
 
 function toast(msg, tipo = 'ok', ms = 5000) {
@@ -433,6 +435,7 @@ async function conCarga(fn) {
 function aplicar(d) {
   S.usuario = d.usuario;
   S.plan = !!d.planificador;
+  S.lectura = !!d.soloLectura;
   S.reglas = d.reglas || {};
   S.clientes = d.clientes || [];
   S.fechas = d.fechas || [];
@@ -518,7 +521,8 @@ function render() {
   if (!S.usuario) return;
   const who = $('#who');
   who.hidden = false;
-  who.innerHTML = `<span>${S.plan ? 'Planificación · <b>' + esc(S.usuario) + '</b>' : 'Cliente: <b>' + esc(S.usuario) + '</b>'}</span>` +
+  const perfil = S.plan ? 'Planificación · ' : S.lectura ? 'Consulta · ' : 'Cliente: ';
+  who.innerHTML = `<span>${perfil}<b>${esc(S.usuario)}</b></span>` +
     `<button type="button" id="btnSalir">Cerrar sesión</button>`;
 
   if (!S.mes) {
@@ -530,16 +534,17 @@ function render() {
   document.querySelectorAll('[data-vista]').forEach(b => b.classList.toggle('sel', b.dataset.vista === S.vista));
   document.querySelectorAll('.monthnav button').forEach(b => b.disabled = S.vista !== 'cal');
 
-  $('#legend').innerHTML = S.plan
+  $('#legend').innerHTML = verTodo()
     ? `<span><i class="sw libre"></i>Libre</span>` + S.clientes.map(c => `<span><i class="sw" style="background:${colorCliente(c)}"></i>${esc(c)}</span>`).join('')
     : `<span><i class="sw libre"></i>Libre (pulsa para reservar)</span><span><i class="sw mia"></i>Tu reserva</span>`;
 
   $('#view').innerHTML = S.vista === 'cal' ? htmlCalendario() : htmlLista();
-  $('#side').innerHTML = S.plan ? htmlResumen() : htmlMisReservas();
+  $('#side').innerHTML = verTodo() ? htmlResumen() : htmlMisReservas();
   $('#planPanel').hidden = !S.plan;
-  $('#planTable').hidden = !S.plan;
-  $('#mainBox').classList.toggle('last', !S.plan);
-  if (S.plan) { $('#planTable').innerHTML = htmlTabla(); previewAlta(); }
+  $('#planTable').hidden = !verTodo();
+  $('#mainBox').classList.toggle('last', !verTodo());
+  if (verTodo()) $('#planTable').innerHTML = htmlTabla();
+  if (S.plan) previewAlta();
 }
 
 function chip(f) {
@@ -547,11 +552,11 @@ function chip(f) {
   const hora = esc(f.hora || 'Todo el día');
   const id = esc(f.id);
   if (f.estado === 'libre') {
-    return S.plan
+    return verTodo()
       ? `<button type="button" class="chip libre${past}" data-act="detalle" data-id="${id}" title="Libre">${hora}</button>`
       : `<button type="button" class="chip libre" data-act="reservar" data-id="${id}" title="Reservar">＋ ${hora}</button>`;
   }
-  if (S.plan) {
+  if (verTodo()) {
     return `<button type="button" class="chip cli${past}" style="background:${colorCliente(f.cliente)}" data-act="detalle" data-id="${id}" ` +
       `title="${esc(f.cliente)} · ${esc(palets(f.palets))}">${esc(f.cliente)} · ${hora}</button>`;
   }
@@ -608,13 +613,13 @@ function htmlLista() {
 
 function badge(f) {
   if (f.estado === 'libre') return '<span class="badge libre">Libre</span>';
-  if (S.plan) return `<span class="badge cli" style="background:${colorCliente(f.cliente)}">${esc(f.cliente)}</span>`;
+  if (verTodo()) return `<span class="badge cli" style="background:${colorCliente(f.cliente)}">${esc(f.cliente)}</span>`;
   return '<span class="badge mia">Tu reserva</span>';
 }
 
 function accionLista(f) {
   const id = esc(f.id);
-  if (S.plan) return `<button type="button" class="small" data-act="detalle" data-id="${id}">Detalle</button>`;
+  if (verTodo()) return `<button type="button" class="small" data-act="detalle" data-id="${id}">Detalle</button>`;
   if (f.estado === 'libre') return `<button type="button" class="small primary" data-act="reservar" data-id="${id}">Reservar</button>`;
   return `<button type="button" class="small" data-act="detalle" data-id="${id}">Ver reserva</button>`;
 }
@@ -652,9 +657,11 @@ function htmlResumen() {
       <span><b>Total</b></span><span class="n">${fut.length}</span><span class="n">${sumPal(fut)}</span>
     </div>
     <div class="info">
-      <p>Pulsa un día del calendario para ver el detalle, <b>liberarlo</b> (si está reservado) o <b>eliminarlo</b> (si está libre).</p>
+      ${S.lectura
+        ? '<p><b>Usuario de solo consulta:</b> puedes ver todos los días habilitados y las reservas de cada cliente, pero no reservar ni modificar fechas.</p>'
+        : `<p>Pulsa un día del calendario para ver el detalle, <b>liberarlo</b> (si está reservado) o <b>eliminarlo</b> (si está libre).</p>
       <p>Los clientes solo ven los días libres y sus propias reservas: nunca las de otro cliente.</p>
-      <p>Cada reserva o anulación envía un aviso por correo a Perseida.</p>
+      <p>Cada reserva o anulación envía un aviso por correo a Perseida.</p>`}
     </div>`;
 }
 
@@ -666,7 +673,7 @@ function htmlTabla() {
       <label><input type="checkbox" id="chkPasadas" ${S.verPasadas ? 'checked' : ''}/> Mostrar fechas pasadas</label>
     </div>
     ${lista.length ? `<div class="tablewrap"><table>
-      <thead><tr><th>Fecha</th><th>Hora</th><th>Estado / cliente</th><th>Nº palets</th><th>Reservado el</th><th></th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Hora</th><th>Estado / cliente</th><th>Nº palets</th><th>Reservado el</th>${S.plan ? '<th></th>' : ''}</tr></thead>
       <tbody>${lista.map(f => `
         <tr class="${f.fecha < hoy ? 'past' : ''}">
           <td>${esc(fechaCorta(f.fecha))}</td>
@@ -674,9 +681,9 @@ function htmlTabla() {
           <td>${badge(f)}</td>
           <td class="num">${esc(f.palets || '')}</td>
           <td>${esc(f.reservadoEl || '')}</td>
-          <td>${f.estado === 'libre'
+          ${!S.plan ? '' : `<td>${f.estado === 'libre'
             ? `<button type="button" class="small danger" data-act="eliminar" data-id="${esc(f.id)}">Eliminar</button>`
-            : `<button type="button" class="small" data-act="liberar" data-id="${esc(f.id)}">Liberar</button>`}</td>
+            : `<button type="button" class="small" data-act="liberar" data-id="${esc(f.id)}">Liberar</button>`}</td>`}
         </tr>`).join('')}
       </tbody></table></div>` : '<p class="empty">No hay días habilitados.</p>'}`;
 }
@@ -725,10 +732,10 @@ function dialogoDetalle(f) {
     acciones += f.estado === 'libre'
       ? `<button type="button" class="danger" data-act="eliminar" data-id="${esc(f.id)}">Eliminar</button>`
       : `<button type="button" class="danger" data-act="liberar" data-id="${esc(f.id)}">Liberar</button>`;
-  } else if (S.reglas.permitirAnular && f.fecha >= hoyISO()) {
+  } else if (!S.lectura && S.reglas.permitirAnular && f.fecha >= hoyISO()) {
     acciones += `<button type="button" class="danger" data-act="anular" data-id="${esc(f.id)}">Anular reserva</button>`;
   }
-  abrirDialogo(S.plan ? 'Detalle' : 'Tu reserva', datos(filas.filter(([, v]) => v !== '' && v != null)), acciones);
+  abrirDialogo(verTodo() ? 'Detalle' : 'Tu reserva', datos(filas.filter(([, v]) => v !== '' && v != null)), acciones);
 }
 
 /* ---------- Alta de días y horas (planificación) ---------- */

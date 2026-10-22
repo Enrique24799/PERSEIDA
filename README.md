@@ -144,7 +144,7 @@ cálculo de Google** con un **Apps Script** publicado como aplicación web.
 
 - **Hoja «Fechas»**: una fila por día/hora de carga (`ID`, `Fecha`, `Hora`, `Cliente`, `Nº palets`,
   `Reservado el`). Fila sin cliente = libre; con cliente = reservada.
-- **Hoja «Accesos»**: `Usuario`, `Contraseña` y `Perfil` (`CLIENTE` o `PLANIFICADOR`).
+- **Hoja «Accesos»**: `Usuario`, `Contraseña` y `Perfil` (`CLIENTE`, `PLANIFICADOR` o `VISUALIZACION`).
 - **Hoja «Registro»**: histórico de accesos fallidos, altas, bajas, reservas, anulaciones y errores de correo.
 
 Código del servidor: [`reserva-cargas-apps-script/Code.gs`](reserva-cargas-apps-script/Code.gs).
@@ -185,6 +185,11 @@ Código del servidor: [`reserva-cargas-apps-script/Code.gs`](reserva-cargas-apps
 - También puede trabajar directamente en la hoja «Fechas»: añadir filas (Fecha, Hora; el ID se rellena
   solo), escribir un cliente para asignarle un día o borrar las columnas D–F para liberarlo.
 - El sistema arranca **sin ninguna fecha**: solo aparecen las que habilite la planificación.
+
+**Consulta** (usuario `VISUALIZACION`, perfil `VISUALIZACION`)
+- Ve lo mismo que la planificación (calendario, tabla con cliente y nº de palets, resumen), pero sin
+  formulario de alta ni botones: no puede reservar, anular, liberar, habilitar ni eliminar. El servidor
+  rechaza esas operaciones aunque se intenten fuera de la página.
 
 **Correo** a `jgata@perseida.com` en cada reserva (y en cada anulación o liberación), con cliente, fecha,
 hora y nº de palets, y enlace a la hoja. Si el envío falla, la reserva se mantiene, la página lo indica
@@ -242,7 +247,10 @@ y queda anotado en «Registro».
 - Cambiar una contraseña: edítala en la hoja «Accesos»; el cambio es inmediato y cierra las sesiones
   abiertas de ese usuario. Usa 4 cifras aleatorias, distintas para cada usuario y sin patrones obvios
   (1234, 1111, años…). Si recibes una alerta de bloqueo que no ha provocado el cliente, cámbiala.
-- Añadir otro cliente: una fila nueva en «Accesos» con usuario, contraseña y perfil `CLIENTE`.
+- Añadir otro cliente: una fila nueva en «Accesos» con usuario, contraseña y perfil `CLIENTE`. Para otro
+  usuario de solo consulta, perfil `VISUALIZACION`.
+- Al actualizar `Code.gs`, ejecutar `setup()` añade los usuarios de `USUARIOS_INICIALES` que falten, sin
+  tocar los existentes, sus contraseñas ni las reservas.
 - Quitar el acceso: borra la fila (o la contraseña) del usuario.
 
 ### Límites
