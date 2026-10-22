@@ -385,6 +385,13 @@ function pruebaCorreo() {
 
 /* ---------- Instalación ---------- */
 
+/* Ejecutar desde el editor para quitar el bloqueo por contraseñas erróneas de todos los usuarios. */
+function desbloquear() {
+  const usuarios = [...new Set(USUARIOS_INICIALES.map(([u]) => u).concat(leerAccesos_().map(a => a.usuario)))];
+  CacheService.getScriptCache().removeAll(usuarios.map(u => 'int_' + u));
+  Logger.log('Usuarios desbloqueados: ' + usuarios.join(', '));
+}
+
 /* Ejecutar una vez desde el editor: crea las hojas y genera las contraseñas. */
 function setup() {
   const fechas = hoja_(HOJA.FECHAS, true);
@@ -421,6 +428,7 @@ function setup() {
   }
   cabecera_(registro, 7);
 
+  desbloquear(); // por si se probó a entrar con un usuario antes de crearlo
   Logger.log('Hojas preparadas. Usuarios de la hoja «Accesos»:');
   accesos.getRange(2, 1, accesos.getLastRow() - 1, 3).getDisplayValues()
     .forEach(([u, p, perfil]) => Logger.log(`  ${u} (${perfil}): ${p ? 'con contraseña' : 'SIN CONTRASEÑA — escríbela en la hoja'}`));
