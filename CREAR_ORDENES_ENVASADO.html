@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Control de Producción — Crear Órdenes de Envasado (simulación)</title>
+<style>
+  :root {
+    --border: #c9d3df;
+    --grid: #e9edf3;
+    --ink: #223040;
+    --ribbon-grad-1: #fbfdff;
+    --ribbon-grad-2: #e7eef7;
+    --head-bg: #f0f3f7;
+    --ok: #27ae60;
+    --warn: #e0a800;
+    --bad: #d9534f;
+    --plan-cell: #bfe3f2;
+    --plan-head: #7fc4e0;
+    --fab-cell: #2f6fb8;
+    --sel: #cfe3fb;
+    --nuevo: #f0a500;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, system-ui, Arial, sans-serif;
+    color: var(--ink);
+    background: #dfe6ee;
+    font-size: 12px;
+  }
+
+  /* ===================== Ventana / pestaña ===================== */
+  .win { display: flex; flex-direction: column; height: 100vh; background: #e8edf3; }
+  .doctab {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(180deg, #4a4f57, #3a3e45);
+    color: #eef1f4; padding: 5px 12px; font-size: 12px; font-weight: 600;
+  }
+  .doctab .tab {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: linear-gradient(180deg, #565b63, #43474e);
+    border: 1px solid #2c2f34; border-radius: 4px 4px 0 0; padding: 4px 12px;
+  }
+  .doctab .tab .close { opacity: .7; font-weight: 400; }
+  .doctab .dot { color: #6fb1ff; }
+
+  /* ===================== Cinta (ribbon) ===================== */
+  .ribbon-tabrow { background: #eef2f7; border-bottom: 1px solid var(--border); padding: 3px 8px 0; }
+  .ribbon-tabrow .rtab {
+    display: inline-block; padding: 4px 16px; font-size: 12px; font-weight: 600;
+    color: #33475e; background: #fff; border: 1px solid var(--border); border-bottom: none;
+    border-radius: 5px 5px 0 0;
+  }
+  .ribbon {
+    display: flex; align-items: stretch;
+    background: linear-gradient(180deg, var(--ribbon-grad-1), var(--ribbon-grad-2));
+    border-bottom: 1px solid var(--border); padding: 6px 4px 2px; overflow-x: auto;
+  }
+  .rgroup { display: flex; flex-direction: column; padding: 0 8px 2px; border-right: 1px solid #d6deea; }
+  .rgroup > .rbody { display: flex; align-items: flex-start; gap: 2px; flex: 1; padding: 4px 0 2px; }
+  .rgroup > .rtitle { text-align: center; font-size: 11px; color: #5f7086; padding-top: 3px; }
+  .searchopts { display: flex; align-items: center; gap: 12px; }
+  .lineSel { display: flex; flex-direction: column; gap: 3px; }
+  .lineSel span { font-size: 11px; color: #5f7086; }
+  .lineSel select {
+    font-size: 13px; padding: 5px 8px; width: 210px;
+    border: 1px solid #a9b8cb; border-radius: 3px; background: #fff;
+  }
+  .refresh-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #a9b8cb; background: radial-gradient(circle at 40% 35%, #fff, #dce7f3);
+    cursor: pointer; font-size: 17px; color: #3a6ea5; line-height: 1;
+  }
+  .rbtn {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
+    width: 62px; min-height: 62px; padding: 5px 3px;
+    border: 1px solid transparent; border-radius: 4px; background: transparent;
+    cursor: pointer; text-align: center; color: #2c3a4b; font-family: inherit;
+  }
+  .rbtn:hover { background: #dce9f8; border-color: #a9c6ea; }
+  .rbtn:active { background: #c9ddf3; }
+  .rbtn .ic { font-size: 22px; line-height: 1; height: 26px; display: flex; align-items: center; }
+  .rbtn .lb { font-size: 10.5px; line-height: 1.05; }
+  .rbtn.sm { width: 58px; }
+  .rbtn.focus { background: #fff6dc; border-color: #f0c460; }
+
+  /* ===================== Barra de acciones ===================== */
+  .subbar {
+    display: flex; align-items: center; gap: 14px;
+    background: #4b5058; color: #e7ebef; padding: 5px 12px; font-size: 12px;
+  }
+  .subbar .item { display: inline-flex; align-items: center; gap: 6px; }
+  .subbar .warn-ic { color: #ffcf4d; }
+  .subbar .spacer { flex: 1; }
+  .subbar label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+  .info {
+    background: #fff8e1; border-bottom: 1px solid #f0d58a; color: #5e4a00;
+    padding: 7px 12px; font-size: 12px; line-height: 1.45;
+  }
+  .info b { color: #3f3100; }
+
+  /* ===================== Rejilla ===================== */
+  .gridwrap { flex: 1; overflow: auto; background: #fff; }
+  table.grid { border-collapse: collapse; width: 100%; font-size: 12px; white-space: nowrap; }
+  table.grid thead th {
+    position: sticky; top: 0; z-index: 6;
+    background: linear-gradient(180deg, #fbfcfe, var(--head-bg));
+    color: #35495f; font-weight: 600; padding: 6px 8px; text-align: left;
+    border-right: 1px solid var(--border); border-bottom: 1px solid #b9c4d2;
+  }
+  table.grid thead th.plan { background: linear-gradient(180deg, #a7d6ec, var(--plan-head)); color: #123; }
+  table.grid tbody td { padding: 4px 8px; border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); }
+  table.grid tbody tr { cursor: pointer; }
+  table.grid tbody tr:nth-child(even) td { background: #f7f9fc; }
+  table.grid tbody tr:hover td { background: #eef5ff; }
+  table.grid tbody tr.rsel td { background: var(--sel) !important; }
+  table.grid tbody tr.nueva td { animation: nueva 2.6s ease-out; }
+  @keyframes nueva { 0%, 35% { background: #c9f0d6; } 100% { background: transparent; } }
+  td.mono { font-family: "Consolas", monospace; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.center { text-align: center; }
+  td.nom { white-space: normal; min-width: 220px; }
+  .st { font-size: 15px; line-height: 1; }
+  .st.ok { color: var(--ok); }
+  .st.run { color: #556; }
+  .st.wait { color: var(--warn); }
+  .st.plan { color: #8a98a8; }
+  td.rotura.brk { background: #f6c2c0 !important; color: #7a1d1a; font-weight: 600; text-align: center; }
+  td.planilla { background: var(--plan-cell); text-align: right; font-weight: 600; color: #0d3a4f; }
+  td.fabricada { background: var(--fab-cell); color: #fff; text-align: right; font-weight: 600; }
+  td.ordfab { background: #fbe9d0; }
+  td.ordenv { background: #fdf3d6; }
+  td.ordenv .sin { color: #a08a50; font-style: italic; font-family: "Segoe UI", sans-serif; }
+  .chk { text-align: center; }
+
+  /* ===================== Barra de estado ===================== */
+  .statusbar {
+    display: flex; align-items: center; gap: 10px;
+    background: #e6ebf1; border-top: 1px solid var(--border);
+    padding: 5px 12px; font-size: 11.5px; color: #45566a;
+  }
+  .statusbar .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+  .statusbar .right { margin-left: auto; opacity: .85; }
+  .toast {
+    position: fixed; bottom: 42px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #2c3a4b; color: #fff; padding: 9px 16px; border-radius: 6px; font-size: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.28); opacity: 0; pointer-events: none;
+    transition: opacity .18s, transform .18s; z-index: 100; max-width: 80vw;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===================== Pop-up estilo GPP ===================== */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(40, 46, 54, .45);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+  }
+  .overlay.show { display: flex; }
+  .gwin {
+    width: 640px; max-width: calc(100vw - 24px); background: #fff;
+    border: 1px solid #2f3338; box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  }
+  .gtitle {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(180deg, #4a4f57, #3a3e45); color: #fff;
+    font-size: 12px; font-weight: 600; padding: 6px 10px;
+  }
+  .gtitle .x { margin-left: auto; cursor: pointer; opacity: .85; font-weight: 400; font-size: 14px; }
+  .gcount {
+    background: #fff; color: #2b3138; border-radius: 9px; padding: 1px 9px; font-size: 11px; font-weight: 700;
+  }
+  .gbody { padding: 14px 18px 16px; background: #fff; }
+  fieldset.gop { border: 1px solid #9aa3ad; border-radius: 3px; padding: 8px 12px 12px; margin: 0; }
+  fieldset.gop legend { font-weight: 700; font-size: 12px; padding: 0 4px; }
+  .gform { display: grid; grid-template-columns: 128px minmax(0, 1fr) 118px minmax(0, 1fr); gap: 7px 10px; align-items: center; }
+  .gform label { font-size: 12px; white-space: nowrap; }
+  .gform input {
+    font-family: inherit; font-size: 12px; padding: 2px 6px; height: 24px; width: 100%;
+    border: 1px solid #8f99a4; background: #fff; color: #111;
+  }
+  .gform input:focus { outline: 1px solid #3b7dd8; border-color: #3b7dd8; }
+  .gform input.bad { border-color: var(--bad); background: #fdf0ef; }
+  .gform .full { grid-column: 2 / 5; }
+  .gerr { color: var(--bad); font-weight: 600; min-height: 16px; margin-top: 8px; font-size: 12px; }
+  .ghint { color: #5b6b7d; font-size: 11.5px; margin-top: 6px; }
+  .gfoot {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(180deg, #5a5f66, #474b51); padding: 6px 10px; color: #eef1f4;
+  }
+  .gfoot .prog { font-size: 12px; }
+  .gfoot .push { margin-left: auto; }
+  .gbtn {
+    font-family: inherit; font-size: 12px; padding: 4px 14px; cursor: pointer;
+    background: linear-gradient(180deg, #fdfdfd, #e2e5e9); border: 1px solid #2d3136; color: #1d2329;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .gbtn:hover { background: linear-gradient(180deg, #ffffff, #d4dae1); }
+  .gbtn:disabled { opacity: .5; cursor: default; }
+  .gbtn .okic { color: #2a9d3e; font-weight: 700; }
+  .gbtn.nav { padding: 4px 9px; font-weight: 700; }
+  .gall { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; user-select: none; }
+  .gnav { display: inline-flex; gap: 4px; }
+
+  /* Resultado */
+  table.gres { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.gres th { text-align: left; background: #f0f3f7; padding: 5px 7px; border-bottom: 1px solid #c9d3df; }
+  table.gres td { padding: 5px 7px; border-bottom: 1px solid #edf1f5; vertical-align: top; }
+  table.gres td.okc { color: var(--ok); font-weight: 700; }
+  table.gres td.koc { color: var(--bad); font-weight: 700; }
+
+  /* Resaltado de lo que se añade al pop-up actual */
+  body.resaltar .nuevo { outline: 2px dashed var(--nuevo); outline-offset: 2px; position: relative; }
+  body.resaltar .nuevo::after {
+    content: "NUEVO"; position: absolute; top: -10px; right: -8px;
+    background: var(--nuevo); color: #fff; font-size: 8.5px; font-weight: 700; letter-spacing: .4px;
+    padding: 1px 4px; border-radius: 6px; line-height: 1.3;
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body class="resaltar">
+<div class="win">
+
+  <div class="doctab">
+    <span class="tab"><span class="dot">◉</span> Control de Producción <span class="close">✕</span></span>
+  </div>
+
+  <div class="ribbon-tabrow"><span class="rtab">Menú</span></div>
+  <div class="ribbon">
+    <div class="rgroup">
+      <div class="rbody">
+        <div class="searchopts">
+          <div class="lineSel">
+            <span>Puesto de trabajo</span>
+            <select id="puestoSel" title="Puesto de trabajo">
+              <option>L1 · ENVASADO LÍNEA 1</option>
+            </select>
+          </div>
+          <button class="refresh-btn" data-act="Refrescar" title="Refrescar">⟳</button>
+        </div>
+      </div>
+      <div class="rtitle">Opciones de Búsqueda</div>
+    </div>
+    <div class="rgroup">
+      <div class="rbody">
+        <button class="rbtn" data-act="Crear Orden de Fabricación"><span class="ic">📝</span><span class="lb">Crear Orden de Fabricación</span></button>
+        <button class="rbtn" data-act="Liberar Orden de Fabricación"><span class="ic">📂</span><span class="lb">Liberar Orden de Fabricación</span></button>
+        <button class="rbtn focus" data-act="Crear Orden de Envasado" title="Funcionalidad simulada"><span class="ic">📋</span><span class="lb">Crear Orden de Envasado</span></button>
+        <button class="rbtn" data-act="Liberar Orden de Envasado"><span class="ic">📤</span><span class="lb">Liberar Orden de Envasado</span></button>
+        <button class="rbtn sm" data-act="Anular"><span class="ic" style="color:#d9534f">⊘</span><span class="lb">Anular</span></button>
+        <button class="rbtn sm" data-act="Baja"><span class="ic" style="color:#d9534f">🗑</span><span class="lb">Baja</span></button>
+      </div>
+      <div class="rtitle">Gestión Órdenes Operativas</div>
+    </div>
+    <div class="rgroup" style="border-right:none">
+      <div class="rbody">
+        <button class="rbtn" data-act="Cambiar Fecha"><span class="ic">📅</span><span class="lb">Cambiar Fecha</span></button>
+        <button class="rbtn" data-act="Dividir Fab."><span class="ic">🔃</span><span class="lb">Dividir Fab.</span></button>
+        <button class="rbtn" data-act="En Marcha"><span class="ic" style="color:#27ae60">▶</span><span class="lb">En Marcha</span></button>
+      </div>
+      <div class="rtitle">Ajuste y Control de Órdenes</div>
+    </div>
+  </div>
+
+  <div class="subbar">
+    <span class="item"><span class="warn-ic">⚠</span> Faltantes Envasado</span>
+    <span class="spacer"></span>
+    <label><input type="checkbox" id="chkResaltar" checked /> Resaltar lo nuevo del pop-up</label>
+  </div>
+
+  <div class="info">
+    <b>Simulación.</b> Marca una o varias líneas <b>sin orden de envasado</b> y pulsa <b>Crear Orden de Envasado</b>.
+    Con una línea el pop-up es el de siempre. Con varias, cada línea crea <b>su propia orden con sus datos</b>:
+    se recorren con ◀ ▶ y <b>Aceptar</b> las crea todas. La casilla «Usar estos datos en todas las líneas» mantiene
+    el funcionamiento actual (misma orden en todas). Para ver cómo se gestiona un error de SAP, escribe <b>ERROR</b> como nº de lote.
+  </div>
+
+  <div class="gridwrap">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th class="chk"><input type="checkbox" id="chkAll" title="Seleccionar todo" /></th>
+          <th>Estatus</th>
+          <th>Ord.Fab.Sap</th>
+          <th>Ord.Env.SAP</th>
+          <th>Inicio Previsto</th>
+          <th>Fin Previsto</th>
+          <th>Num.Lote.SAP</th>
+          <th>Material</th>
+          <th>Fecha Rotura</th>
+          <th>Nombre</th>
+          <th>Formato</th>
+          <th class="plan">Cant.Planificada</th>
+          <th class="plan">Cant.Fabricada</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="statusbar">
+    <span class="dot" id="stDot"></span>
+    <span id="stMsg">Listo</span>
+    <span class="right" id="stCount"></span>
+  </div>
+</div>
+
+<!-- ===================== Pop-up: Crear Ordenes de Envasado ===================== -->
+<div class="overlay" id="crearOv">
+  <div class="gwin" role="dialog" aria-modal="true" aria-labelledby="crearTit">
+    <div class="gtitle">
+      <span id="crearTit">Crear Ordenes de Envasado</span>
+      <span class="gcount nuevo" id="gCount" hidden>Orden 1 de 3</span>
+      <span class="x" id="gX" title="Cerrar">✕</span>
+    </div>
+    <div class="gbody">
+      <fieldset class="gop">
+        <legend>Operacion</legend>
+        <div class="gform">
+          <label for="fMat">Nombre Material:</label>
+          <input id="fMat" class="full" type="text" />
+          <label for="fIni">Fecha Inicio Extrema:</label>
+          <input id="fIni" type="date" />
+          <label for="fFin">Fecha Fin Extrema:</label>
+          <input id="fFin" type="date" />
+          <label for="fPlan">Planificado:</label>
+          <input id="fPlan" type="text" inputmode="numeric" />
+          <label for="fLote">Numero de Lote:</label>
+          <input id="fLote" type="text" maxlength="10" />
+        </div>
+      </fieldset>
+      <div class="ghint" id="gHint" hidden></div>
+      <div class="gerr" id="gErr"></div>
+    </div>
+    <div class="gfoot">
+      <span class="gnav nuevo" id="gNav" hidden>
+        <button class="gbtn nav" id="gPrev" title="Línea anterior">◀</button>
+        <button class="gbtn nav" id="gNext" title="Línea siguiente">▶</button>
+      </span>
+      <label class="gall nuevo" id="gAllWrap" hidden><input type="checkbox" id="gAll" /> Usar estos datos en todas las líneas</label>
+      <span class="prog" id="gProg"></span>
+      <button class="gbtn push" id="gOk"><span class="okic">✔</span> <span id="gOkTxt">Aceptar</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Pop-up: resultado ===================== -->
+<div class="overlay" id="resOv">
+  <div class="gwin" role="dialog" aria-modal="true" style="width:760px">
+    <div class="gtitle"><span>Crear Ordenes de Envasado · Resultado</span><span class="x" data-close-res title="Cerrar">✕</span></div>
+    <div class="gbody" id="resBody"></div>
+    <div class="gfoot"><button class="gbtn push" data-close-res><span class="okic">✔</span> Aceptar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   SIMULACIÓN · Control de Producción — Crear Órdenes de Envasado
+
+   Mismo botón y mismo pop-up que hoy:
+   - 1 línea seleccionada  → pop-up idéntico al actual.
+   - N líneas seleccionadas → el pop-up trabaja con una LISTA de órdenes
+     (una por línea, con sus propios datos). Solo se añaden: contador
+     «Orden i de N», botones ◀ ▶ y la casilla «Usar estos datos en todas
+     las líneas» (= comportamiento actual). Aceptar valida todas y llama a
+     la creación de orden existente una vez por línea, siguiendo aunque
+     alguna falle, y muestra un resumen.
+   Los datos y la creación en SAP son simulados.
+   ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const nf0 = n => Number(n || 0).toLocaleString('es-ES');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const pad = n => String(n).padStart(2, '0');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const ESTATUS = {
+  ok:   { cls: 'ok',   glyph: '✔', txt: 'Finalizada' },
+  run:  { cls: 'run',  glyph: '⚙', txt: 'En marcha' },
+  wait: { cls: 'wait', glyph: '⏱', txt: 'Pendiente (orden de envasado creada)' },
+  plan: { cls: 'plan', glyph: '◌', txt: 'Planificada · sin orden de envasado' },
+};
+
+/* Líneas de producción del puesto de trabajo L1 (datos de ejemplo) */
+const ROWS = [
+  { est:'ok',   ofab:'10161249', oenv:'20084377', ini:'02/11/2026 6:00:00',  fin:'03/11/2026 21:40:00', lote:'26306001', mat:'70909356', rot:'18/11/2026', brk:true,  nom:'BRAVO JABON INTIMO HIDRACARE 250ML 26',   fmt:'039', plan:24000, fab:24000 },
+  { est:'run',  ofab:'10161250', oenv:'20084390', ini:'04/11/2026 6:00:00',  fin:'06/11/2026 13:58:00', lote:'26308001', mat:'70909357', rot:'20/11/2026', brk:true,  nom:'BRAVO JABON INTIMO PH NEUTRO 250ML 26',   fmt:'039', plan:30500, fab:21340 },
+  { est:'plan', ofab:'10161302', oenv:'',         ini:'06/11/2026 14:38:00', fin:'11/11/2026 1:58:00',  lote:'',         mat:'70909744', rot:'29/11/2026', brk:true,  nom:'CROWE CHAMPU HIDRATANTE 400ML',           fmt:'112', plan:45177, fab:0 },
+  { est:'plan', ofab:'10161303', oenv:'',         ini:'11/11/2026 2:38:00',  fin:'12/11/2026 10:40:00', lote:'',         mat:'70909502', rot:'16/11/2026', brk:true,  nom:'LACURA CHAMPU ALISADOR/RIZOS 400ML',      fmt:'112', plan:18500, fab:0 },
+  { est:'plan', ofab:'10161304', oenv:'',         ini:'12/11/2026 11:20:00', fin:'13/11/2026 11:27:00', lote:'',         mat:'70909608', rot:'29/11/2026', brk:true,  nom:'LACURA CHAMPU PURE 0%/EQUILIBRANT 400 26', fmt:'112', plan:21340, fab:0 },
+  { est:'plan', ofab:'10161304', oenv:'',         ini:'13/11/2026 12:07:00', fin:'16/11/2026 12:14:00', lote:'',         mat:'70909609', rot:'02/12/2026', brk:false, nom:'LACURA CHAMPU PURE 0%/NUTRITIVO 400 26', fmt:'112', plan:12760, fab:0 },
+  { est:'plan', ofab:'10161311', oenv:'',         ini:'16/11/2026 12:54:00', fin:'18/11/2026 20:10:00', lote:'',         mat:'70909745', rot:'05/12/2026', brk:false, nom:'CROWE CHAMPU ANTICASPA 400ML',            fmt:'112', plan:30210, fab:0 },
+  { est:'plan', ofab:'10161315', oenv:'',         ini:'19/11/2026 6:00:00',  fin:'20/11/2026 14:30:00', lote:'',         mat:'70909361', rot:'09/12/2026', brk:false, nom:'BRAVO GEL INTIMO HIDRACARE 500ML 26',     fmt:'039', plan:9800,  fab:0 },
+];
+
+let seleccion = new Set();
+let oenvSeq = 20084512;          // siguiente nº de orden de envasado (simulado)
+const loteSeq = {};              // secuencia de lote por prefijo aaddd
+
+/* ---------- Fechas ---------- */
+// "dd/mm/aaaa hh:mm:ss" → "aaaa-mm-dd"
+function isoDe(s) { const [d, m, y] = s.split(' ')[0].split('/'); return `${y}-${m}-${d}`; }
+// "aaaa-mm-dd" → "dd/mm/aaaa"
+function esDe(iso) { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+const horaDe = s => s.split(' ')[1] || '6:00:00';
+// Lote SAP simulado: aa + día del año de la fecha de inicio + secuencia (p. ej. 26310001)
+function nuevoLote(iso) {
+  const d = new Date(iso + 'T12:00:00Z'), y0 = Date.UTC(d.getUTCFullYear(), 0, 1);
+  const pref = String(d.getUTCFullYear()).slice(2) + String(Math.floor((d - y0) / 864e5) + 1).padStart(3, '0');
+  loteSeq[pref] = (loteSeq[pref] || 0) + 1;
+  return pref + String(loteSeq[pref]).padStart(3, '0');
+}
+
+/* ---------- Rejilla ---------- */
+function fila(r, i) {
+  const st = ESTATUS[r.est];
+  return `<tr class="${seleccion.has(i) ? 'rsel' : ''} ${r.nueva ? 'nueva' : ''}" data-i="${i}">
+    <td class="chk"><input type="checkbox" data-sel="${i}" ${seleccion.has(i) ? 'checked' : ''}></td>
+    <td class="center" title="${st.txt}"><span class="st ${st.cls}">${st.glyph}</span></td>
+    <td class="mono ordfab">${r.ofab}</td>
+    <td class="mono ordenv">${r.oenv || '<span class="sin">sin orden</span>'}</td>
+    <td class="mono">${r.ini}</td>
+    <td class="mono">${r.fin}</td>
+    <td class="mono">${esc(r.lote)}</td>
+    <td class="mono">${r.mat}</td>
+    <td class="${r.brk ? 'rotura brk' : ''}">${r.rot}</td>
+    <td class="nom">${esc(r.nom)}</td>
+    <td class="center">${r.fmt}</td>
+    <td class="planilla">${nf0(r.plan)}</td>
+    <td class="fabricada">${nf0(r.fab)}</td>
+  </tr>`;
+}
+
+function render() {
+  $('#tbody').innerHTML = ROWS.map(fila).join('');
+  ROWS.forEach(r => { delete r.nueva; });
+  const pend = ROWS.filter(r => !r.oenv).length;
+  $('#stCount').textContent = `Puesto L1  ·  Líneas: ${ROWS.length} (${pend} sin orden de envasado)  ·  Seleccionadas: ${seleccion.size}`;
+  $('#chkAll').checked = seleccion.size === ROWS.length;
+}
+
+$('#tbody').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-i]');
+  if (!tr) return;
+  const i = +tr.dataset.i;
+  if (seleccion.has(i)) seleccion.delete(i); else seleccion.add(i);
+  render();
+});
+$('#chkAll').addEventListener('change', e => {
+  seleccion = e.target.checked ? new Set(ROWS.map((_, i) => i)) : new Set();
+  render();
+});
+$('#chkResaltar').addEventListener('change', e => document.body.classList.toggle('resaltar', e.target.checked));
+
+function toast(msg, tipo) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600);
+  $('#stDot').style.background = tipo === 'warn' ? 'var(--warn)' : tipo === 'bad' ? 'var(--bad)' : 'var(--ok)';
+  $('#stMsg').textContent = msg;
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  if (act === 'Refrescar') { seleccion.clear(); render(); toast('Datos refrescados'); return; }
+  if (act === 'Crear Orden de Envasado') { abrirCrear(); return; }
+  toast(act + ' (no simulado en esta pantalla)');
+});
+
+/* =====================================================================
+   POP-UP «Crear Ordenes de Envasado»
+   P = { filas: [líneas], ordenes: [{mat, ini, fin, plan, lote}], i }
+   ===================================================================== */
+let P = null;
+const campos = { mat: '#fMat', ini: '#fIni', fin: '#fFin', plan: '#fPlan', lote: '#fLote' };
+
+function abrirCrear() {
+  const sel = [...seleccion].sort((a, b) => a - b).map(i => ROWS[i]);
+  if (!sel.length) { toast('Seleccione al menos una línea para «Crear Orden de Envasado»', 'warn'); return; }
+  const filas = sel.filter(r => !r.oenv);
+  const omitidas = sel.length - filas.length;
+  if (!filas.length) { toast('Las líneas seleccionadas ya tienen orden de envasado', 'warn'); return; }
+  if (omitidas) toast(`${omitidas} línea(s) ya tienen orden de envasado y se omiten`, 'warn');
+
+  P = {
+    filas,
+    ordenes: filas.map(r => ({ mat: `${r.mat} - ${r.nom}`, ini: isoDe(r.ini), fin: isoDe(r.fin), plan: String(r.plan), lote: r.lote })),
+    i: 0,
+  };
+  const multi = filas.length > 1;
+  $('#gCount').hidden = $('#gNav').hidden = $('#gAllWrap').hidden = !multi;
+  $('#gAll').checked = false;
+  $('#gOkTxt').textContent = multi ? `Aceptar (${filas.length})` : 'Aceptar';
+  $('#gProg').textContent = '';
+  $('#gErr').textContent = '';
+  bloquear(false);
+  cargar();
+  $('#crearOv').classList.add('show');
+  $('#fPlan').focus();
+}
+
+function cargar() {
+  const o = P.ordenes[P.i];
+  Object.entries(campos).forEach(([k, s]) => { $(s).value = o[k]; $(s).classList.remove('bad'); });
+  const n = P.ordenes.length, todas = $('#gAll').checked;
+  $('#gCount').textContent = todas ? `${n} líneas · mismos datos` : `Orden ${P.i + 1} de ${n}`;
+  $('#gPrev').disabled = todas || P.i === 0;
+  $('#gNext').disabled = todas || P.i === n - 1;
+  const h = $('#gHint');
+  h.hidden = n === 1;
+  h.textContent = todas
+    ? `Se crearán ${n} órdenes iguales con estos datos (funcionamiento actual).`
+    : `Cada línea crea su propia orden con sus datos. Revísalas con ◀ ▶ y pulsa Aceptar para crear las ${n}.`;
+}
+
+function guardar() {
+  const o = P.ordenes[P.i];
+  Object.entries(campos).forEach(([k, s]) => { o[k] = $(s).value.trim(); });
+}
+
+$('#gPrev').onclick = () => { guardar(); P.i--; $('#gErr').textContent = ''; cargar(); };
+$('#gNext').onclick = () => { guardar(); P.i++; $('#gErr').textContent = ''; cargar(); };
+$('#gAll').onchange = () => { guardar(); cargar(); };
+$('#gX').onclick = () => { if (!$('#gOk').disabled) cerrarCrear(); };
+function cerrarCrear() { $('#crearOv').classList.remove('show'); P = null; }
+
+/* Validación de una orden: devuelve [campo, mensaje] o null */
+function validar(o) {
+  if (!o.mat) return ['mat', 'Indique el material.'];
+  if (!o.ini) return ['ini', 'Indique la fecha de inicio extrema.'];
+  if (!o.fin) return ['fin', 'Indique la fecha de fin extrema.'];
+  if (o.fin < o.ini) return ['fin', 'La fecha de fin extrema no puede ser anterior a la de inicio.'];
+  if (!/^\d{1,7}$/.test(o.plan.replace(/\./g, '')) || +o.plan.replace(/\./g, '') <= 0) return ['plan', 'El planificado debe ser un número entero mayor que 0.'];
+  return null;
+}
+
+$('#gOk').onclick = async () => {
+  guardar();
+  const todas = $('#gAll').checked;
+  const ordenes = todas ? P.ordenes.map(() => ({ ...P.ordenes[P.i] })) : P.ordenes;
+
+  // 1) Validar TODAS antes de crear ninguna
+  for (let k = 0; k < ordenes.length; k++) {
+    const err = validar(ordenes[k]);
+    if (err) {
+      if (!todas) { P.i = k; cargar(); }
+      $(campos[err[0]]).classList.add('bad');
+      $(campos[err[0]]).focus();
+      $('#gErr').textContent = (ordenes.length > 1 && !todas ? `Orden ${k + 1}: ` : '') + err[1];
+      return;
+    }
+  }
+  $('#gErr').textContent = '';
+
+  // 2) Crear una a una con la función de creación existente; si una falla, seguir
+  bloquear(true);
+  const resultados = [];
+  for (let k = 0; k < ordenes.length; k++) {
+    $('#gProg').textContent = `Creando orden ${k + 1} de ${ordenes.length}…`;
+    try {
+      const r = await crearOrdenEnvasado(P.filas[k], ordenes[k]);
+      resultados.push({ ok: true, ...r });
+    } catch (e) {
+      resultados.push({ ok: false, o: ordenes[k], fila: P.filas[k], msg: e.message });
+    }
+  }
+  cerrarCrear();
+  seleccion.clear();
+  render();
+  mostrarResultado(resultados);
+};
+
+function bloquear(si) { ['#gOk', '#gPrev', '#gNext', '#gAll', '#gX'].forEach(s => { $(s).disabled = si; }); }
+
+/* Simula la llamada que hoy crea UNA orden de envasado en SAP (no cambia). */
+async function crearOrdenEnvasado(fila, o) {
+  await sleep(450);
+  if (o.lote.toUpperCase() === 'ERROR') throw new Error('Error SAP (simulado): el nº de lote no es válido.');
+  const oenv = String(oenvSeq++);
+  const lote = o.lote || nuevoLote(o.ini);
+  const [mat, ...nom] = o.mat.split(' - ');
+  Object.assign(fila, {
+    oenv, lote, est: 'wait', nueva: true,
+    ini: `${esDe(o.ini)} ${horaDe(fila.ini)}`, fin: `${esDe(o.fin)} ${horaDe(fila.fin)}`,
+    plan: +o.plan.replace(/\./g, ''),
+    mat: mat.trim() || fila.mat, nom: nom.join(' - ').trim() || fila.nom,
+  });
+  return { oenv, lote, o, fila };
+}
+
+function mostrarResultado(res) {
+  const ok = res.filter(r => r.ok).length, ko = res.length - ok;
+  $('#resBody').innerHTML = `
+    <p style="margin:0 0 10px">${ok ? `<b style="color:var(--ok)">${ok} orden(es) creada(s)</b>` : ''}${ok && ko ? ' · ' : ''}${ko ? `<b style="color:var(--bad)">${ko} con error</b> (las demás se han creado igualmente)` : ''}</p>
+    <table class="gres">
+      <thead><tr><th></th><th>Ord.Env.SAP</th><th>Material</th><th>Inicio – Fin extrema</th><th style="text-align:right">Planificado</th><th>Lote</th><th>Mensaje</th></tr></thead>
+      <tbody>${res.map(r => `<tr>
+        <td class="${r.ok ? 'okc' : 'koc'}">${r.ok ? '✔' : '✖'}</td>
+        <td class="mono">${r.ok ? r.oenv : '—'}</td>
+        <td>${esc(r.o.mat)}</td>
+        <td>${esDe(r.o.ini)} – ${esDe(r.o.fin)}</td>
+        <td style="text-align:right">${nf0(+r.o.plan.replace(/\./g, ''))}</td>
+        <td class="mono">${r.ok ? esc(r.lote) + (r.o.lote ? '' : ' <span style="color:#8494a6">(SAP)</span>') : esc(r.o.lote)}</td>
+        <td>${r.ok ? 'Orden de envasado creada' : esc(r.msg)}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  $('#resOv').classList.add('show');
+  toast(`${ok} orden(es) de envasado creada(s)` + (ko ? ` · ${ko} con error` : ''), ko ? 'warn' : 'ok');
+}
+document.querySelectorAll('[data-close-res]').forEach(b => b.onclick = () => $('#resOv').classList.remove('show'));
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('#resOv').classList.contains('show')) $('#resOv').classList.remove('show');
+  else if (P && !$('#gOk').disabled) cerrarCrear();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -5,6 +5,8 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `gantt-tiempo-cambio.html` — Gantt de tiempos de cambio por línea.
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `AJUSTE_PALETS.html` — Transacción de control y ajuste de inventario de palets.
+- `CREAR_ORDENES_ENVASADO.html` — Simulación de **Crear Orden de Envasado** (Control de Producción, GPP) con
+  varias líneas seleccionadas: una orden por línea con sus propios datos, tocando lo mínimo el pop-up.
 - `RESERVA_CARGAS.html` — Reserva de fechas de carga para FEDEFARMA, BIDAFARMA y UNNEFA (con servidor en
   Google Sheets + Apps Script y aviso por correo; ver [su sección](#reserva_cargashtml--reserva-de-fechas-de-carga)).
 
@@ -262,3 +264,27 @@ y queda anotado en «Registro».
 
 Si `CONFIG.API_URL` está vacío, la página no funciona: al iniciar sesión avisa de que falta conectarla al
 servidor de reservas. **No subas el HTML a los clientes sin configurar `API_URL`.**
+
+## `CREAR_ORDENES_ENVASADO.html` — Crear varias órdenes de envasado (simulación)
+
+Simula la pantalla **Control de Producción** de GPP con un único **puesto de trabajo** (L1) y varias líneas
+de producción, algunas ya con orden de envasado y otras **sin orden**. Propuesta para que el botón
+**Crear Orden de Envasado** cree varias órdenes a la vez **tocando lo mínimo el pop-up**:
+
+- **1 línea seleccionada:** el pop-up es el de siempre (Nombre Material, Fecha Inicio/Fin Extrema,
+  Planificado, Número de Lote, Aceptar).
+- **Varias líneas:** el mismo pop-up trabaja con una **lista de órdenes, una por línea con sus datos**.
+  Solo se añaden (marcados como *NUEVO*, se puede desactivar el resaltado):
+  - contador **«Orden i de N»** en el título;
+  - botones **◀ ▶** para revisar o retocar cada orden (p. ej. su lote);
+  - casilla **«Usar estos datos en todas las líneas»**, que conserva el funcionamiento actual (la misma
+    orden en todas).
+- **Aceptar (N)** valida **todas** antes de crear ninguna (fechas, planificado) y salta a la orden con el
+  error; después llama a la **función de creación existente una vez por línea**, sigue aunque alguna
+  falle y muestra un **resumen** con el nº de orden y el lote de cada una.
+- Las líneas que ya tienen orden de envasado se omiten con un aviso.
+
+Datos y creación en SAP **simulados** (escribir `ERROR` como nº de lote simula un error de SAP). Para
+llevarlo a GPP, la función `crearOrdenEnvasado()` del `<script>` es el punto donde va la llamada real
+que hoy crea una orden.
+
