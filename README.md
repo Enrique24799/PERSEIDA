@@ -6,6 +6,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `flujos-material-multipais.html` — Flujos actual y objetivo de dos procesos de traslado, en pestañas.
 - `PANTALLA_NECESIDADES_TRASLADO.html` — Pantalla de necesidades de solicitudes de traslado.
+- `manuales/` — Manuales en PowerPoint para dar de alta las áreas de planificación (RMMDDIBE y MM02).
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -203,3 +204,15 @@ generados no se guardan al recargar.
 
 Para conectar con datos reales basta sustituir `genDatos()` por la consulta correspondiente,
 manteniendo la forma de los arrays `solicitudes`, `pedidos`, `ordenes`, `faltas` y `compras`.
+
+## `manuales/` — Áreas de planificación 12_12PO y 12_12FV
+
+Dos manuales en PowerPoint para dar de alta las áreas de planificación de los almacenes externos
+12PO y 12FV del centro 12, con el material 70909518 como ejemplo y capturas reales del sistema.
+
+| Archivo | Para qué | Contenido |
+|---|---|---|
+| `Manual_RMMDDIBE_areas_planificacion.pptx` | Alta **masiva** con el programa estándar RMMDDIBE (15 diapositivas) | Requisitos, cómo abrir el programa (SA38), la pantalla por partes, las cinco pestañas, paso a paso con simulación y log, cómo completar los campos propios del área, cómo debe quedar, comprobación en MM03/MD04, 12_12FV, problemas frecuentes y resumen |
+| `Manual_MM02_area_planificacion.pptx` | Alta **manual**, material a material, con MM02 (11 diapositivas) | Cuándo usar MM02 o RMMDDIBE, abrir el material, vista de planificación, añadir el área, las pestañas Planif. nec. 1, Planif. nec. 2 y Pronóst. con los valores esperados, grabar, comprobar y resumen |
+
+Cada diapositiva lleva notas para quien la presente.
