@@ -209,10 +209,13 @@ manteniendo la forma de los arrays `solicitudes`, `pedidos`, `ordenes`, `faltas`
 
 Dos manuales en PowerPoint para dar de alta las áreas de planificación de los almacenes externos
 12PO y 12FV del centro 12, con el material 70909518 como ejemplo y capturas reales del sistema.
+Están hechos sobre la plantilla corporativa del departamento (portada, índice, barra de título con
+etiqueta de sección y logotipo, Montserrat). Todas las áreas usan la clave de aprovisionamiento
+especial **Z9**.
 
 | Archivo | Para qué | Contenido |
 |---|---|---|
-| `Manual_RMMDDIBE_areas_planificacion.pptx` | Alta **masiva** con el programa estándar RMMDDIBE (15 diapositivas) | Requisitos, cómo abrir el programa (SA38), la pantalla por partes, las cinco pestañas, paso a paso con simulación y log, cómo completar los campos propios del área, cómo debe quedar, comprobación en MM03/MD04, 12_12FV, problemas frecuentes y resumen |
-| `Manual_MM02_area_planificacion.pptx` | Alta **manual**, material a material, con MM02 (11 diapositivas) | Cuándo usar MM02 o RMMDDIBE, abrir el material, vista de planificación, añadir el área, las pestañas Planif. nec. 1, Planif. nec. 2 y Pronóst. con los valores esperados, grabar, comprobar y resumen |
+| `Manual_RMMDDIBE_areas_planificacion.pptx` | Alta **masiva** con el programa estándar RMMDDIBE (16 diapositivas) | Requisitos, cómo abrir el programa (SA38), la pantalla por partes, las cinco pestañas, paso a paso con simulación y log, cómo completar los campos propios del área, cómo debe quedar, comprobación en MM03/MD04, 12_12FV, problemas frecuentes y resumen |
+| `Manual_MM02_area_planificacion.pptx` | Alta **manual**, material a material, con MM02 (12 diapositivas) | Cuándo usar MM02 o RMMDDIBE, abrir el material, vista de planificación, añadir el área, las pestañas Planif. nec. 1, Planif. nec. 2 y Pronóst. con los valores esperados, grabar, comprobar y resumen |
 
 Cada diapositiva lleva notas para quien la presente.
