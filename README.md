@@ -6,7 +6,7 @@ Visores HTML **autocontenidos** (sin dependencias externas, se abren directament
 - `OUTPUT_PANTALLA_VENTAS.html` — Pantalla de ventas con la propuesta de carga de camiones.
 - `flujos-material-multipais.html` — Flujos actual y objetivo de dos procesos de traslado, en pestañas.
 - `PANTALLA_NECESIDADES_TRASLADO.html` — Pantalla de necesidades de solicitudes de traslado.
-- `manuales/` — Manuales en PowerPoint para dar de alta las áreas de planificación (RMMDDIBE y MM02).
+- `manuales/` — Manuales en PowerPoint: áreas de planificación (RMMDDIBE y MM02) y ampliación de materiales a los centros de país.
 
 ## `gantt-tiempo-cambio.html` — Gantt de tiempo de cambio (líneas internas)
 
@@ -219,3 +219,23 @@ especial **Z9**.
 | `Manual_MM02_area_planificacion.pptx` | Alta **manual**, material a material, con MM02 (12 diapositivas) | Cuándo usar MM02 o RMMDDIBE, abrir el material, vista de planificación, añadir el área, las pestañas Planif. nec. 1, Planif. nec. 2 y Pronóst. con los valores esperados, grabar, comprobar y resumen |
 
 Cada diapositiva lleva notas para quien la presente.
+
+### `Manual_ampliar_material_centros_pais.pptx` — Ventas entre centros (17 diapositivas)
+
+Cómo ampliar un material a los centros de país **12FR (HUFR), 12NL (HUNL), 12BE (HUBE) y 12DE
+(HUDE)** para las ventas entre centros, con la misma lógica de traslado que las áreas de
+planificación. Con la misma plantilla que los otros dos manuales y capturas del 70908810 en 12FR.
+
+- **Circuito:** diferencia entre área de planificación (mismo centro 12, almacén externo) y centro de
+  país (otro centro de la sociedad del país, traslado desde el 12 con Z9 y venta al cliente final).
+- **Requisitos:** centro y almacén creados, Z9 definida en cada centro (las claves de aprovisionamiento
+  especial son por centro), circuito de traslado en customizing y datos de la sociedad del país.
+- **Vistas:** obligatorias (ventas org. 1 y 2, ventas datos gen./centro, compras, planificación de
+  necesidades 1 y 2, datos gral. centro/almacenamiento, contabilidad 1), como en 12FR (preparación de
+  trabajo, gestión de almacenes) y según el caso (cálculo de costes, pronóstico).
+- **Paso a paso con MM01:** el mismo material, niveles del país nuevo y *Copiar de* 12FR (no del 12,
+  que fabrica); después se cambian almacenes, grupo de compras, plazo de tránsito, ventas y precio.
+- **Datos del centro** pantalla a pantalla con 12FR: clase de aprovisionamiento F con Z9, almacenes
+  HUFR, estrategia Z1, compensación 2 (60/7), verificación 02, lote y caducidad.
+- **Diferencias** frente al centro 12 y por país, comprobación (MM03, MD04, MMBE), problemas
+  frecuentes y resumen.
